@@ -10,8 +10,8 @@ import {
   appointmentFormValuesFromFormData,
   type AppointmentFormValues,
 } from "@/lib/appointments/schema";
-import { validateAppointment } from "@/lib/appointments/validation";
-import { getChairBookingsForDay, getDoctorBookingsForDay } from "@/lib/appointments/queries";
+import { computeAvailabilityWindows, validateAppointment } from "@/lib/appointments/validation";
+import { getChairBookingsForDay, getDoctorBookingsForDay, getDoctorScheduleInput } from "@/lib/appointments/queries";
 
 export interface AppointmentActionState {
   error?: string;
@@ -54,10 +54,18 @@ async function runConflictCheck(
   values: AppointmentFormValues,
   excludeAppointmentId?: string,
 ): Promise<{ valid: true; scheduledEnd: string } | { valid: false; error: string }> {
-  const [doctorBookings, chairBookings] = await Promise.all([
+  const [doctorBookings, chairBookings, doctorSchedule] = await Promise.all([
     getDoctorBookingsForDay(values.doctor_id, values.scheduled_start),
     values.chair_id ? getChairBookingsForDay(values.chair_id, values.scheduled_start) : Promise.resolve([]),
+    getDoctorScheduleInput(values.doctor_id),
   ]);
+
+  // null = doctor has no schedule configured at all -> validateAppointment
+  // falls back to its own DEFAULT_CLINIC_HOURS default, same as before
+  // Doctor Schedule Management existed. A non-null (possibly empty) array
+  // means the doctor's configured schedule is the authority instead.
+  const availabilityWindows =
+    computeAvailabilityWindows(values.scheduled_start, doctorSchedule) ?? undefined;
 
   const result = validateAppointment({
     scheduledStart: values.scheduled_start,
@@ -73,6 +81,7 @@ async function runConflictCheck(
       scheduledEnd: b.scheduled_end,
     })),
     excludeAppointmentId,
+    availabilityWindows,
   });
 
   if (!result.valid) {
