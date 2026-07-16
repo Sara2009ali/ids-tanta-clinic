@@ -119,8 +119,11 @@ interface ScheduleQueryRow {
   visit_types: { name: string; color: string } | null;
 }
 
-/** Today's full schedule, oldest-first, with the patient/doctor/chair/visit-type names already joined in. */
-export async function getTodaysSchedule(): Promise<ScheduleRow[]> {
+/** Schedule for [startIso, endIsoExclusive), oldest-first, with patient/doctor/chair/visit-type names already joined in. */
+export async function getScheduleForRange(
+  startIso: string,
+  endIsoExclusive: string,
+): Promise<ScheduleRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("appointments")
@@ -131,13 +134,13 @@ export async function getTodaysSchedule(): Promise<ScheduleRow[]> {
        chairs ( label ),
        visit_types ( name, color )`,
     )
-    .gte("scheduled_start", startOfTodayIso())
-    .lt("scheduled_start", startOfTomorrowIso())
+    .gte("scheduled_start", startIso)
+    .lt("scheduled_start", endIsoExclusive)
     .is("deleted_at", null)
     .order("scheduled_start", { ascending: true });
 
   if (error) {
-    console.error("getTodaysSchedule failed", error);
+    console.error("getScheduleForRange failed", error);
     return [];
   }
 
@@ -156,6 +159,11 @@ export async function getTodaysSchedule(): Promise<ScheduleRow[]> {
     visit_type_name: row.visit_types?.name ?? "—",
     visit_type_color: row.visit_types?.color ?? "#6366f1",
   }));
+}
+
+/** Today's full schedule — a thin wrapper around `getScheduleForRange` for the Reception Dashboard. */
+export async function getTodaysSchedule(): Promise<ScheduleRow[]> {
+  return getScheduleForRange(startOfTodayIso(), startOfTomorrowIso());
 }
 
 export interface RecentActivityRow {
