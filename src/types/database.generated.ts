@@ -14,6 +14,174 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_status_history: {
+        Row: {
+          appointment_id: string
+          changed_by: string | null
+          clinic_id: string
+          created_at: string
+          from_status: Database["public"]["Enums"]["appointment_status"] | null
+          id: string
+          note: string | null
+          to_status: Database["public"]["Enums"]["appointment_status"]
+        }
+        Insert: {
+          appointment_id: string
+          changed_by?: string | null
+          clinic_id: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["appointment_status"] | null
+          id?: string
+          note?: string | null
+          to_status: Database["public"]["Enums"]["appointment_status"]
+        }
+        Update: {
+          appointment_id?: string
+          changed_by?: string | null
+          clinic_id?: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["appointment_status"] | null
+          id?: string
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["appointment_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_status_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_status_history_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointments: {
+        Row: {
+          chair_id: string | null
+          chief_complaint: string | null
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          doctor_id: string
+          id: string
+          is_emergency: boolean
+          notes: string | null
+          patient_id: string
+          priority: string
+          scheduled_end: string
+          scheduled_start: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+          updated_by: string | null
+          visit_type_id: string
+        }
+        Insert: {
+          chair_id?: string | null
+          chief_complaint?: string | null
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          doctor_id: string
+          id?: string
+          is_emergency?: boolean
+          notes?: string | null
+          patient_id: string
+          priority?: string
+          scheduled_end: string
+          scheduled_start: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+          updated_by?: string | null
+          visit_type_id: string
+        }
+        Update: {
+          chair_id?: string | null
+          chief_complaint?: string | null
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          doctor_id?: string
+          id?: string
+          is_emergency?: boolean
+          notes?: string | null
+          patient_id?: string
+          priority?: string
+          scheduled_end?: string
+          scheduled_start?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+          updated_by?: string | null
+          visit_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_chair_id_fkey"
+            columns: ["chair_id"]
+            isOneToOne: false
+            referencedRelation: "chairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -55,6 +223,41 @@ export type Database = {
           },
           {
             foreignKeyName: "audit_log_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chairs: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chairs_clinic_id_fkey"
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
@@ -570,6 +773,47 @@ export type Database = {
           },
         ]
       }
+      visit_types: {
+        Row: {
+          clinic_id: string
+          color: string
+          created_at: string
+          default_duration_minutes: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          color?: string
+          created_at?: string
+          default_duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          color?: string
+          created_at?: string
+          default_duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_types_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -613,6 +857,15 @@ export type Database = {
     }
     Enums: {
       alert_severity: "info" | "warning" | "critical"
+      appointment_status:
+        | "scheduled"
+        | "confirmed"
+        | "checked_in"
+        | "waiting"
+        | "in_treatment"
+        | "completed"
+        | "cancelled"
+        | "no_show"
       patient_file_type:
         | "photo"
         | "radiograph"
@@ -755,6 +1008,16 @@ export const Constants = {
   public: {
     Enums: {
       alert_severity: ["info", "warning", "critical"],
+      appointment_status: [
+        "scheduled",
+        "confirmed",
+        "checked_in",
+        "waiting",
+        "in_treatment",
+        "completed",
+        "cancelled",
+        "no_show",
+      ],
       patient_file_type: [
         "photo",
         "radiograph",

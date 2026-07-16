@@ -30,7 +30,8 @@ src/
         new/                # registration form
         [id]/               # profile: overview/medical/dental/timeline/files/audit
         [id]/edit/           # edit form (shares <PatientForm> with new/)
-      appointments|recalls|reports|settings/   # <ComingSoon/> placeholders
+      appointments/          # Phase 3A: schema + Server Actions land first; screens are Phase 3B+
+      recalls|reports|settings/   # <ComingSoon/> placeholders
   components/
     ui/        # shadcn primitives
     layout/    # Sidebar, Topbar, UserMenu, ComingSoon
@@ -42,6 +43,7 @@ src/
     auth/      # legacy staff DAL (getCurrentStaff, requireStaff, requireRole)
     authz/     # RBAC: permissions.ts (pure helpers), session.ts (I/O, cached per-request)
     patients/  # schema (zod), queries, server actions, storage helpers, utils
+    appointments/  # Phase 3A: validation.ts (pure rules), schema.ts, queries.ts, actions.ts
     audit/     # audit log writer
   proxy.ts     # session refresh + route protection (Next 16's renamed middleware)
 supabase/
@@ -53,7 +55,9 @@ docs/
   RBAC.md           # role/permission model, DB schema, RLS design
   Permissions.md    # permission key reference + application-layer usage patterns
   Security.md       # headers, env validation, what's in/out of scope
-  Phase-2.1.md       # changelog for this hardening phase
+  Database.md       # full schema reference (all tables)
+  Phase-2.1.md       # changelog for the hardening/RBAC phase
+  Phase-3A.md        # changelog for the appointments foundation phase
 ```
 
 This is an evolution of the structure documented in the project `README.md`; the additions in
@@ -129,3 +133,45 @@ is designed to be reused by every future module exactly as it's used by patients
 enforces the same permission model at the database layer independent of the application code.
 See [RBAC.md](./RBAC.md) for the full design and [Permissions.md](./Permissions.md) for the
 permission key reference and usage patterns for future modules.
+
+## Appointments (Phase 3A): the second module, same pattern
+
+Phase 3A adds the Appointments module (`supabase/migrations/0008_appointments.sql`,
+`src/lib/appointments/`). Architecturally it introduces nothing new — that's a deliberate
+consistency point, not an oversight: Appointments is built as a second, independent proof that
+the patterns established in Phase 1/2/2.1 generalize, rather than as a special case.
+
+- **Multi-tenant model**: `appointments`, `appointment_status_history`, `visit_types`, and
+  `chairs` all carry `clinic_id` and are scoped by the same
+  `clinic_id = current_clinic_id() OR current_staff_role() = 'super_admin'` RLS shape as every
+  other clinic-owned table.
+- **RBAC**: reads are open to any clinic staff member; writes are gated by
+  `appointments.create`/`appointments.edit` via `private.has_permission()` in RLS, and by
+  `ensurePermission(PERMISSIONS.APPOINTMENTS_CREATE)`/`ensurePermission(PERMISSIONS.APPOINTMENTS_EDIT)`
+  in `src/lib/appointments/actions.ts` — the exact same two-layer enforcement (application-layer
+  check for UX, RLS as the ultimate authority) described above for patients. These permission
+  keys were pre-registered in the Phase 2.1 RBAC migration specifically so this module could
+  reuse the contract without a follow-up migration.
+- **Server Components + Server Actions**: reads live in `src/lib/appointments/queries.ts` (called
+  directly from Server Components, e.g. the Reception Dashboard), writes are `"use server"`
+  actions in `src/lib/appointments/actions.ts` (`createAppointment`/`updateAppointment`),
+  following the same `queries.ts`/`actions.ts` split as `src/lib/patients/`.
+- **Validation**: `src/lib/appointments/schema.ts` mirrors `src/lib/patients/schema.ts`'s
+  Zod-plus-FormData-parsing shape. `src/lib/appointments/validation.ts` adds a layer patients
+  didn't need — pure, I/O-free business rules (working hours, overlap detection) shared between
+  the server action and (eventually) client-side instant feedback — but it plugs into the same
+  "application-layer check backstopped by a database constraint" idea already used for
+  `patients_clinic_phone_unique_idx`: two exclusion constraints
+  (`appointments_doctor_no_overlap`/`appointments_chair_no_overlap`) are the real
+  double-booking guarantee, closing the race window that any "check then insert" application
+  check inherently has. See [Database.md](./Database.md) for the schema detail.
+
+One genuinely new piece of infrastructure appears here — the append-only
+`appointment_status_history` table, populated exclusively by a database trigger rather than
+application code, so it can never drift from the `appointments.status` column regardless of
+which code path changes it. That's a schema-level technique specific to needing a tamper-proof
+history of a mutable field, not a new architectural layer; the RLS/permission/Server-Component
+pattern around it is unchanged.
+
+See [Phase-3A.md](./Phase-3A.md) for the phase changelog and [Database.md](./Database.md) for
+the full schema reference (all tables, not just this phase's).
