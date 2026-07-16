@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { CalendarClock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { CalendarNav } from "@/components/appointments/calendar-nav";
 import { CalendarViewSwitcher } from "@/components/appointments/calendar-view-switcher";
@@ -41,6 +44,7 @@ export default async function AppointmentsPage({
   ]);
 
   const canCreateAppointment = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_CREATE);
+  const canManageSchedules = hasPermission(permissions, PERMISSIONS.SETTINGS_MANAGE);
 
   return (
     <div className="flex h-full flex-col gap-6">
@@ -49,9 +53,17 @@ export default async function AppointmentsPage({
           <h1 className="text-2xl font-semibold tracking-tight">Appointments</h1>
           <p className="text-sm text-muted-foreground">{formatViewLabel(view, anchor)}</p>
         </div>
-        {canCreateAppointment && (
-          <AppointmentFormSheet doctors={doctors} chairs={chairs} visitTypes={visitTypes} />
-        )}
+        <div className="flex items-center gap-2">
+          {canManageSchedules && (
+            <Button variant="outline" render={<Link href="/appointments/doctor-schedule" />}>
+              <CalendarClock className="size-4" />
+              Doctor Schedules
+            </Button>
+          )}
+          {canCreateAppointment && (
+            <AppointmentFormSheet doctors={doctors} chairs={chairs} visitTypes={visitTypes} />
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
