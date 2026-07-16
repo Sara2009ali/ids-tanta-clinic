@@ -327,6 +327,167 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_schedule_exceptions: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          doctor_id: string
+          end_minutes: number
+          exception_date: string
+          id: string
+          reason: string | null
+          start_minutes: number
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          doctor_id: string
+          end_minutes: number
+          exception_date: string
+          id?: string
+          reason?: string | null
+          start_minutes: number
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          doctor_id?: string
+          end_minutes?: number
+          exception_date?: string
+          id?: string
+          reason?: string | null
+          start_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_schedule_exceptions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_schedule_exceptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_schedule_exceptions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_vacations: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          doctor_id: string
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          doctor_id: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          doctor_id?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_vacations_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_vacations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_vacations_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_weekly_hours: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          day_of_week: number
+          doctor_id: string
+          end_minutes: number
+          id: string
+          start_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          day_of_week: number
+          doctor_id: string
+          end_minutes: number
+          id?: string
+          start_minutes: number
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          day_of_week?: number
+          doctor_id?: string
+          end_minutes?: number
+          id?: string
+          start_minutes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_weekly_hours_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_weekly_hours_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_clinical_info: {
         Row: {
           allergies: string[]

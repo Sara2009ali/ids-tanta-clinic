@@ -18,6 +18,10 @@ export type AppointmentStatusHistory = Database["public"]["Tables"]["appointment
 export type VisitType = Database["public"]["Tables"]["visit_types"]["Row"];
 export type Chair = Database["public"]["Tables"]["chairs"]["Row"];
 
+export type DoctorWeeklyHours = Database["public"]["Tables"]["doctor_weekly_hours"]["Row"];
+export type DoctorVacation = Database["public"]["Tables"]["doctor_vacations"]["Row"];
+export type DoctorScheduleException = Database["public"]["Tables"]["doctor_schedule_exceptions"]["Row"];
+
 export type PatientSearchRow = Database["public"]["Functions"]["search_patients"]["Returns"][number];
 
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
