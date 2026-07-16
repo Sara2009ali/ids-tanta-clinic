@@ -51,6 +51,93 @@ export function isWithinWorkingHours(
   return startMinutes >= hours.startMinutes && endMinutes <= hours.endMinutes && endMinutes > startMinutes;
 }
 
+/**
+ * Doctor Schedule Management (Phase 3B, Milestone 2) inputs — plain,
+ * camelCase mirrors of the doctor_weekly_hours/doctor_vacations/
+ * doctor_schedule_exceptions rows. The query layer maps DB rows into
+ * these; this module stays free of any DB/Supabase import.
+ */
+export interface WeeklyHoursBlock {
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
+}
+
+export interface VacationRange {
+  /** YYYY-MM-DD, inclusive. */
+  startDate: string;
+  /** YYYY-MM-DD, inclusive. */
+  endDate: string;
+}
+
+export interface ScheduleExceptionBlock {
+  /** YYYY-MM-DD. */
+  date: string;
+  startMinutes: number;
+  endMinutes: number;
+}
+
+export interface DoctorScheduleInput {
+  weeklyHours: readonly WeeklyHoursBlock[];
+  vacations: readonly VacationRange[];
+  exceptions: readonly ScheduleExceptionBlock[];
+}
+
+/**
+ * Computes the availability windows for a doctor on a given date, applying
+ * vacation > exception > weekly-template precedence:
+ *   1. Any vacation covering the date -> fully unavailable ([]).
+ *   2. Any exception rows for the exact date -> those hours only, the
+ *      weekly template is ignored for that date.
+ *   3. Otherwise -> the weekly template's blocks for that day of week
+ *      (empty if the doctor has a template but no blocks on this weekday,
+ *      e.g. a doctor who doesn't work Sundays).
+ *
+ * Returns `null` — not `[]` — when the doctor has zero rows across all
+ * three inputs, so the caller can distinguish "never configured, fall back
+ * to DEFAULT_CLINIC_HOURS" from "configured, and unavailable today."
+ */
+export function computeAvailabilityWindows(
+  dateIso: string,
+  schedule: DoctorScheduleInput,
+): WorkingHours[] | null {
+  const hasAnyConfiguration =
+    schedule.weeklyHours.length > 0 || schedule.vacations.length > 0 || schedule.exceptions.length > 0;
+  if (!hasAnyConfiguration) return null;
+
+  const date = dateIso.slice(0, 10);
+
+  const onVacation = schedule.vacations.some((v) => date >= v.startDate && date <= v.endDate);
+  if (onVacation) return [];
+
+  const exceptionsForDate = schedule.exceptions.filter((exception) => exception.date === date);
+  if (exceptionsForDate.length > 0) {
+    return exceptionsForDate.map((exception) => ({
+      startMinutes: exception.startMinutes,
+      endMinutes: exception.endMinutes,
+    }));
+  }
+
+  const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
+  return schedule.weeklyHours
+    .filter((block) => block.dayOfWeek === dayOfWeek)
+    .map((block) => ({ startMinutes: block.startMinutes, endMinutes: block.endMinutes }));
+}
+
+/** Same as `isWithinWorkingHours`, but against multiple candidate windows (e.g. a split shift with a break). */
+export function isWithinAvailability(
+  scheduledStartIso: string,
+  scheduledEndIso: string,
+  windows: readonly WorkingHours[],
+): boolean {
+  const start = new Date(scheduledStartIso);
+  const end = new Date(scheduledEndIso);
+  const startMinutes = start.getHours() * 60 + start.getMinutes();
+  const endMinutes = end.getHours() * 60 + end.getMinutes();
+  if (endMinutes <= startMinutes) return false;
+  return windows.some((window) => startMinutes >= window.startMinutes && endMinutes <= window.endMinutes);
+}
+
 export interface ExistingBooking {
   id: string;
   scheduledStart: string;
@@ -82,6 +169,14 @@ export interface AppointmentValidationInput {
   excludeAppointmentId?: string;
   now?: Date;
   workingHours?: WorkingHours;
+  /**
+   * The doctor's actual availability windows for the scheduled date (see
+   * `computeAvailabilityWindows`), taking precedence over `workingHours`
+   * when provided. Falls back to `[workingHours ?? DEFAULT_CLINIC_HOURS]`
+   * when omitted, so callers that predate Doctor Schedule Management keep
+   * their exact previous behavior.
+   */
+  availabilityWindows?: WorkingHours[];
 }
 
 export interface AppointmentValidationResult {
@@ -105,8 +200,13 @@ export function validateAppointment(input: AppointmentValidationInput): Appointm
   if (isInPast(input.scheduledStart, input.now)) {
     errors.push("Appointments can't be scheduled in the past.");
   }
-  if (errors.length === 0 && !isWithinWorkingHours(input.scheduledStart, scheduledEnd, input.workingHours)) {
-    errors.push("Appointment must fall within clinic working hours (9:00 AM–9:00 PM).");
+  const availabilityWindows = input.availabilityWindows ?? [input.workingHours ?? DEFAULT_CLINIC_HOURS];
+  if (errors.length === 0 && !isWithinAvailability(input.scheduledStart, scheduledEnd, availabilityWindows)) {
+    errors.push(
+      availabilityWindows.length === 0
+        ? "This doctor is not available on the selected date."
+        : "Appointment must fall within the doctor's available hours.",
+    );
   }
   if (hasOverlap(input.scheduledStart, scheduledEnd, input.doctorBookings, input.excludeAppointmentId)) {
     errors.push("This doctor already has an appointment at that time.");
