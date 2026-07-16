@@ -7,8 +7,20 @@ shell for Dashboard and Patients.
 filters, sorting and pagination; a complete registration form (personal/medical/dental
 information); patient profiles with medical/dental history, a real activity timeline built
 from the audit log, file uploads (photo/documents/X-rays/consent forms), and audit history;
-archive and soft-delete. Appointments, Clinical Notes, Invoices, Payments, Recalls, Reports,
-and Settings remain placeholders until their own phases.
+archive and soft-delete.
+
+**Phase 2.1** (done): infrastructure hardening — role-based access control (roles, permissions,
+role-permission mapping) enforced via RLS across `patients`/`patient_clinical_info`/
+`patient_files`. See [docs/Phase-2.1.md](./docs/Phase-2.1.md).
+
+**Phase 3A** (done): Appointment & Reception Management foundation — appointment/visit-type/chair
+schema with database-enforced double-booking prevention, the Server Action/query layer, and a
+Reception Dashboard (stat cards, today's schedule, recent activity, booking workflow). Calendar
+view, Doctor Schedule management, Chair Management UI, and the full Reception Workspace are
+sequenced into Phase 3B+. See [docs/Phase-3A.md](./docs/Phase-3A.md).
+
+Clinical Notes, Invoices, Payments, Recalls, Reports, and Settings remain placeholders until
+their own phases.
 
 ## Stack
 
@@ -81,17 +93,20 @@ src/
         new/                # registration form
         [id]/               # profile: overview/medical/dental/timeline/files/audit
         [id]/edit/           # edit form (shares <PatientForm> with new/)
-      appointments|recalls|reports|settings/   # <ComingSoon/> placeholders
+      dashboard/            # Reception Dashboard: stat cards, today's schedule, activity feed
+      recalls|reports|settings/   # <ComingSoon/> placeholders
   components/
-    ui/        # shadcn primitives
-    layout/    # Sidebar, Topbar, UserMenu, ComingSoon
-    patients/  # list/form/profile UI + shared bits (status badge, doctor select, file upload)
-    auth/      # login form
+    ui/           # shadcn primitives
+    layout/       # Sidebar, Topbar, UserMenu, ComingSoon
+    patients/     # list/form/profile UI + shared bits (status badge, doctor select, file upload)
+    appointments/ # booking sheet, patient picker, chair/visit-type selects, schedule/activity feed
+    auth/         # login form
   lib/
-    supabase/  # browser/server/proxy client factories
-    auth/      # session DAL (getCurrentStaff, requireRole)
-    patients/  # schema (zod), queries, server actions, storage helpers, utils
-    audit/     # audit log writer
+    supabase/     # browser/server/proxy client factories
+    auth/         # session DAL (getCurrentStaff, requireRole)
+    patients/     # schema (zod), queries, server actions, storage helpers, utils
+    appointments/ # schema (zod), validation, queries, server actions
+    audit/        # audit log writer
   proxy.ts     # session refresh + route protection (Next 16's renamed middleware)
 supabase/
   migrations/  # SQL schema + RLS + search_patients RPC
