@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { AppointmentStatus, Chair, VisitType } from "@/types/domain";
+import type { AppointmentStatus, Chair, DoctorScheduleException, DoctorVacation, DoctorWeeklyHours, VisitType } from "@/types/domain";
+import type { DoctorScheduleInput } from "@/lib/appointments/validation";
 
 /** Active (non-inactive) visit types for the current clinic, for the booking dialog's dropdown. */
 export async function listVisitTypes(): Promise<VisitType[]> {
@@ -261,4 +262,85 @@ export async function getChairBookingsForDay(chairId: string, dayIso: string): P
     .lt("scheduled_start", dayEnd.toISOString());
 
   return data ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Doctor Schedule Management (Phase 3B, Milestone 2).
+// ---------------------------------------------------------------------------
+
+/** A doctor's recurring weekly-hours blocks, ordered for display (day, then time). */
+export async function listDoctorWeeklyHours(doctorId: string): Promise<DoctorWeeklyHours[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("doctor_weekly_hours")
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .order("day_of_week")
+    .order("start_minutes");
+
+  if (error) {
+    console.error("listDoctorWeeklyHours failed", error);
+    return [];
+  }
+  return data ?? [];
+}
+
+/** A doctor's vacation date ranges, most recent first. */
+export async function listDoctorVacations(doctorId: string): Promise<DoctorVacation[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("doctor_vacations")
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .order("start_date", { ascending: false });
+
+  if (error) {
+    console.error("listDoctorVacations failed", error);
+    return [];
+  }
+  return data ?? [];
+}
+
+/** A doctor's single-date hour overrides, most recent first. */
+export async function listDoctorScheduleExceptions(doctorId: string): Promise<DoctorScheduleException[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("doctor_schedule_exceptions")
+    .select("*")
+    .eq("doctor_id", doctorId)
+    .order("exception_date", { ascending: false });
+
+  if (error) {
+    console.error("listDoctorScheduleExceptions failed", error);
+    return [];
+  }
+  return data ?? [];
+}
+
+/**
+ * Fetches and maps a doctor's full schedule configuration into the pure
+ * `DoctorScheduleInput` shape `computeAvailabilityWindows` (validation.ts)
+ * expects — the one round trip the booking Server Actions need before
+ * running the availability check.
+ */
+export async function getDoctorScheduleInput(doctorId: string): Promise<DoctorScheduleInput> {
+  const [weeklyHours, vacations, exceptions] = await Promise.all([
+    listDoctorWeeklyHours(doctorId),
+    listDoctorVacations(doctorId),
+    listDoctorScheduleExceptions(doctorId),
+  ]);
+
+  return {
+    weeklyHours: weeklyHours.map((row) => ({
+      dayOfWeek: row.day_of_week,
+      startMinutes: row.start_minutes,
+      endMinutes: row.end_minutes,
+    })),
+    vacations: vacations.map((row) => ({ startDate: row.start_date, endDate: row.end_date })),
+    exceptions: exceptions.map((row) => ({
+      date: row.exception_date,
+      startMinutes: row.start_minutes,
+      endMinutes: row.end_minutes,
+    })),
+  };
 }
