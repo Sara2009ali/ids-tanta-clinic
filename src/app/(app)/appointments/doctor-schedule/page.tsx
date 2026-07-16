@@ -3,11 +3,17 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DoctorScheduleSelector } from "@/components/appointments/doctor-schedule-selector";
+import { ExceptionsManager } from "@/components/appointments/exceptions-manager";
+import { VacationsManager } from "@/components/appointments/vacations-manager";
 import { WeeklyHoursEditor } from "@/components/appointments/weekly-hours-editor";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { listDoctors } from "@/lib/patients/queries";
-import { listDoctorWeeklyHours } from "@/lib/appointments/queries";
+import {
+  listDoctorScheduleExceptions,
+  listDoctorVacations,
+  listDoctorWeeklyHours,
+} from "@/lib/appointments/queries";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -30,7 +36,13 @@ export default async function DoctorSchedulePage({
     ? requestedDoctorId
     : doctors[0]?.id;
 
-  const weeklyHours = doctorId ? await listDoctorWeeklyHours(doctorId) : [];
+  const [weeklyHours, vacations, exceptions] = doctorId
+    ? await Promise.all([
+        listDoctorWeeklyHours(doctorId),
+        listDoctorVacations(doctorId),
+        listDoctorScheduleExceptions(doctorId),
+      ])
+    : [[], [], []];
 
   return (
     <div className="space-y-6">
@@ -51,14 +63,36 @@ export default async function DoctorSchedulePage({
       <DoctorScheduleSelector doctors={doctors} selectedDoctorId={doctorId} />
 
       {doctorId ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Weekly hours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WeeklyHoursEditor doctorId={doctorId} weeklyHours={weeklyHours} />
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Weekly hours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WeeklyHoursEditor doctorId={doctorId} weeklyHours={weeklyHours} />
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Vacations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VacationsManager doctorId={doctorId} vacations={vacations} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Exceptions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ExceptionsManager doctorId={doctorId} exceptions={exceptions} />
+              </CardContent>
+            </Card>
+          </div>
+        </>
       ) : null}
     </div>
   );
