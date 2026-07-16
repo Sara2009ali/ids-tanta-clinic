@@ -17,11 +17,17 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export function TodaysSchedule({ rows }: { rows: ScheduleRow[] }) {
+export function TodaysSchedule({
+  rows,
+  emptyMessage = "No appointments scheduled for today.",
+}: {
+  rows: ScheduleRow[];
+  emptyMessage?: string;
+}) {
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No appointments scheduled for today.
+        {emptyMessage}
       </div>
     );
   }
