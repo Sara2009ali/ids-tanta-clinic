@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock } from "lucide-react";
+import { Armchair, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { CalendarNav } from "@/components/appointments/calendar-nav";
@@ -58,6 +58,12 @@ export default async function AppointmentsPage({
             <Button variant="outline" render={<Link href="/appointments/doctor-schedule" />}>
               <CalendarClock className="size-4" />
               Doctor Schedules
+            </Button>
+          )}
+          {canManageSchedules && (
+            <Button variant="outline" render={<Link href="/appointments/chairs" />}>
+              <Armchair className="size-4" />
+              Chairs
             </Button>
           )}
           {canCreateAppointment && (
