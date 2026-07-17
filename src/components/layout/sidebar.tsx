@@ -8,14 +8,23 @@ import {
   CalendarDays,
   ClipboardList,
   Receipt,
+  HandCoins,
   RotateCcw,
   BarChart3,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hasPermission, PERMISSIONS, type Permission } from "@/lib/authz/permissions";
+import type { StaffRole } from "@/types/domain";
 
-const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; permission?: Permission }[] = [
+const NAV_ITEMS: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  permission?: Permission;
+  /** Shown to this legacy role regardless of permissions — e.g. a doctor's own self-service view needs no permission key at all (see compensation.view/compensation.manage: doctors are deliberately granted neither). */
+  visibleToRole?: StaffRole;
+}[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/patients", label: "Patients", icon: Users, permission: PERMISSIONS.PATIENTS_VIEW },
   {
@@ -31,15 +40,25 @@ const NAV_ITEMS: { href: string; label: string; icon: typeof LayoutDashboard; pe
     permission: PERMISSIONS.APPOINTMENTS_VIEW,
   },
   { href: "/billing", label: "Billing", icon: Receipt, permission: PERMISSIONS.BILLING_VIEW },
+  {
+    href: "/compensation",
+    label: "Compensation",
+    icon: HandCoins,
+    permission: PERMISSIONS.COMPENSATION_VIEW,
+    visibleToRole: "doctor",
+  },
   { href: "/recalls", label: "Recalls", icon: RotateCcw },
   { href: "/reports", label: "Reports", icon: BarChart3, permission: PERMISSIONS.REPORTS_VIEW },
   { href: "/settings", label: "Settings", icon: Settings, permission: PERMISSIONS.SETTINGS_MANAGE },
 ];
 
-export function Sidebar({ permissions }: { permissions: string[] }) {
+export function Sidebar({ permissions, role }: { permissions: string[]; role: StaffRole }) {
   const pathname = usePathname();
   const visibleNavItems = NAV_ITEMS.filter(
-    (item) => !item.permission || hasPermission(permissions, item.permission),
+    (item) =>
+      !item.permission ||
+      hasPermission(permissions, item.permission) ||
+      (item.visibleToRole && item.visibleToRole === role),
   );
 
   return (
