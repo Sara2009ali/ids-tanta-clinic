@@ -26,6 +26,10 @@ export type Invoice = Database["public"]["Tables"]["invoices"]["Row"];
 export type InvoiceItem = Database["public"]["Tables"]["invoice_items"]["Row"];
 export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 
+export type CompensationRule = Database["public"]["Tables"]["compensation_rules"]["Row"];
+export type DoctorEarning = Database["public"]["Tables"]["doctor_earnings"]["Row"];
+export type DoctorSettlement = Database["public"]["Tables"]["doctor_settlements"]["Row"];
+
 // invoices.status and payments.method are text + check constraints, not
 // Postgres enums (see 0011_billing.sql's header comment for why), so there's
 // no generated Database["public"]["Enums"] entry for either — these mirror
@@ -37,6 +41,13 @@ export type PaymentMethod = "cash" | "visa" | "bank_transfer" | "wallet" | "othe
 // classification, not a refund-specific flag. Widening this to future
 // categories (e.g. 'adjustment') is a check-constraint change only.
 export type PaymentType = "payment" | "refund";
+
+// compensation_rules.type / doctor_earnings.entry_type (0014_doctor_compensation.sql)
+// — text + check, same convention. A new rule type (e.g. a future
+// 'per_diem') is a check-constraint widening plus a new `config` shape,
+// never a new column, mirroring payments.type's own extensibility.
+export type CompensationRuleType = "percentage" | "fixed" | "hybrid";
+export type CompensationEntryType = "earning" | "reversal" | "correction" | "unresolved";
 
 export type PatientSearchRow = Database["public"]["Functions"]["search_patients"]["Returns"][number];
 
@@ -85,4 +96,17 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
   payment: "Payment",
   refund: "Refund",
+};
+
+export const COMPENSATION_RULE_TYPE_LABELS: Record<CompensationRuleType, string> = {
+  percentage: "Percentage of invoice",
+  fixed: "Fixed amount per procedure",
+  hybrid: "Hybrid (base + percentage)",
+};
+
+export const COMPENSATION_ENTRY_TYPE_LABELS: Record<CompensationEntryType, string> = {
+  earning: "Earning",
+  reversal: "Reversal",
+  correction: "Correction",
+  unresolved: "Unresolved (no rate configured)",
 };

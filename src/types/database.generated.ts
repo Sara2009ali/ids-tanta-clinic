@@ -330,6 +330,165 @@ export type Database = {
         }
         Relationships: []
       }
+      compensation_rules: {
+        Row: {
+          clinic_id: string
+          config: Json
+          created_at: string
+          created_by: string | null
+          doctor_id: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          type: string
+          updated_at: string
+          visit_type_id: string | null
+        }
+        Insert: {
+          clinic_id: string
+          config: Json
+          created_at?: string
+          created_by?: string | null
+          doctor_id?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          type: string
+          updated_at?: string
+          visit_type_id?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          doctor_id?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          type?: string
+          updated_at?: string
+          visit_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compensation_rules_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_rules_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_rules_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_earnings: {
+        Row: {
+          amount: number
+          clinic_id: string
+          compensation_rule_id: string | null
+          created_at: string
+          doctor_id: string
+          entry_type: string
+          id: string
+          invoice_id: string
+          payment_id: string
+          rate_snapshot: Json | null
+          settlement_id: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount?: number
+          clinic_id: string
+          compensation_rule_id?: string | null
+          created_at?: string
+          doctor_id: string
+          entry_type: string
+          id?: string
+          invoice_id: string
+          payment_id: string
+          rate_snapshot?: Json | null
+          settlement_id?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount?: number
+          clinic_id?: string
+          compensation_rule_id?: string | null
+          created_at?: string
+          doctor_id?: string
+          entry_type?: string
+          id?: string
+          invoice_id?: string
+          payment_id?: string
+          rate_snapshot?: Json | null
+          settlement_id?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_earnings_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_earnings_compensation_rule_id_fkey"
+            columns: ["compensation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "compensation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_earnings_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_earnings_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_earnings_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_earnings_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "doctor_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doctor_schedule_exceptions: {
         Row: {
           clinic_id: string
@@ -382,6 +541,67 @@ export type Database = {
           {
             foreignKeyName: "doctor_schedule_exceptions_doctor_id_fkey"
             columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_settlements: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          doctor_id: string
+          id: string
+          period_end: string
+          period_start: string
+          settled_at: string
+          settled_by: string | null
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+          period_end: string
+          period_start: string
+          settled_at?: string
+          settled_by?: string | null
+          status?: string
+          total_amount: number
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          settled_at?: string
+          settled_by?: string | null
+          status?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_settlements_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_settlements_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_settlements_settled_by_fkey"
+            columns: ["settled_by"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
@@ -1206,6 +1426,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_full_compensation: {
+        Args: { p_config: Json; p_subtotal: number; p_type: string }
+        Returns: number
+      }
       current_permissions: { Args: never; Returns: string[] }
       recalculate_invoice_totals: {
         Args: { target_invoice_id: string }
