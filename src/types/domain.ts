@@ -22,6 +22,18 @@ export type DoctorWeeklyHours = Database["public"]["Tables"]["doctor_weekly_hour
 export type DoctorVacation = Database["public"]["Tables"]["doctor_vacations"]["Row"];
 export type DoctorScheduleException = Database["public"]["Tables"]["doctor_schedule_exceptions"]["Row"];
 
+export type Invoice = Database["public"]["Tables"]["invoices"]["Row"];
+export type InvoiceItem = Database["public"]["Tables"]["invoice_items"]["Row"];
+export type Payment = Database["public"]["Tables"]["payments"]["Row"];
+
+// invoices.status and payments.method are text + check constraints, not
+// Postgres enums (see 0011_billing.sql's header comment for why), so there's
+// no generated Database["public"]["Enums"] entry for either — these mirror
+// the check constraints by hand, same as how appointments.priority has no
+// enum type either.
+export type InvoiceStatus = "draft" | "unpaid" | "partially_paid" | "paid" | "cancelled";
+export type PaymentMethod = "cash" | "visa" | "bank_transfer" | "wallet" | "other";
+
 export type PatientSearchRow = Database["public"]["Functions"]["search_patients"]["Returns"][number];
 
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
@@ -48,4 +60,20 @@ export const PATIENT_STATUS_LABELS: Record<PatientStatus, string> = {
   active: "Active",
   inactive: "Inactive",
   archived: "Archived",
+};
+
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
+  draft: "Draft",
+  unpaid: "Unpaid",
+  partially_paid: "Partially Paid",
+  paid: "Paid",
+  cancelled: "Cancelled",
+};
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Cash",
+  visa: "Visa",
+  bank_transfer: "Bank Transfer",
+  wallet: "Wallet",
+  other: "Other",
 };

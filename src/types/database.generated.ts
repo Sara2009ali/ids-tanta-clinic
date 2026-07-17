@@ -268,14 +268,17 @@ export type Database = {
       clinic_counters: {
         Row: {
           clinic_id: string
+          next_invoice_number: number
           next_patient_number: number
         }
         Insert: {
           clinic_id: string
+          next_invoice_number?: number
           next_patient_number?: number
         }
         Update: {
           clinic_id?: string
+          next_invoice_number?: number
           next_patient_number?: number
         }
         Relationships: [
@@ -482,6 +485,162 @@ export type Database = {
           {
             foreignKeyName: "doctor_weekly_hours_doctor_id_fkey"
             columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          description: string
+          discount_amount: number
+          id: string
+          invoice_id: string
+          line_total: number
+          quantity: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          description: string
+          discount_amount?: number
+          id?: string
+          invoice_id: string
+          line_total?: number
+          quantity?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          description?: string
+          discount_amount?: number
+          id?: string
+          invoice_id?: string
+          line_total?: number
+          quantity?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          appointment_id: string | null
+          balance_due: number
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          invoice_number: string
+          issued_date: string
+          notes: string | null
+          paid_amount: number
+          patient_id: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          tax_percent: number
+          total: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          balance_due?: number
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_number?: string
+          issued_date?: string
+          notes?: string | null
+          paid_amount?: number
+          patient_id: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_percent?: number
+          total?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          balance_due?: number
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_number?: string
+          issued_date?: string
+          notes?: string | null
+          paid_amount?: number
+          patient_id?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_percent?: number
+          total?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
@@ -796,6 +955,70 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          invoice_id: string
+          method: string
+          notes: string | null
+          paid_at: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_id: string
+          method: string
+          notes?: string | null
+          paid_at?: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invoice_id?: string
+          method?: string
+          notes?: string | null
+          paid_at?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           created_at: string
@@ -981,6 +1204,10 @@ export type Database = {
     }
     Functions: {
       current_permissions: { Args: never; Returns: string[] }
+      recalculate_invoice_totals: {
+        Args: { target_invoice_id: string }
+        Returns: undefined
+      }
       search_patients: {
         Args: {
           p_doctor_id?: string
