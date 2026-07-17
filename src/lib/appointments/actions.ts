@@ -12,6 +12,7 @@ import {
 } from "@/lib/appointments/schema";
 import { computeAvailabilityWindows, validateAppointment } from "@/lib/appointments/validation";
 import { getChairBookingsForDay, getDoctorBookingsForDay, getDoctorScheduleInput } from "@/lib/appointments/queries";
+import type { AppointmentStatus } from "@/types/domain";
 
 export interface AppointmentActionState {
   error?: string;
@@ -194,4 +195,72 @@ export async function updateAppointment(
   revalidatePath("/dashboard");
   revalidatePath("/appointments");
   return { success: true, appointmentId };
+}
+
+/**
+ * Shared implementation for the Reception Workspace's one-click status
+ * actions (check in / complete / cancel). A plain status update — the
+ * appointment_status_history row is written automatically by the existing
+ * log_appointment_status_change() trigger (0008_appointments.sql), so
+ * there's nothing extra to do here beyond the update itself and the usual
+ * audit_log entry.
+ */
+async function setAppointmentStatus(
+  appointmentId: string,
+  status: AppointmentStatus,
+  permission: Parameters<typeof ensurePermission>[0],
+  auditAction: string,
+): Promise<AppointmentActionState> {
+  const authz = await ensurePermission(permission);
+  if (!authz.ok) {
+    return { error: authz.error };
+  }
+  const staff = authz.staff;
+  if (!staff.clinic_id) {
+    return { error: "Your account isn't assigned to a clinic yet." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status, updated_by: staff.id })
+    .eq("id", appointmentId);
+
+  if (error) {
+    console.error(`${auditAction}: update failed`, error);
+    return { error: "Couldn't update the appointment. Please try again." };
+  }
+
+  await writeAuditLog(supabase, {
+    clinicId: staff.clinic_id,
+    actorId: staff.id,
+    action: auditAction,
+    entityType: "appointment",
+    entityId: appointmentId,
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/appointments");
+  return { success: true, appointmentId };
+}
+
+export async function checkInAppointment(appointmentId: string): Promise<AppointmentActionState> {
+  return setAppointmentStatus(appointmentId, "checked_in", PERMISSIONS.APPOINTMENTS_EDIT, "appointment.checked_in");
+}
+
+export async function completeAppointment(appointmentId: string): Promise<AppointmentActionState> {
+  return setAppointmentStatus(appointmentId, "completed", PERMISSIONS.APPOINTMENTS_EDIT, "appointment.completed");
+}
+
+/**
+ * Gated by appointments.cancel rather than appointments.edit like the
+ * other status actions — RLS's "authorized staff can update appointments"
+ * policy still requires appointments.edit underneath (0008_appointments.sql
+ * was never changed to check appointments.cancel), but every seeded role
+ * that holds appointments.cancel also holds appointments.edit
+ * (0007_reapply_rbac.sql), so this app-layer check is strictly more
+ * specific, never a false permit.
+ */
+export async function cancelAppointmentStatus(appointmentId: string): Promise<AppointmentActionState> {
+  return setAppointmentStatus(appointmentId, "cancelled", PERMISSIONS.APPOINTMENTS_CANCEL, "appointment.cancelled");
 }
