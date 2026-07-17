@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { FilePlus2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { InvoicesFilters } from "@/components/billing/invoices-filters";
 import { InvoicesTable } from "@/components/billing/invoices-table";
 import { InvoicesPagination } from "@/components/billing/invoices-pagination";
@@ -57,12 +55,7 @@ export default async function InvoicesPage({
             {totalCount} invoice{totalCount === 1 ? "" : "s"}
           </p>
         </div>
-        {canCreate && (
-          <Button render={<Link href="/billing/invoices/new" />}>
-            <FilePlus2 className="size-4" />
-            New Invoice
-          </Button>
-        )}
+        {canCreate && <InvoiceFormSheet />}
       </div>
 
       <InvoicesFilters value={filterValue} />

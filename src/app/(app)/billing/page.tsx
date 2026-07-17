@@ -3,6 +3,7 @@ import { AlertCircle, FilePlus2, FileText, Wallet } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { formatCurrency } from "@/lib/billing/format";
 import { getBillingDashboardCounts, searchInvoices } from "@/lib/billing/queries";
@@ -37,12 +38,7 @@ export default async function BillingDashboardPage() {
             <FileText className="size-4" />
             All Invoices
           </Button>
-          {canEdit && (
-            <Button render={<Link href="/billing/invoices/new" />}>
-              <FilePlus2 className="size-4" />
-              New Invoice
-            </Button>
-          )}
+          {canEdit && <InvoiceFormSheet />}
         </div>
       </div>
 
