@@ -171,9 +171,14 @@ export interface ScheduleRow {
   patient_name: string;
   doctor_id: string;
   doctor_name: string;
+  chair_id: string | null;
   chair_label: string | null;
+  visit_type_id: string;
   visit_type_name: string;
   visit_type_color: string;
+  /** Only needed by the Reception Workspace's edit sheet; every other consumer ignores these. */
+  chief_complaint: string | null;
+  notes: string | null;
 }
 
 interface ScheduleQueryRow {
@@ -185,6 +190,10 @@ interface ScheduleQueryRow {
   is_emergency: boolean;
   patient_id: string;
   doctor_id: string;
+  chair_id: string | null;
+  visit_type_id: string;
+  chief_complaint: string | null;
+  notes: string | null;
   patients: { full_name: string } | null;
   staff_profiles: { full_name: string } | null;
   chairs: { label: string } | null;
@@ -201,6 +210,7 @@ export async function getScheduleForRange(
     .from("appointments")
     .select(
       `id, scheduled_start, scheduled_end, status, priority, is_emergency, patient_id, doctor_id,
+       chair_id, visit_type_id, chief_complaint, notes,
        patients ( full_name ),
        staff_profiles!appointments_doctor_id_fkey ( full_name ),
        chairs ( label ),
@@ -227,9 +237,13 @@ export async function getScheduleForRange(
     patient_name: row.patients?.full_name ?? "—",
     doctor_id: row.doctor_id,
     doctor_name: row.staff_profiles?.full_name ?? "—",
+    chair_id: row.chair_id,
     chair_label: row.chairs?.label ?? null,
+    visit_type_id: row.visit_type_id,
     visit_type_name: row.visit_types?.name ?? "—",
     visit_type_color: row.visit_types?.color ?? "#6366f1",
+    chief_complaint: row.chief_complaint,
+    notes: row.notes,
   }));
 }
 
