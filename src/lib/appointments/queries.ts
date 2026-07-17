@@ -28,6 +28,36 @@ export async function listChairs(): Promise<Chair[]> {
   return data ?? [];
 }
 
+export interface ChairForManagement extends Chair {
+  clinic_name: string | null;
+}
+
+/**
+ * Every chair (active and disabled) with its clinic's name joined in, for
+ * the Chair Management page. Distinct from `listChairs()` — that one stays
+ * exactly as-is for the booking dropdown, which must only ever offer
+ * active chairs. Ordered by label; that display order is also this list's
+ * "Order" column position (see chairs-manager.tsx) — no separate stored
+ * ordering field exists or is needed for Phase 3B's Chair Management scope.
+ */
+export async function listChairsForManagement(): Promise<ChairForManagement[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chairs")
+    .select("*, clinics ( name )")
+    .order("label");
+
+  if (error) {
+    console.error("listChairsForManagement failed", error);
+    return [];
+  }
+
+  return ((data ?? []) as unknown as (Chair & { clinics: { name: string } | null })[]).map((row) => {
+    const { clinics, ...chair } = row;
+    return { ...chair, clinic_name: clinics?.name ?? null };
+  });
+}
+
 function startOfTodayIso(): string {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
