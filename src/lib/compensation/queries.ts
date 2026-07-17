@@ -25,8 +25,10 @@ export async function getCompensationRules(params: CompensationRulesParams = {})
 
 export interface DoctorEarningsParams {
   doctorId: string;
-  /** true = only settlement_id is null (pending); false/omitted = every entry, settled or not. */
+  /** true = only settlement_id is null (pending); false/omitted = every entry, settled or not. Mutually exclusive with settlementId in practice — pass at most one. */
   pendingOnly?: boolean;
+  /** Scope to exactly one settlement's swept entries — for drilling into a historical statement from the settlements list. */
+  settlementId?: string;
 }
 
 /** A doctor's earnings ledger — every entry_type, including 'unresolved' and voided rows, for a complete history. Ordered most recent first. */
@@ -39,6 +41,7 @@ export async function getDoctorEarnings(params: DoctorEarningsParams): Promise<D
     .eq("doctor_id", params.doctorId)
     .order("created_at", { ascending: false });
   if (params.pendingOnly) query = query.is("settlement_id", null);
+  if (params.settlementId) query = query.eq("settlement_id", params.settlementId);
 
   const { data, error } = await query;
   if (error) {

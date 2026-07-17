@@ -1435,6 +1435,45 @@ export type Database = {
         Args: { target_invoice_id: string }
         Returns: undefined
       }
+      resolve_compensation_entry: {
+        Args: { p_earning_id: string }
+        Returns: string
+      }
+      resolve_compensation_rule: {
+        Args: {
+          p_as_of_date: string
+          p_clinic_id: string
+          p_doctor_id: string
+          p_visit_type_id: string
+        }
+        Returns: {
+          clinic_id: string
+          config: Json
+          created_at: string
+          created_by: string | null
+          doctor_id: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          type: string
+          updated_at: string
+          visit_type_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "compensation_rules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      run_doctor_settlement: {
+        Args: {
+          p_doctor_id: string
+          p_period_end: string
+          p_period_start: string
+        }
+        Returns: string
+      }
       search_patients: {
         Args: {
           p_doctor_id?: string
