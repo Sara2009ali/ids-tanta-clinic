@@ -10,9 +10,18 @@ import {
   invoiceFormValuesFromFormData,
   paymentFormSchema,
   paymentFormValuesFromFormData,
+  refundFormSchema,
+  refundFormValuesFromFormData,
   type InvoiceFormValues,
 } from "@/lib/billing/schema";
-import { canEditInvoiceItems, canRecordPayment, computeLineTotal } from "@/lib/billing/calculations";
+import {
+  canCancelInvoice,
+  canEditInvoiceItems,
+  canRecordPayment,
+  canRefundPayment,
+  computeInvoiceTotals,
+  computeLineTotal,
+} from "@/lib/billing/calculations";
 import type { InvoiceStatus } from "@/types/domain";
 
 export interface InvoiceActionState {
@@ -181,12 +190,22 @@ export async function updateInvoice(invoiceId: string, formData: FormData): Prom
     return { error: "Couldn't update the invoice items. Please try again." };
   }
 
+  const totals = computeInvoiceTotals(
+    values.items.map((item) => ({
+      quantity: item.quantity,
+      unitPrice: item.unit_price,
+      discountAmount: item.discount_amount,
+    })),
+    values.tax_percent,
+  );
+
   await writeAuditLog(supabase, {
     clinicId: staff.clinic_id,
     actorId: staff.id,
     action: "invoice.updated",
     entityType: "invoice",
     entityId: invoiceId,
+    changes: { tax_percent: values.tax_percent, item_count: values.items.length, total: totals.total },
   });
 
   revalidateInvoicePaths(invoiceId);
@@ -252,6 +271,25 @@ export async function cancelInvoice(invoiceId: string): Promise<InvoiceActionSta
   }
 
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("status, paid_amount")
+    .eq("id", invoiceId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!existing) {
+    return { error: "Invoice not found." };
+  }
+  if (!canCancelInvoice(existing.status as InvoiceStatus, Number(existing.paid_amount))) {
+    return {
+      error:
+        existing.status === "paid" || existing.status === "cancelled"
+          ? "Paid or already-cancelled invoices can't be cancelled."
+          : "Refund all payments on this invoice before cancelling it.",
+    };
+  }
+
   const { error } = await supabase
     .from("invoices")
     .update({ status: "cancelled", updated_by: staff.id })
@@ -366,6 +404,84 @@ export async function recordPayment(invoiceId: string, formData: FormData): Prom
     entityType: "payment",
     entityId: payment.id,
     changes: { invoice_id: invoiceId, amount: parsed.data.amount, method: parsed.data.method },
+  });
+
+  revalidateInvoicePaths(invoiceId);
+  return { success: true };
+}
+
+/**
+ * Records money returned to the patient as its own payments row
+ * (type: 'refund') rather than mutating or voiding the original payment —
+ * both the original collection and the refund are real events and must
+ * both stay visible in history. recalculate_invoice_totals_on_payments
+ * (0012_billing_payment_model.sql) nets it against paid_amount.
+ */
+export async function refundPayment(invoiceId: string, formData: FormData): Promise<PaymentActionState> {
+  const authz = await ensurePermission(PERMISSIONS.BILLING_EDIT);
+  if (!authz.ok) {
+    return { error: authz.error };
+  }
+  const staff = authz.staff;
+  if (!staff.clinic_id) {
+    return { error: "Your account isn't assigned to a clinic yet." };
+  }
+
+  const supabase = await createClient();
+  const { data: invoice } = await supabase
+    .from("invoices")
+    .select("status, paid_amount")
+    .eq("id", invoiceId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!invoice) {
+    return { error: "Invoice not found." };
+  }
+  if (!canRefundPayment(invoice.status as InvoiceStatus)) {
+    return { error: "Refunds can't be recorded on this invoice." };
+  }
+
+  const parsed = refundFormSchema.safeParse(refundFormValuesFromFormData(formData));
+  if (!parsed.success) {
+    return { error: "Please fix the highlighted fields.", fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+
+  const paidAmount = Number(invoice.paid_amount);
+  if (parsed.data.amount > paidAmount) {
+    return {
+      error: "Refund exceeds the amount paid.",
+      fieldErrors: { amount: `Can't refund more than the $${paidAmount.toFixed(2)} already paid.` },
+    };
+  }
+
+  const { data: payment, error } = await supabase
+    .from("payments")
+    .insert({
+      invoice_id: invoiceId,
+      clinic_id: staff.clinic_id,
+      type: "refund",
+      amount: parsed.data.amount,
+      method: parsed.data.method,
+      reference: parsed.data.reference ?? null,
+      notes: parsed.data.notes,
+      created_by: staff.id,
+    })
+    .select()
+    .single();
+
+  if (error || !payment) {
+    console.error("refundPayment: insert failed", error);
+    return { error: "Couldn't record the refund. Please try again." };
+  }
+
+  await writeAuditLog(supabase, {
+    clinicId: staff.clinic_id,
+    actorId: staff.id,
+    action: "payment.refunded",
+    entityType: "payment",
+    entityId: payment.id,
+    changes: { invoice_id: invoiceId, amount: parsed.data.amount, reason: parsed.data.notes },
   });
 
   revalidateInvoicePaths(invoiceId);

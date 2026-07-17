@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { Invoice, InvoiceItem, InvoiceStatus, Payment } from "@/types/domain";
+import type { AuditLogEntry, Invoice, InvoiceItem, InvoiceStatus, Payment } from "@/types/domain";
 
 export interface InvoiceListRow {
   id: string;
@@ -89,6 +89,7 @@ export async function searchInvoices(params: InvoiceSearchParams = {}): Promise<
 }
 
 export interface InvoiceDetail extends Invoice {
+  status: InvoiceStatus;
   patient_name: string;
   patient_number: string;
   appointment_scheduled_start: string | null;
@@ -97,6 +98,7 @@ export interface InvoiceDetail extends Invoice {
 }
 
 interface InvoiceDetailQueryRow extends Invoice {
+  status: InvoiceStatus;
   patients: { full_name: string; patient_number: string } | null;
   appointments: { scheduled_start: string } | null;
 }
@@ -136,6 +138,41 @@ export async function getInvoiceDetail(id: string): Promise<InvoiceDetail | null
     items: itemsRes.data ?? [],
     payments: paymentsRes.data ?? [],
   };
+}
+
+/**
+ * Invoice-level audit rows (entity_type='invoice', entity_id=invoiceId) plus
+ * payment-level rows for payments belonging to this invoice — a payment's
+ * own entity_id is the *payment's* id, not the invoice's, so it's matched
+ * via jsonb containment on `changes.invoice_id` instead (parameterized by
+ * supabase-js, not string-interpolated, unlike a raw `.or()` filter would
+ * require). Two queries, run in parallel and merged client-side, same
+ * Promise.all convention as everything else in this file.
+ */
+export async function getInvoiceAuditEntries(invoiceId: string): Promise<AuditLogEntry[]> {
+  const supabase = await createClient();
+
+  const [invoiceEventsRes, paymentEventsRes] = await Promise.all([
+    supabase
+      .from("audit_log")
+      .select("*")
+      .eq("entity_type", "invoice")
+      .eq("entity_id", invoiceId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("audit_log")
+      .select("*")
+      .eq("entity_type", "payment")
+      .contains("changes", { invoice_id: invoiceId })
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (invoiceEventsRes.error) console.error("getInvoiceAuditEntries: invoice events failed", invoiceEventsRes.error);
+  if (paymentEventsRes.error) console.error("getInvoiceAuditEntries: payment events failed", paymentEventsRes.error);
+
+  return [...(invoiceEventsRes.data ?? []), ...(paymentEventsRes.data ?? [])].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 }
 
 export interface BillingDashboardCounts {

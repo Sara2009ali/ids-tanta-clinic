@@ -36,6 +36,16 @@ export const paymentFormSchema = z.object({
 
 export type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
+/** Reason is required (unlike payment's optional notes) — it's the audit trail's only record of why money went back out. */
+export const refundFormSchema = z.object({
+  amount: z.coerce.number().positive("Enter an amount greater than zero"),
+  method: methodEnum,
+  reference: trimmedOptional,
+  notes: z.string().trim().min(1, "Explain why this refund is being issued"),
+});
+
+export type RefundFormValues = z.infer<typeof refundFormSchema>;
+
 function str(formData: FormData, key: string): string | undefined {
   const value = formData.get(key);
   return typeof value === "string" ? value : undefined;
@@ -67,6 +77,15 @@ export function invoiceFormValuesFromFormData(formData: FormData) {
 }
 
 export function paymentFormValuesFromFormData(formData: FormData) {
+  return {
+    amount: str(formData, "amount") ?? "",
+    method: str(formData, "method") ?? "cash",
+    reference: str(formData, "reference"),
+    notes: str(formData, "notes"),
+  };
+}
+
+export function refundFormValuesFromFormData(formData: FormData) {
   return {
     amount: str(formData, "amount") ?? "",
     method: str(formData, "method") ?? "cash",

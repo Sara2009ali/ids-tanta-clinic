@@ -76,3 +76,19 @@ export function canEditInvoiceItems(status: InvoiceStatus): boolean {
 export function canRecordPayment(status: InvoiceStatus): boolean {
   return status !== "draft" && status !== "cancelled" && status !== "paid";
 }
+
+/**
+ * 'paid'/'cancelled' are terminal. Everything else is cancellable, but only
+ * once nothing is still owed to the patient — cancelling an invoice with
+ * money collected against it would leave `paid_amount` orphaned with no
+ * invoice obligation behind it, so any payments must be refunded first.
+ */
+export function canCancelInvoice(status: InvoiceStatus, paidAmount: number): boolean {
+  if (status === "paid" || status === "cancelled") return false;
+  return paidAmount <= 0;
+}
+
+/** Refunds only make sense against an invoice that's actually been issued and isn't cancelled — same eligibility as recording a payment, minus the 'paid' exclusion (a fully paid invoice can still need a refund). */
+export function canRefundPayment(status: InvoiceStatus): boolean {
+  return status !== "draft" && status !== "cancelled";
+}

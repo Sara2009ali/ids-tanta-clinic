@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  canCancelInvoice,
   canEditInvoiceItems,
   canRecordPayment,
+  canRefundPayment,
   computeBalanceDue,
   computeInvoiceTotals,
   computeLineTotal,
@@ -109,5 +111,36 @@ describe("canRecordPayment", () => {
     expect(canRecordPayment("draft")).toBe(false);
     expect(canRecordPayment("paid")).toBe(false);
     expect(canRecordPayment("cancelled")).toBe(false);
+  });
+});
+
+describe("canCancelInvoice", () => {
+  it("is false for paid and cancelled regardless of paid_amount", () => {
+    expect(canCancelInvoice("paid", 0)).toBe(false);
+    expect(canCancelInvoice("cancelled", 0)).toBe(false);
+  });
+
+  it("is true for draft, unpaid, and partially_paid with nothing paid", () => {
+    expect(canCancelInvoice("draft", 0)).toBe(true);
+    expect(canCancelInvoice("unpaid", 0)).toBe(true);
+    expect(canCancelInvoice("partially_paid", 0)).toBe(true);
+  });
+
+  it("is false once anything has been paid, until refunded back to 0", () => {
+    expect(canCancelInvoice("partially_paid", 40)).toBe(false);
+    expect(canCancelInvoice("unpaid", 0.01)).toBe(false);
+  });
+});
+
+describe("canRefundPayment", () => {
+  it("is true for unpaid, partially_paid, and paid", () => {
+    expect(canRefundPayment("unpaid")).toBe(true);
+    expect(canRefundPayment("partially_paid")).toBe(true);
+    expect(canRefundPayment("paid")).toBe(true);
+  });
+
+  it("is false for draft and cancelled", () => {
+    expect(canRefundPayment("draft")).toBe(false);
+    expect(canRefundPayment("cancelled")).toBe(false);
   });
 });

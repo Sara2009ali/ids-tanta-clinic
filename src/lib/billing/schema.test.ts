@@ -5,6 +5,8 @@ import {
   invoiceItemInputSchema,
   paymentFormSchema,
   paymentFormValuesFromFormData,
+  refundFormSchema,
+  refundFormValuesFromFormData,
 } from "@/lib/billing/schema";
 
 describe("invoiceItemInputSchema", () => {
@@ -202,5 +204,48 @@ describe("paymentFormValuesFromFormData", () => {
     expect(values.method).toBe("cash");
     expect(values.reference).toBeUndefined();
     expect(values.notes).toBeUndefined();
+  });
+});
+
+describe("refundFormSchema", () => {
+  const validInput = { amount: 50, method: "cash", reference: "REF-1", notes: "Overpayment corrected" };
+
+  it("parses a valid refund", () => {
+    expect(refundFormSchema.safeParse(validInput).success).toBe(true);
+  });
+
+  it("fails when amount is zero or negative", () => {
+    expect(refundFormSchema.safeParse({ ...validInput, amount: 0 }).success).toBe(false);
+    expect(refundFormSchema.safeParse({ ...validInput, amount: -10 }).success).toBe(false);
+  });
+
+  it("fails on an invalid method", () => {
+    expect(refundFormSchema.safeParse({ ...validInput, method: "crypto" }).success).toBe(false);
+  });
+
+  it("requires a non-empty reason, unlike payment's optional notes", () => {
+    const { notes, ...rest } = validInput;
+    void notes;
+    expect(refundFormSchema.safeParse(rest).success).toBe(false);
+    expect(refundFormSchema.safeParse({ ...rest, notes: "" }).success).toBe(false);
+    expect(refundFormSchema.safeParse({ ...rest, notes: "   " }).success).toBe(false);
+  });
+
+  it("passes when reference is omitted", () => {
+    const result = refundFormSchema.safeParse({ amount: 50, method: "cash", notes: "Service cancelled" });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("refundFormValuesFromFormData", () => {
+  it("extracts every field from a populated form", () => {
+    const formData = new FormData();
+    formData.set("amount", "50");
+    formData.set("method", "visa");
+    formData.set("reference", "REF-1");
+    formData.set("notes", "Overpayment corrected");
+
+    const values = refundFormValuesFromFormData(formData);
+    expect(values).toEqual({ amount: "50", method: "visa", reference: "REF-1", notes: "Overpayment corrected" });
   });
 });

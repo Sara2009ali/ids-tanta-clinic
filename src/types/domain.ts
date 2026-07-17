@@ -33,6 +33,10 @@ export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 // enum type either.
 export type InvoiceStatus = "draft" | "unpaid" | "partially_paid" | "paid" | "cancelled";
 export type PaymentMethod = "cash" | "visa" | "bank_transfer" | "wallet" | "other";
+// payments.type (0012_billing_payment_model.sql) — a general transaction
+// classification, not a refund-specific flag. Widening this to future
+// categories (e.g. 'adjustment') is a check-constraint change only.
+export type PaymentType = "payment" | "refund";
 
 export type PatientSearchRow = Database["public"]["Functions"]["search_patients"]["Returns"][number];
 
@@ -76,4 +80,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: "Bank Transfer",
   wallet: "Wallet",
   other: "Other",
+};
+
+export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
+  payment: "Payment",
+  refund: "Refund",
 };
