@@ -21,7 +21,7 @@ import { PatientAuditHistory } from "@/components/patients/patient-audit-history
 import { InvoicesTable } from "@/components/billing/invoices-table";
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { PatientPaymentsHistory } from "@/components/billing/patient-payments-history";
-import { getCurrentPermissions } from "@/lib/authz/session";
+import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { getPatientPayments, searchInvoices } from "@/lib/billing/queries";
 import type { PatientFileType } from "@/types/domain";
@@ -31,6 +31,8 @@ export default async function PatientProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requirePermission(PERMISSIONS.PATIENTS_VIEW);
+
   const { id } = await params;
   const result = await getPatientById(id);
 

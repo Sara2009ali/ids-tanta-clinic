@@ -30,12 +30,16 @@ src/
         new/                # registration form
         [id]/               # profile: overview/medical/dental/timeline/files/audit
         [id]/edit/           # edit form (shares <PatientForm> with new/)
-      appointments/          # Phase 3A: schema + Server Actions land first; screens are Phase 3B+
+      appointments/          # calendar, booking, chairs, doctor-schedule management
+      reception/             # Reception Workspace: stat cards, today's schedule, quick actions
+      billing/                # Billing V1: dashboard, invoice list/detail, payments/refunds
       recalls|reports|settings/   # <ComingSoon/> placeholders
   components/
     ui/        # shadcn primitives
     layout/    # Sidebar, Topbar, UserMenu, ComingSoon
     patients/  # list/form/profile UI + shared bits (status badge, doctor select, file upload)
+    appointments/  # booking sheets, calendar views, chairs/doctor-schedule managers
+    billing/   # invoice/payment forms, tables, status badges, audit history
     auth/      # login form
   lib/
     env.ts     # Zod-validated NEXT_PUBLIC_* environment variables (see Security.md)
@@ -43,7 +47,8 @@ src/
     auth/      # legacy staff DAL (getCurrentStaff, requireStaff, requireRole)
     authz/     # RBAC: permissions.ts (pure helpers), session.ts (I/O, cached per-request)
     patients/  # schema (zod), queries, server actions, storage helpers, utils
-    appointments/  # Phase 3A: validation.ts (pure rules), schema.ts, queries.ts, actions.ts
+    appointments/  # validation.ts (pure rules), schema.ts, queries.ts, actions.ts, chair/doctor-schedule variants
+    billing/   # calculations.ts (pure rules), schema.ts, queries.ts, actions.ts
     audit/     # audit log writer
   proxy.ts     # session refresh + route protection (Next 16's renamed middleware)
 supabase/
@@ -175,3 +180,33 @@ pattern around it is unchanged.
 
 See [Phase-3A.md](./Phase-3A.md) for the phase changelog and [Database.md](./Database.md) for
 the full schema reference (all tables, not just this phase's).
+
+## Billing (Billing Version 1): the third module, same pattern
+
+Billing (`supabase/migrations/0011_billing.sql`, `0012_billing_payment_model.sql`,
+`src/lib/billing/`) is a third independent instance of the same pattern described above for
+Appointments: `clinic_id` + `current_clinic_id()` tenancy, `billing.view`/`billing.edit` gating
+both RLS and `ensurePermission()`/`requirePermission()` calls (these permission keys were
+pre-registered in `0005`/`0007`, the same "future modules inherit RBAC from day one" reasoning as
+`appointments.*`), `queries.ts`/`actions.ts` split, and `writeAuditLog()` on every mutation. See
+[Database.md](./Database.md) for the schema detail.
+
+Two things are genuinely new, not just a third repetition of existing techniques:
+
+- **A derived-totals trigger** (`recalculate_invoice_totals()`) that recomputes
+  `subtotal`/`tax_amount`/`total`/`paid_amount`/`balance_due`/`status` on `invoices` any time
+  `invoice_items` or `payments` changes, regardless of code path — the same tamper-proof-by-
+  construction idea as `appointment_status_history`, applied to derived numeric state instead of
+  an append-only log.
+- **A transaction-classification column** (`payments.type`) designed explicitly for
+  forward-compatible extension: today it's `'payment'`/`'refund'`, and a future category is a
+  check-constraint widening plus a small addition to the recalculation trigger's `CASE` —
+  never a new column or a schema redesign. This was a deliberate design decision (see the header
+  comment in `0012_billing_payment_model.sql`), made after evaluating and rejecting encoding
+  refunds as signed/negative amounts specifically because a sign error in any of the several
+  `sum(amount)` call sites across the app would silently corrupt a financial total.
+
+Billing deliberately does **not** compute or store anything about doctor compensation — it
+exposes invoice/payment facts only (including `invoices.appointment_id`, which is the join point
+a future Doctor Compensation module would use), keeping that future module a pure downstream
+consumer rather than something Billing needs to be redesigned around.

@@ -5,18 +5,16 @@ schema (`supabase/migrations/0005_rbac.sql`), the RLS policy changes it makes, a
 application-layer helpers (`src/lib/authz/`) that consume it. For the permission key reference
 and usage patterns for future modules, see [Permissions.md](./Permissions.md).
 
-## Status: implemented, not yet deployed
+## Status: live in production
 
-**`supabase/migrations/0005_rbac.sql` has been authored and dry-run-validated against the live
-linked Supabase project (`npx supabase db push --dry-run` confirmed it applies cleanly with no
-conflicts), but has not been applied yet.** Applying schema/RLS changes to the live project
-requires explicit user sign-off, which is pending as of this writing. Do not treat the RBAC
-schema described below as live in production — it is implemented and ready to deploy, pending
-a `npm run db:push` + `npm run db:types` step that requires explicit approval. See
-[Phase-2.1.md](./Phase-2.1.md) for the current rollout status.
+RBAC has been live since `0007_reapply_rbac.sql` (see the history note in
+[Database.md](./Database.md) for the `0005`/`0006`/`0007` revert/reapply sequence). Every table
+and Server Action described below is enforcing these permissions today, not a future state.
 
-Because the migration isn't applied yet, the application code has a graceful fallback so that
-nothing depends on the migration having landed — see "Legacy-role fallback" below.
+The application code still carries the legacy-role fallback described below even though the
+migration is long since applied — it costs nothing to keep and remains the reason authorization
+behavior doesn't depend on which of `current_permissions()` (RPC) or `LEGACY_ROLE_PERMISSIONS`
+(hardcoded fallback) actually answered a given `getCurrentPermissions()` call.
 
 ## Roles
 

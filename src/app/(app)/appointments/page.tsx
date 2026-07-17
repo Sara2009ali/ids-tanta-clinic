@@ -7,7 +7,7 @@ import { CalendarViewSwitcher } from "@/components/appointments/calendar-view-sw
 import { MonthView } from "@/components/appointments/month-view";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { WeekView } from "@/components/appointments/week-view";
-import { getCurrentPermissions } from "@/lib/authz/session";
+import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import {
   formatViewLabel,
@@ -29,6 +29,8 @@ export default async function AppointmentsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission(PERMISSIONS.APPOINTMENTS_VIEW);
+
   const sp = await searchParams;
   const viewRaw = firstParam(sp.view) ?? "week";
   const view = VIEWS.has(viewRaw as CalendarView) ? (viewRaw as CalendarView) : "week";

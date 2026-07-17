@@ -7,7 +7,7 @@ import { PatientsFilters } from "@/components/patients/patients-filters";
 import { buildPatientsHref, type PatientsQueryParams } from "@/components/patients/patients-query-params";
 import { PatientsTable } from "@/components/patients/patients-table";
 import { PatientsPagination } from "@/components/patients/patients-pagination";
-import { getCurrentPermissions } from "@/lib/authz/session";
+import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { PatientStatus } from "@/types/domain";
 
@@ -24,6 +24,8 @@ export default async function PatientsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requirePermission(PERMISSIONS.PATIENTS_VIEW);
+
   const sp = await searchParams;
 
   const query = firstParam(sp.query) ?? "";

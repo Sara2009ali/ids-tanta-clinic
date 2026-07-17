@@ -1,6 +1,8 @@
 "use server";
 
 import { searchPatients } from "@/lib/patients/queries";
+import { ensurePermission } from "@/lib/authz/session";
+import { PERMISSIONS } from "@/lib/authz/permissions";
 import type { PatientSearchRow } from "@/types/domain";
 
 export interface PatientSearchActionResult {
@@ -15,6 +17,11 @@ export interface PatientSearchActionResult {
  * server actions are called elsewhere in this app.
  */
 export async function searchPatientsAction(query: string): Promise<PatientSearchActionResult> {
+  const authz = await ensurePermission(PERMISSIONS.PATIENTS_VIEW);
+  if (!authz.ok) {
+    return { rows: [], totalCount: 0 };
+  }
+
   const { rows, totalCount } = await searchPatients({ query: query || undefined, pageSize: 8 });
   return { rows, totalCount };
 }

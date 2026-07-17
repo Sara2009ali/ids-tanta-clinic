@@ -254,12 +254,12 @@ export async function completeAppointment(appointmentId: string): Promise<Appoin
 
 /**
  * Gated by appointments.cancel rather than appointments.edit like the
- * other status actions — RLS's "authorized staff can update appointments"
- * policy still requires appointments.edit underneath (0008_appointments.sql
- * was never changed to check appointments.cancel), but every seeded role
- * that holds appointments.cancel also holds appointments.edit
- * (0007_reapply_rbac.sql), so this app-layer check is strictly more
- * specific, never a false permit.
+ * other status actions. RLS's "authorized staff can update appointments"
+ * policy enforces the same distinction underneath as of
+ * 0013_appointments_cancel_permission_fix.sql — a transition to
+ * 'cancelled' requires appointments.cancel in addition to the base
+ * appointments.edit every update needs, mirroring how the patients update
+ * policy conditionally requires patients.delete.
  */
 export async function cancelAppointmentStatus(appointmentId: string): Promise<AppointmentActionState> {
   return setAppointmentStatus(appointmentId, "cancelled", PERMISSIONS.APPOINTMENTS_CANCEL, "appointment.cancelled");

@@ -15,13 +15,21 @@ Migrations live in `supabase/migrations/`, applied in filename order:
 | `0003_patient_management.sql` | Patient registration field set, `search_patients()` RPC, trigram search indexes |
 | `0004_clinic_counters_rls_fix.sql` | `SECURITY DEFINER` fix for `assign_patient_number()` |
 | `0005_rbac.sql` / `0006_revert_rbac.sql` / `0007_reapply_rbac.sql` | `roles`, `permissions`, `role_permissions`, `staff_profiles.role_id`, permission-gated RLS (see history note below) |
-| `0008_appointments.sql` | `appointment_status`, `visit_types`, `chairs`, `appointments`, `appointment_status_history` (this document's main subject) |
+| `0008_appointments.sql` | `appointment_status`, `visit_types`, `chairs`, `appointments`, `appointment_status_history` |
+| `0010_doctor_schedules.sql` | `doctor_weekly_hours`, `doctor_vacations`, `doctor_schedule_exceptions` |
+| `0011_billing.sql` | `invoices`, `invoice_items`, `payments`, invoice numbering, total-recalculation trigger |
+| `0012_billing_payment_model.sql` | `payments.type` ('payment'/'refund'), refund-aware total recalculation |
+| `0013_appointments_cancel_permission_fix.sql` | Aligns the `appointments` update RLS policy with the `appointments.cancel` app-layer check (see history note below) |
 
 **History note on 0005–0007**: `0005_rbac.sql` was applied to the live project, then reverted in
 full by `0006_revert_rbac.sql` after being pushed without the required review/authorization, then
 reapplied — reviewed and approved — as `0007_reapply_rbac.sql`. The end state is identical to
 `0005`; the revert/reapply pair exists only in the migration history as a record of that incident.
 RBAC is live in production as of `0007`.
+
+**Note on the `0009` gap**: there is no `0009` migration, on either the local filesystem or the
+remote project (`supabase migration list` shows the same gap). The sequence intentionally skips
+from `0008` to `0010` — no migration was ever authored or lost under that number.
 
 ## Multi-tenant model (summary)
 
@@ -256,3 +264,75 @@ No Billing or Clinical columns/tables were added speculatively. Those future mod
 to add their own tables referencing `appointments.id` by foreign key — nothing in this schema
 needs to change to support that. See [Phase-3A.md](./Phase-3A.md) for the full list of what's
 deferred to Phase 3B+.
+
+## Doctor Schedules module (`0010_doctor_schedules.sql`)
+
+Clinic-configuration data — a doctor's own recurring availability, vacations, and one-off
+exceptions — kept deliberately separate from `appointments` itself.
+
+- **`doctor_weekly_hours`** — recurring template. `doctor_id`, `day_of_week` (0–6),
+  `start_minutes`/`end_minutes` (int, checked `0–1440` and `end > start`). Multiple rows per
+  doctor/day are allowed (split shifts). A `gist` exclusion constraint
+  (`doctor_weekly_hours_no_overlap`) prevents overlapping blocks for the same doctor/day — the
+  same `btree_gist`-backed technique `0008`'s double-booking guards use.
+- **`doctor_vacations`** — a date range (`start_date`/`end_date`, checked `end_date >=
+  start_date`) plus an optional reason.
+- **`doctor_schedule_exceptions`** — a single-date hour override plus a reason, for one-off
+  changes that don't fit the weekly template or a vacation.
+
+All three carry `clinic_id` and are indexed on `(doctor_id, ...)` to match how the booking flow
+reads them (a doctor's day). RLS scopes `select` to any clinic staff member, same tenancy check as
+every other table — but **writes are gated by `current_staff_role() = 'admin'` directly, not
+`private.has_permission()`**, the same shape `0008` already uses for `chairs`/`visit_types`. This
+is a deliberate second convention, not an oversight: doctor schedules, chairs, and visit types are
+all treated as clinic-configuration data (an admin concern), distinct from clinical/financial
+entities like `patients`/`appointments`/`invoices`, which are gated by the permission-key system
+instead. Both conventions are intentional and both are in active use — there is no single
+`has_permission()` rule covering every write in this schema.
+
+## Billing module (`0011_billing.sql`, `0012_billing_payment_model.sql`)
+
+- **`invoices`** — `patient_id`/`appointment_id` (nullable) FKs, a per-clinic sequential
+  `invoice_number` (same `assign_invoice_number()`/`clinic_counters` mechanism as
+  `patient_number`), `status` (`text + check`: `draft`/`unpaid`/`partially_paid`/`paid`/
+  `cancelled`), and `subtotal`/`tax_percent`/`tax_amount`/`total`/`paid_amount`/`balance_due` —
+  all five of the last group are **derived, not application-set**; see the trigger below.
+- **`invoice_items`** — line items (`description`, `quantity`, `unit_price`, `discount_amount`,
+  `line_total`). Only mutable while the parent invoice is `draft`, an application-layer rule (see
+  `canEditInvoiceItems` in `src/lib/billing/calculations.ts`), not a DB constraint — the same
+  "app-layer rule on top of a general-purpose table" shape appointments uses for "can't book in
+  the past."
+- **`payments`** — `amount` (checked `> 0` regardless of type — see below), `method` (`text +
+  check`: `cash`/`visa`/`bank_transfer`/`wallet`/`other`), and `type` (`0012`: `text + check`,
+  `'payment'`/`'refund'`, default `'payment'`) — a general transaction classification, not a
+  refund-specific flag; a future category (e.g. `'adjustment'`) is a check-constraint widening,
+  not a new column. Soft-deleted (`deleted_at`) rather than hard-deleted — "void" corrects a
+  mistaken entry, while a `'refund'`-type row is its own real, auditable transaction, never a
+  mutation of the original payment.
+- **`recalculate_invoice_totals()`** — the single source of truth for every derived total on
+  `invoices`. Runs via an `after insert or update or delete` trigger on both `invoice_items` and
+  `payments` (`recalculate_invoice_totals_on_items`/`_on_payments`), so the totals can never drift
+  regardless of which code path touched either table — the same guarantee
+  `log_appointment_status_change()` provides for `appointment_status_history`. As of `0012`, the
+  paid-amount sum nets refunds against payments
+  (`sum(case when type = 'refund' then -amount else amount end)`); `status` is auto-derived from
+  paid-vs-total except `'draft'`/`'cancelled'`, which are always set explicitly by the
+  application.
+- **RLS**: mirrors the appointments shape exactly — `select` requires `billing.view`, writes
+  require `billing.edit`, both on top of the standard clinic-tenancy check. Unlike
+  `chairs`/`visit_types`/doctor schedules, billing reads are **not** open to every clinic staff
+  member — `billing.view`/`billing.edit` are deliberately not granted to every role (see
+  [RBAC.md](./RBAC.md)).
+
+## `0013_appointments_cancel_permission_fix.sql`
+
+Closes a gap flagged by the Version 1 pre-production architecture review: `cancelAppointmentStatus`
+(`src/lib/appointments/actions.ts`) gates cancellation on `appointments.cancel` at the application
+layer, but the `0008`-era "authorized staff can update appointments" RLS policy only ever checked
+`appointments.edit`, regardless of what the update changed. This migration adds a conditional
+requirement to that policy's `with check` clause — a transition to `status = 'cancelled'`
+additionally requires `appointments.cancel` — mirroring the exact technique the `patients` update
+policy already uses for `patients.delete` (`deleted_at is null or has_permission('patients.delete')`).
+Every seeded role holding `appointments.cancel` already holds `appointments.edit`
+(`0007_reapply_rbac.sql`), so this changes no current behavior; it closes the gap for any future
+role where that stops being true.
