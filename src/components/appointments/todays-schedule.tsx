@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@/types/domain";
 import type { ScheduleRow } from "@/lib/appointments/queries";
@@ -20,9 +21,12 @@ function formatTime(iso: string) {
 export function TodaysSchedule({
   rows,
   emptyMessage = "No appointments scheduled for today.",
+  renderActions,
 }: {
   rows: ScheduleRow[];
   emptyMessage?: string;
+  /** Optional per-row actions slot (Reception Workspace). Omitted everywhere else — same look as before. */
+  renderActions?: (row: ScheduleRow) => ReactNode;
 }) {
   if (rows.length === 0) {
     return (
@@ -59,6 +63,7 @@ export function TodaysSchedule({
             </span>
             <Badge variant={STATUS_BADGE_VARIANT[row.status]}>{APPOINTMENT_STATUS_LABELS[row.status]}</Badge>
           </div>
+          {renderActions && <div className="shrink-0">{renderActions(row)}</div>}
         </div>
       ))}
     </div>
