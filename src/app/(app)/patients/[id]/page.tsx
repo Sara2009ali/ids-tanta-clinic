@@ -18,7 +18,12 @@ import { FileUploadZone, type ExistingPatientFile } from "@/components/patients/
 import { PatientHeaderActions } from "@/components/patients/patient-header-actions";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
 import { PatientAuditHistory } from "@/components/patients/patient-audit-history";
+import { InvoicesTable } from "@/components/billing/invoices-table";
+import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
+import { PatientPaymentsHistory } from "@/components/billing/patient-payments-history";
 import { getCurrentPermissions } from "@/lib/authz/session";
+import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { getPatientPayments, searchInvoices } from "@/lib/billing/queries";
 import type { PatientFileType } from "@/types/domain";
 
 export default async function PatientProfilePage({
@@ -36,6 +41,12 @@ export default async function PatientProfilePage({
   const { patient, clinicalInfo, alerts, files, auditEntries } = result;
   const [doctors, permissions] = await Promise.all([listDoctors(), getCurrentPermissions()]);
   const preferredDentist = doctors.find((doctor) => doctor.id === patient.preferred_dentist_id);
+
+  const canViewBilling = hasPermission(permissions, PERMISSIONS.BILLING_VIEW);
+  const canEditBilling = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
+  const [invoicesResult, patientPayments] = canViewBilling
+    ? await Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
+    : [null, []];
 
   const [photoUrl, ...fileUrls] = await getPatientFileUrls([
     patient.photo_path,
@@ -108,8 +119,8 @@ export default async function PatientProfilePage({
           <TabsTrigger value="audit">Audit History</TabsTrigger>
           <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
+          {canViewBilling && <TabsTrigger value="invoices">Invoices</TabsTrigger>}
+          {canViewBilling && <TabsTrigger value="payments">Payments</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="pt-6">
@@ -246,12 +257,25 @@ export default async function PatientProfilePage({
         <TabsContent value="appointments" className="pt-6">
           <EmptyTab text="Appointments will appear here once the Scheduling module ships." />
         </TabsContent>
-        <TabsContent value="invoices" className="pt-6">
-          <EmptyTab text="Invoices will appear here once the Financial module ships." />
-        </TabsContent>
-        <TabsContent value="payments" className="pt-6">
-          <EmptyTab text="Payments will appear here once the Financial module ships." />
-        </TabsContent>
+        {canViewBilling && invoicesResult && (
+          <TabsContent value="invoices" className="space-y-4 pt-6">
+            <div className="flex justify-end">
+              {canEditBilling && (
+                <InvoiceFormSheet initialPatient={{ id: patient.id, full_name: patient.full_name ?? "" }} />
+              )}
+            </div>
+            {invoicesResult.rows.length > 0 ? (
+              <InvoicesTable rows={invoicesResult.rows} hasFilters={false} />
+            ) : (
+              <EmptyTab text="No invoices yet for this patient." />
+            )}
+          </TabsContent>
+        )}
+        {canViewBilling && (
+          <TabsContent value="payments" className="pt-6">
+            <PatientPaymentsHistory payments={patientPayments} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

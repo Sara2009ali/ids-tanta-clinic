@@ -175,6 +175,45 @@ export async function getInvoiceAuditEntries(invoiceId: string): Promise<AuditLo
   );
 }
 
+export interface PatientPaymentRow extends Payment {
+  invoice_number: string;
+}
+
+interface PatientPaymentQueryRow extends Payment {
+  invoices: { invoice_number: string } | null;
+}
+
+/**
+ * A patient's payment/refund history across all of their invoices, for the
+ * Patient Profile's Payments tab. payments has no patient_id of its own —
+ * this joins through the existing invoice_id FK (`invoices!inner`) and
+ * filters on the joined row's patient_id, covered by the same RLS policies
+ * as every other payments/invoices read (no new policy needed). Capped and
+ * unpaginated, same "recent list" shape as getBillingDashboardCounts's
+ * recent invoices — see /billing/invoices for the full, filterable list.
+ */
+export async function getPatientPayments(patientId: string): Promise<PatientPaymentRow[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("*, invoices!inner ( invoice_number, patient_id )")
+    .eq("invoices.patient_id", patientId)
+    .is("deleted_at", null)
+    .order("paid_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    console.error("getPatientPayments failed", error);
+    return [];
+  }
+
+  return ((data ?? []) as unknown as PatientPaymentQueryRow[]).map(({ invoices, ...payment }) => ({
+    ...payment,
+    invoice_number: invoices?.invoice_number ?? "—",
+  }));
+}
+
 export interface BillingDashboardCounts {
   /** Sum of balance_due across every unpaid/partially_paid invoice. */
   outstandingTotal: number;
