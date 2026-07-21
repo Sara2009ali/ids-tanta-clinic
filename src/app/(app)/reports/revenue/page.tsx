@@ -66,7 +66,7 @@ export default async function RevenueReportPage({
       <ReportDateRangeFilter basePath="/reports/revenue" value={range} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <StatCard label="Revenue" value={formatCurrency(revenueTotal)} icon={Wallet} />
+        <StatCard label="Revenue" value={formatCurrency(revenueTotal)} icon={Wallet} highlight="gold" />
         <StatCard label="Outstanding" value={formatCurrency(billingCounts.outstandingTotal)} icon={Receipt} />
       </div>
 

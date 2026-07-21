@@ -78,7 +78,7 @@ async function CompensationAdminDashboard() {
         <h2 className={typography.eyebrow}>Overview</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Pending" value={formatCurrency(summary.pendingTotal)} icon={Wallet} />
-          <StatCard label="Settled This Month" value={formatCurrency(summary.settledThisMonthTotal)} icon={HandCoins} />
+          <StatCard label="Settled This Month" value={formatCurrency(summary.settledThisMonthTotal)} icon={HandCoins} highlight="gold" />
           <StatCard label="Unresolved Entries" value={summary.unresolvedCount} icon={FileWarning} />
           <StatCard label="Active Rules" value={summary.activeRulesCount} icon={AlertCircle} />
         </div>

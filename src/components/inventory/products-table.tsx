@@ -29,9 +29,14 @@ export function ProductsTable({
   if (products.length === 0) {
     return (
       <EmptyState
-        icon={Package}
-        title={hasFilters ? "No products match these filters." : "No products yet."}
-        description={hasFilters ? undefined : "Add one above to start tracking stock."}
+        icon={hasFilters ? Package : undefined}
+        illustration={hasFilters ? undefined : "boxes"}
+        title={hasFilters ? "No products match these filters" : "No products yet"}
+        description={
+          hasFilters
+            ? "Try a different category or clear your search to see more results."
+            : "Add your first product above to start tracking stock levels, purchase orders, and low-stock alerts."
+        }
       />
     );
   }

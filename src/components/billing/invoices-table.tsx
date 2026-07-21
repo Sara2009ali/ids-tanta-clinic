@@ -1,14 +1,96 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { formatCurrency } from "@/lib/billing/format";
 import type { InvoiceListRow } from "@/lib/billing/queries";
-import { EmptyState } from "@/components/ui/empty-state";
+
+type SortColumn = "invoice_number" | "patient_name" | "issued_date" | "total" | "balance_due";
+type SortDirection = "asc" | "desc";
+
+/**
+ * Sorting here is purely client-side over the current page's already-fetched
+ * rows — this list is server-paginated (searchInvoices), so sorting only
+ * reorders what's already on screen rather than issuing a new query. Kept
+ * presentation-only per the "don't touch queries" constraint; a true
+ * cross-page sort would need a DAL change, which is out of scope here.
+ */
+function SortableHead({
+  label,
+  column,
+  sort,
+  onSort,
+  align,
+}: {
+  label: string;
+  column: SortColumn;
+  sort: { column: SortColumn; direction: SortDirection };
+  onSort: (column: SortColumn) => void;
+  align?: "right";
+}) {
+  const isActive = sort.column === column;
+  return (
+    <TableHead className={align === "right" ? "text-right" : undefined}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={`inline-flex items-center gap-1 hover:text-foreground ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+      >
+        {label}
+        {isActive ? (
+          sort.direction === "asc" ? (
+            <ChevronUp className="size-3.5" />
+          ) : (
+            <ChevronDown className="size-3.5" />
+          )
+        ) : (
+          <ChevronsUpDown className="size-3.5 text-muted-foreground/50" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
 
 export function InvoicesTable({ rows, hasFilters }: { rows: InvoiceListRow[]; hasFilters: boolean }) {
+  const [sort, setSort] = useState<{ column: SortColumn; direction: SortDirection }>({
+    column: "issued_date",
+    direction: "desc",
+  });
+
+  const sortedRows = useMemo(() => {
+    const factor = sort.direction === "asc" ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const av = a[sort.column];
+      const bv = b[sort.column];
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * factor;
+      return String(av).localeCompare(String(bv)) * factor;
+    });
+  }, [rows, sort]);
+
+  function handleSort(column: SortColumn) {
+    setSort((prev) =>
+      prev.column === column
+        ? { column, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { column, direction: "asc" },
+    );
+  }
+
   if (rows.length === 0) {
-    return (
-      <EmptyState title={hasFilters ? "No invoices match these filters." : "No invoices yet."} />
+    return hasFilters ? (
+      <EmptyState
+        title="No invoices match these filters"
+        description="Try a different date range or status to see more results."
+      />
+    ) : (
+      <EmptyState
+        illustration="documents"
+        title="No invoices yet"
+        description="Create an invoice from a patient's profile or an appointment, and it will show up here with its full payment history."
+      />
     );
   }
 
@@ -17,16 +99,16 @@ export function InvoicesTable({ rows, hasFilters }: { rows: InvoiceListRow[]; ha
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Invoice #</TableHead>
-            <TableHead>Patient</TableHead>
-            <TableHead>Date</TableHead>
+            <SortableHead label="Invoice #" column="invoice_number" sort={sort} onSort={handleSort} />
+            <SortableHead label="Patient" column="patient_name" sort={sort} onSort={handleSort} />
+            <SortableHead label="Date" column="issued_date" sort={sort} onSort={handleSort} />
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-right">Balance Due</TableHead>
+            <SortableHead label="Total" column="total" sort={sort} onSort={handleSort} align="right" />
+            <SortableHead label="Balance Due" column="balance_due" sort={sort} onSort={handleSort} align="right" />
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
+          {sortedRows.map((row) => (
             <TableRow key={row.id}>
               <TableCell className="font-medium">
                 <Link href={`/billing/invoices/${row.id}`} className="hover:underline">

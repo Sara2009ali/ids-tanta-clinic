@@ -53,7 +53,7 @@ export default async function InventoryDashboardPage() {
           <StatCard label="Active Products" value={summary.activeProductCount} icon={Package} />
           <StatCard label="Low Stock" value={summary.lowStockCount} icon={AlertTriangle} />
           <StatCard label="Expiring Soon" value={summary.expiringSoonCount} icon={CalendarClock} />
-          <StatCard label="Estimated Stock Value" value={formatCurrency(summary.estimatedStockValue)} icon={Warehouse} />
+          <StatCard label="Estimated Stock Value" value={formatCurrency(summary.estimatedStockValue)} icon={Warehouse} highlight="gold" />
         </div>
       </div>
 

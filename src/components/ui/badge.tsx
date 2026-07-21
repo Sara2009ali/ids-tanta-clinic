@@ -18,6 +18,8 @@ const badgeVariants = cva(
           "bg-success/15 text-success-text border-success/30 [a]:hover:bg-success/25",
         warning:
           "bg-warning/15 text-warning-text border-warning/30 [a]:hover:bg-warning/25",
+        gold:
+          "bg-gold/15 text-gold-text border-gold/30 [a]:hover:bg-gold/25",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:

@@ -208,7 +208,7 @@ export function PatientTimeline({
                 entry.tone === "destructive"
                   ? "bg-destructive/10 text-destructive"
                   : entry.tone === "warning"
-                    ? "bg-warning/15 text-amber-700 dark:text-amber-400"
+                    ? "bg-warning/15 text-warning-text"
                     : "bg-muted text-muted-foreground"
               }`}
             >

@@ -30,9 +30,9 @@ export function MobileNav({ permissions, role }: { permissions: string[]; role: 
         <SheetHeader className="border-b border-border">
           <SheetTitle className="flex items-center gap-2">
             <span className="flex size-7 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
-              IT
+              D
             </span>
-            IDS Tanta
+            Dentra
           </SheetTitle>
         </SheetHeader>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">

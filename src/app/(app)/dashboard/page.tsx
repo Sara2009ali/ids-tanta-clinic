@@ -1,14 +1,9 @@
 import Link from "next/link";
 import {
-  Activity,
   CalendarDays,
-  CheckCircle2,
-  Clock,
   Search,
   UserPlus,
   Users,
-  UserX,
-  XCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { daysAgoIso } from "@/lib/utils";
@@ -29,6 +24,19 @@ import { listDoctors } from "@/lib/patients/queries";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
+
+const TODAY_STATUS_BREAKDOWN: {
+  key: "waiting" | "inTreatment" | "completedToday" | "cancelledToday" | "noShowToday";
+  label: string;
+  dot: string;
+}[] = [
+  { key: "waiting", label: "Waiting", dot: "bg-muted-foreground/40" },
+  { key: "inTreatment", label: "In treatment", dot: "bg-primary" },
+  { key: "completedToday", label: "Completed", dot: "bg-success" },
+  { key: "cancelledToday", label: "Cancelled", dot: "bg-destructive/60" },
+  { key: "noShowToday", label: "No-show", dot: "bg-destructive/60" },
+];
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -63,37 +71,42 @@ export default async function DashboardPage() {
   const canCreatePatient = hasPermission(permissions, PERMISSIONS.PATIENTS_CREATE);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <h1 className={typography.pageTitle}>Dashboard</h1>
         <p className="text-sm text-muted-foreground">
           Here&apos;s what&apos;s happening at the clinic today.
         </p>
       </div>
 
-      <div className="space-y-3">
-        <h2 className={typography.eyebrow}>Today</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Today's Appointments" value={counts.todayTotal} icon={CalendarDays} />
-          <StatCard label="Waiting Patients" value={counts.waiting} icon={Clock} />
-          <StatCard label="In Treatment" value={counts.inTreatment} icon={Activity} />
-          <StatCard label="Completed Today" value={counts.completedToday} icon={CheckCircle2} />
-          <StatCard label="Cancelled Today" value={counts.cancelledToday} icon={XCircle} />
-          <StatCard label="No Show Today" value={counts.noShowToday} icon={UserX} />
-        </div>
-      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Hero stat: today's appointment total is the one number this page
+            leads with — everything else is presented quieter and smaller,
+            instead of eight equally-weighted boxes competing for attention. */}
+        <Card className="lg:col-span-2">
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className={typography.eyebrow}>Today&apos;s appointments</p>
+              <p className="mt-1 text-5xl font-semibold tracking-tight tabular-nums">{counts.todayTotal}</p>
+            </div>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col sm:items-end sm:gap-1.5">
+              {TODAY_STATUS_BREAKDOWN.map(({ key, label, dot }) => (
+                <div key={key} className="flex items-center gap-1.5 text-sm">
+                  <span aria-hidden="true" className={cn("size-1.5 rounded-full", dot)} />
+                  <span className="tabular-nums font-medium">{counts[key]}</span>
+                  <span className="text-muted-foreground">{label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="space-y-3">
-        <h2 className={typography.eyebrow}>Patients</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="New Patients Today" value={counts.newPatientsToday} icon={UserPlus} />
-          <StatCard
-            label="Active Patients"
-            value={totalPatients ?? 0}
-            icon={Users}
-            hint={`${newPatientsThisWeek ?? 0} new in last 7 days`}
-          />
-        </div>
+        <StatCard
+          label="Active Patients"
+          value={totalPatients ?? 0}
+          icon={Users}
+          hint={`${newPatientsThisWeek ?? 0} new in last 7 days · ${counts.newPatientsToday} today`}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -129,6 +142,10 @@ export default async function DashboardPage() {
               <Button variant="outline" className="w-full justify-start" render={<Link href="/patients" />}>
                 <Search className="size-4" />
                 Patient Search
+              </Button>
+              <Button variant="outline" className="w-full justify-start" render={<Link href="/appointments" />}>
+                <CalendarDays className="size-4" />
+                View Calendar
               </Button>
             </CardContent>
           </Card>

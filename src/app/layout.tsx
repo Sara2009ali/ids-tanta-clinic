@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IDS Tanta",
-  description: "Dental practice management for IDS Tanta",
+  title: "Dentra",
+  description: "Dental practice management, done right.",
 };
 
 export default function RootLayout({

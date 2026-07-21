@@ -90,7 +90,7 @@ export default async function ReportsHubPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleCategories.map((category) => (
           <Link key={category.href} href={category.href}>
-            <Card className="h-full transition-colors hover:bg-accent/40">
+            <Card className="h-full transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-accent/40 hover:shadow-elevation-high">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <category.icon className="size-4 text-muted-foreground" />

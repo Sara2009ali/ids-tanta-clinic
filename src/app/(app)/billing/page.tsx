@@ -3,6 +3,7 @@ import { AlertCircle, FilePlus2, FileText, Wallet } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { formatCurrency } from "@/lib/billing/format";
@@ -47,7 +48,7 @@ export default async function BillingDashboardPage() {
         <h2 className={typography.eyebrow}>Overview</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Outstanding Balance" value={formatCurrency(counts.outstandingTotal)} icon={AlertCircle} />
-          <StatCard label="Paid This Month" value={formatCurrency(counts.paidThisMonth)} icon={Wallet} />
+          <StatCard label="Paid This Month" value={formatCurrency(counts.paidThisMonth)} icon={Wallet} highlight="gold" />
           <StatCard label="Unpaid Invoices" value={counts.unpaidCount} icon={FileText} />
           <StatCard label="Draft Invoices" value={counts.draftCount} icon={FilePlus2} />
         </div>
@@ -59,14 +60,19 @@ export default async function BillingDashboardPage() {
         </CardHeader>
         <CardContent>
           {recent.rows.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No invoices yet.</p>
+            <EmptyState
+              illustration="documents"
+              title="No invoices yet"
+              description="Invoices you create will appear here, with quick access to their payment history."
+              className="border-none py-8"
+            />
           ) : (
             <div className="space-y-2">
               {recent.rows.map((row) => (
                 <Link
                   key={row.id}
                   href={`/billing/invoices/${row.id}`}
-                  className="flex items-center gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10 transition-colors hover:bg-muted/50"
+                  className="flex items-center gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10 shadow-elevation-low transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-elevation-high"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">

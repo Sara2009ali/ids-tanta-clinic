@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ChevronDown, ChevronUp, ChevronsUpDown, UserPlus2 } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -129,26 +130,28 @@ export function PatientsTable({
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={7} className="p-0">
                 {hasFilters ? (
-                  <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      No patients match your filters.
-                    </p>
-                    <Link href="/patients" className="text-sm font-medium text-primary hover:underline">
-                      Clear filters
-                    </Link>
-                  </div>
+                  <EmptyState
+                    title="No patients match your filters"
+                    description="Try widening your search or clearing a filter to see more results."
+                    action={
+                      <Link href="/patients" className="text-sm font-medium text-primary hover:underline">
+                        Clear filters
+                      </Link>
+                    }
+                  />
                 ) : (
-                  <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <UserPlus2 className="size-8 text-muted-foreground/50" />
-                    <p className="text-sm text-muted-foreground">
-                      No patients yet — add your first one to get started.
-                    </p>
-                    {canCreatePatient && (
-                      <Button render={<Link href="/patients/new" />} size="sm">
-                        Add Patient
-                      </Button>
-                    )}
-                  </div>
+                  <EmptyState
+                    illustration="people"
+                    title="No patients yet"
+                    description="Once you register your first patient, their profile, appointments, and billing history will all show up here."
+                    action={
+                      canCreatePatient && (
+                        <Button render={<Link href="/patients/new" />} size="sm">
+                          Add Patient
+                        </Button>
+                      )
+                    }
+                  />
                 )}
               </TableCell>
             </TableRow>

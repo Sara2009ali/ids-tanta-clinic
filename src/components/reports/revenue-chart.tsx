@@ -20,7 +20,7 @@ function compactNumber(value: number): string {
  */
 export function RevenueChart({ data }: { data: RevenueChartPoint[] }) {
   return (
-    <div className="h-64 w-full rounded-xl border border-border p-4">
+    <div className="h-64 w-full rounded-xl border border-border p-4 shadow-elevation-low">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <defs>
@@ -51,8 +51,12 @@ export function RevenueChart({ data }: { data: RevenueChartPoint[] }) {
               color: "var(--popover-foreground)",
               border: "1px solid var(--border)",
               borderRadius: "var(--radius-md)",
+              boxShadow: "var(--elevation-high)",
               fontSize: 13,
+              padding: "8px 12px",
             }}
+            labelStyle={{ color: "var(--muted-foreground)", fontSize: 12, marginBottom: 2 }}
+            itemStyle={{ padding: 0 }}
             formatter={(value) => [formatCurrency(Number(value)), "Revenue"]}
           />
           <Area

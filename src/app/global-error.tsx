@@ -27,12 +27,12 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             gap: "0.75rem",
             padding: "1.5rem",
             textAlign: "center",
-            color: "#18181b",
-            backgroundColor: "#fafafa",
+            color: "#2a251f",
+            backgroundColor: "#fafaf8",
           }}
         >
           <p style={{ fontSize: "0.95rem", fontWeight: 600, margin: 0 }}>Something went wrong.</p>
-          <p style={{ fontSize: "0.875rem", color: "#71717a", margin: 0 }}>
+          <p style={{ fontSize: "0.875rem", color: "#79726b", margin: 0 }}>
             The application couldn&apos;t load. Please try again.
           </p>
           <button
@@ -42,8 +42,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
               padding: "0.5rem 1rem",
               fontSize: "0.875rem",
               fontWeight: 500,
-              color: "#fafafa",
-              backgroundColor: "#18181b",
+              color: "#fafaf8",
+              backgroundColor: "#1e5c46",
               border: "none",
               borderRadius: "0.5rem",
               cursor: "pointer",
