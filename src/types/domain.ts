@@ -30,6 +30,13 @@ export type CompensationRule = Database["public"]["Tables"]["compensation_rules"
 export type DoctorEarning = Database["public"]["Tables"]["doctor_earnings"]["Row"];
 export type DoctorSettlement = Database["public"]["Tables"]["doctor_settlements"]["Row"];
 
+export type InventoryCategory = Database["public"]["Tables"]["inventory_categories"]["Row"];
+export type InventorySupplier = Database["public"]["Tables"]["inventory_suppliers"]["Row"];
+export type InventoryProduct = Database["public"]["Tables"]["inventory_products"]["Row"];
+export type PurchaseOrder = Database["public"]["Tables"]["purchase_orders"]["Row"];
+export type PurchaseOrderItem = Database["public"]["Tables"]["purchase_order_items"]["Row"];
+export type InventoryMovement = Database["public"]["Tables"]["inventory_movements"]["Row"];
+
 // invoices.status and payments.method are text + check constraints, not
 // Postgres enums (see 0011_billing.sql's header comment for why), so there's
 // no generated Database["public"]["Enums"] entry for either — these mirror
@@ -48,6 +55,14 @@ export type PaymentType = "payment" | "refund";
 // never a new column, mirroring payments.type's own extensibility.
 export type CompensationRuleType = "percentage" | "fixed" | "hybrid";
 export type CompensationEntryType = "earning" | "reversal" | "correction" | "unresolved";
+
+// inventory_products.unit / purchase_orders.status / inventory_movements.movement_type
+// (0019_inventory.sql) — same text + check convention as every other
+// extensible status/type column in this schema. A new unit or movement
+// type is a check-constraint widening, never a new column.
+export type InventoryUnit = "piece" | "box" | "pack" | "ml" | "l" | "g" | "kg";
+export type PurchaseOrderStatus = "draft" | "ordered" | "partially_received" | "received" | "cancelled";
+export type InventoryMovementType = "receive" | "consumption" | "adjustment" | "expiration";
 
 export type PatientSearchRow = Database["public"]["Functions"]["search_patients"]["Returns"][number];
 
@@ -109,4 +124,29 @@ export const COMPENSATION_ENTRY_TYPE_LABELS: Record<CompensationEntryType, strin
   reversal: "Reversal",
   correction: "Correction",
   unresolved: "Unresolved (no rate configured)",
+};
+
+export const INVENTORY_UNIT_LABELS: Record<InventoryUnit, string> = {
+  piece: "Piece",
+  box: "Box",
+  pack: "Pack",
+  ml: "mL",
+  l: "L",
+  g: "g",
+  kg: "kg",
+};
+
+export const PURCHASE_ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
+  draft: "Draft",
+  ordered: "Ordered",
+  partially_received: "Partially Received",
+  received: "Received",
+  cancelled: "Cancelled",
+};
+
+export const INVENTORY_MOVEMENT_TYPE_LABELS: Record<InventoryMovementType, string> = {
+  receive: "Received",
+  consumption: "Consumed",
+  adjustment: "Adjustment",
+  expiration: "Expired",
 };

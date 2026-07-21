@@ -34,6 +34,9 @@ export const PERMISSIONS = {
   COMPENSATION_VIEW: "compensation.view",
   COMPENSATION_MANAGE: "compensation.manage",
 
+  INVENTORY_VIEW: "inventory.view",
+  INVENTORY_MANAGE: "inventory.manage",
+
   REPORTS_VIEW: "reports.view",
 
   SETTINGS_MANAGE: "settings.manage",
