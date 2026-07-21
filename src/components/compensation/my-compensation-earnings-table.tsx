@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RateSnapshotDisclosure } from "@/components/compensation/rate-snapshot-disclosure";
 import { formatCurrency } from "@/lib/billing/format";
 import type { CompensationEntryType, CompensationRule, DoctorEarning, VisitType } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const ENTRY_TYPE_LABELS: Record<CompensationEntryType, string> = {
   earning: "Earning",
@@ -66,9 +67,7 @@ export function MyCompensationEarningsTable({
 
   if (earnings.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        {emptyMessage}
-      </div>
+      <EmptyState title={emptyMessage} />
     );
   }
 

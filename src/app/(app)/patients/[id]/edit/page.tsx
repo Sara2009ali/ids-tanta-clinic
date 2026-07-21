@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPatientById, listDoctors } from "@/lib/patients/queries";
 import { PatientForm, type PatientFormDefaultValues } from "@/components/patients/patient-form";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { formatPatientName } from "@/lib/patients/utils";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
@@ -53,6 +54,14 @@ export default async function EditPatientPage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Patients", href: "/patients" },
+          { label: formatPatientName(patient), href: `/patients/${id}` },
+          { label: "Edit" },
+        ]}
+      />
+
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Edit Patient — {formatPatientName(patient)}

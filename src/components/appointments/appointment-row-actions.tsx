@@ -26,7 +26,7 @@ import { AppointmentEditSheet } from "@/components/appointments/appointment-edit
 import { cancelAppointmentStatus, checkInAppointment, completeAppointment } from "@/lib/appointments/actions";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { ScheduleRow } from "@/lib/appointments/queries";
-import type { Chair, VisitType } from "@/types/domain";
+import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
 import type { DoctorOption } from "@/lib/patients/queries";
 
 // scheduled/confirmed -> checked_in -> (waiting) -> in_treatment -> completed
@@ -46,12 +46,14 @@ export function AppointmentRowActions({
   doctors,
   chairs,
   visitTypes,
+  treatmentRecords,
   permissions,
 }: {
   appointment: ScheduleRow;
   doctors: DoctorOption[];
   chairs: Chair[];
   visitTypes: VisitType[];
+  treatmentRecords: TreatmentRecord[];
   permissions: string[];
 }) {
   const router = useRouter();
@@ -146,6 +148,8 @@ export function AppointmentRowActions({
           doctors={doctors}
           chairs={chairs}
           visitTypes={visitTypes}
+          treatmentRecords={treatmentRecords}
+          permissions={permissions}
           open={editOpen}
           onOpenChange={setEditOpen}
         />

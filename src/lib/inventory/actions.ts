@@ -45,13 +45,22 @@ function fieldErrorsFromZod(error: import("zod").ZodError): Record<string, strin
   return fieldErrors;
 }
 
-function revalidateInventoryPaths(extra?: string) {
-  revalidatePath("/inventory");
-  revalidatePath("/inventory/products");
-  revalidatePath("/inventory/categories");
-  revalidatePath("/inventory/suppliers");
-  revalidatePath("/inventory/purchase-orders");
-  revalidatePath("/inventory/movements");
+/**
+ * Revalidates only the inventory sub-paths a given mutation can actually
+ * affect, instead of blanket-invalidating all six every time (e.g. renaming
+ * a category has no bearing on /inventory/purchase-orders or /movements).
+ * `extra` is for a specific detail page (a product or PO's own /[id] route).
+ */
+const INVENTORY_PATH_GROUPS = {
+  categories: ["/inventory/categories", "/inventory/products"],
+  suppliers: ["/inventory/suppliers", "/inventory/products", "/inventory/purchase-orders"],
+  products: ["/inventory", "/inventory/products"],
+  purchaseOrders: ["/inventory", "/inventory/products", "/inventory/purchase-orders", "/inventory/movements"],
+  movements: ["/inventory", "/inventory/products", "/inventory/movements"],
+} as const;
+
+function revalidateInventoryPaths(scope: keyof typeof INVENTORY_PATH_GROUPS, extra?: string) {
+  for (const path of INVENTORY_PATH_GROUPS[scope]) revalidatePath(path);
   if (extra) revalidatePath(extra);
 }
 
@@ -93,7 +102,7 @@ export async function createCategory(formData: FormData): Promise<InventoryActio
     entityId: data.id,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("categories");
   return { success: true };
 }
 
@@ -127,7 +136,7 @@ export async function updateCategory(categoryId: string, formData: FormData): Pr
     entityId: categoryId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("categories");
   return { success: true };
 }
 
@@ -153,7 +162,7 @@ export async function toggleCategoryActive(categoryId: string, isActive: boolean
     entityId: categoryId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("categories");
   return { success: true };
 }
 
@@ -189,7 +198,7 @@ export async function deleteCategory(categoryId: string): Promise<InventoryActio
     entityId: categoryId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("categories");
   return { success: true };
 }
 
@@ -237,7 +246,7 @@ export async function createSupplier(formData: FormData): Promise<InventoryActio
     entityId: data.id,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("suppliers");
   return { success: true };
 }
 
@@ -279,7 +288,7 @@ export async function updateSupplier(supplierId: string, formData: FormData): Pr
     entityId: supplierId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("suppliers");
   return { success: true };
 }
 
@@ -305,7 +314,7 @@ export async function toggleSupplierActive(supplierId: string, isActive: boolean
     entityId: supplierId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("suppliers");
   return { success: true };
 }
 
@@ -341,7 +350,7 @@ export async function deleteSupplier(supplierId: string): Promise<InventoryActio
     entityId: supplierId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("suppliers");
   return { success: true };
 }
 
@@ -391,7 +400,7 @@ export async function createProduct(formData: FormData): Promise<InventoryAction
     entityId: data.id,
   });
 
-  revalidateInventoryPaths(`/inventory/products/${data.id}`);
+  revalidateInventoryPaths("products", `/inventory/products/${data.id}`);
   return { success: true };
 }
 
@@ -435,7 +444,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     entityId: productId,
   });
 
-  revalidateInventoryPaths(`/inventory/products/${productId}`);
+  revalidateInventoryPaths("products", `/inventory/products/${productId}`);
   return { success: true };
 }
 
@@ -461,7 +470,7 @@ export async function toggleProductActive(productId: string, isActive: boolean):
     entityId: productId,
   });
 
-  revalidateInventoryPaths(`/inventory/products/${productId}`);
+  revalidateInventoryPaths("products", `/inventory/products/${productId}`);
   return { success: true };
 }
 
@@ -497,7 +506,7 @@ export async function deleteProduct(productId: string): Promise<InventoryActionS
     entityId: productId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("products");
   return { success: true };
 }
 
@@ -571,7 +580,7 @@ export async function createPurchaseOrder(formData: FormData): Promise<PurchaseO
     entityId: order.id,
   });
 
-  revalidateInventoryPaths(`/inventory/purchase-orders/${order.id}`);
+  revalidateInventoryPaths("purchaseOrders", `/inventory/purchase-orders/${order.id}`);
   return { success: true, purchaseOrderId: order.id };
 }
 
@@ -687,7 +696,7 @@ export async function receivePurchaseOrder(
     changes: { status: nextStatus },
   });
 
-  revalidateInventoryPaths(`/inventory/purchase-orders/${purchaseOrderId}`);
+  revalidateInventoryPaths("purchaseOrders", `/inventory/purchase-orders/${purchaseOrderId}`);
   return { success: true, purchaseOrderId };
 }
 
@@ -725,7 +734,7 @@ export async function deletePurchaseOrder(purchaseOrderId: string): Promise<Inve
     entityId: purchaseOrderId,
   });
 
-  revalidateInventoryPaths();
+  revalidateInventoryPaths("purchaseOrders");
   return { success: true };
 }
 
@@ -767,7 +776,7 @@ export async function cancelPurchaseOrder(purchaseOrderId: string): Promise<Inve
     entityId: purchaseOrderId,
   });
 
-  revalidateInventoryPaths(`/inventory/purchase-orders/${purchaseOrderId}`);
+  revalidateInventoryPaths("purchaseOrders", `/inventory/purchase-orders/${purchaseOrderId}`);
   return { success: true };
 }
 
@@ -816,7 +825,7 @@ export async function createAdjustment(formData: FormData): Promise<InventoryAct
     changes: { product_id: parsed.data.product_id, quantity: parsed.data.quantity },
   });
 
-  revalidateInventoryPaths(`/inventory/products/${parsed.data.product_id}`);
+  revalidateInventoryPaths("movements", `/inventory/products/${parsed.data.product_id}`);
   return { success: true };
 }
 
@@ -866,6 +875,6 @@ export async function createConsumption(formData: FormData): Promise<InventoryAc
     changes: { product_id: parsed.data.product_id, quantity: parsed.data.quantity },
   });
 
-  revalidateInventoryPaths(`/inventory/products/${parsed.data.product_id}`);
+  revalidateInventoryPaths("movements", `/inventory/products/${parsed.data.product_id}`);
   return { success: true };
 }

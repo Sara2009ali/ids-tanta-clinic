@@ -41,8 +41,10 @@
   --color-card: var(--card);
   --color-success-foreground: var(--success-foreground);
   --color-success: var(--success);
+  --color-success-text: var(--success-text);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -70,8 +72,10 @@
   --destructive: oklch(0.577 0.245 27.325);
   --success: oklch(0.6 0.14 155);
   --success-foreground: oklch(0.985 0 0);
+  --success-text: oklch(0.45 0.13 155);
   --warning: oklch(0.75 0.15 80);
   --warning-foreground: oklch(0.2 0.03 80);
+  --warning-text: oklch(0.5 0.15 80);
   --border: oklch(0.9 0.004 240);
   --input: oklch(0.9 0.004 240);
   --ring: oklch(0.28 0.06 255 / 0.4);
@@ -109,8 +113,10 @@
   --destructive: oklch(0.704 0.191 22.216);
   --success: oklch(0.65 0.13 155);
   --success-foreground: oklch(0.1 0.02 155);
+  --success-text: oklch(0.75 0.15 155);
   --warning: oklch(0.75 0.14 80);
   --warning-foreground: oklch(0.15 0.02 80);
+  --warning-text: oklch(0.8 0.15 80);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.6 0.11 255 / 0.5);
@@ -138,5 +144,23 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+ * Respects OS-level "reduce motion" preference globally — neutralizes
+ * animation/transition duration everywhere (including tw-animate-css's
+ * enter/exit utilities on Dialog/Sheet/Select/DropdownMenu, and Recharts'
+ * own transitions) rather than requiring every consumer to remember a
+ * motion-reduce: variant.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

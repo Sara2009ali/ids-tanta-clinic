@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AuditLogEntry } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const ACTION_LABELS: Record<string, string> = {
   "invoice.created": "Invoice created",
@@ -36,9 +37,7 @@ function summarizeChanges(changes: AuditLogEntry["changes"]): string {
 export function InvoiceAuditHistory({ auditEntries }: { auditEntries: AuditLogEntry[] }) {
   if (auditEntries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No audit history recorded for this invoice yet.
-      </div>
+      <EmptyState title={"No audit history recorded for this invoice yet."} />
     );
   }
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Armchair, CalendarClock } from "lucide-react";
+import { Armchair, CalendarClock, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { CalendarNav } from "@/components/appointments/calendar-nav";
@@ -66,6 +66,12 @@ export default async function AppointmentsPage({
             <Button variant="outline" render={<Link href="/appointments/chairs" />}>
               <Armchair className="size-4" />
               Chairs
+            </Button>
+          )}
+          {canManageSchedules && (
+            <Button variant="outline" render={<Link href="/appointments/visit-types" />}>
+              <Stethoscope className="size-4" />
+              Procedures
             </Button>
           )}
           {canCreateAppointment && (

@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeMenuItems } from "@/components/layout/theme-menu-items";
 import { STAFF_ROLE_LABELS, type StaffRole } from "@/types/domain";
 import { initials } from "@/lib/utils";
 
@@ -29,6 +30,8 @@ export function UserMenu({ fullName, role }: { fullName: string; role: StaffRole
             {STAFF_ROLE_LABELS[role]}
           </span>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <ThemeMenuItems />
         <DropdownMenuSeparator />
         <form action={logout}>
           <DropdownMenuItem render={<button type="submit" className="w-full cursor-pointer" />}>

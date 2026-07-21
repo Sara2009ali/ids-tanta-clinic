@@ -1,11 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { INVOICE_STATUS_LABELS, type InvoiceStatus } from "@/types/domain";
 
-const STATUS_BADGE_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "outline" | "destructive"> = {
+const STATUS_BADGE_VARIANT: Record<InvoiceStatus, "default" | "secondary" | "outline" | "destructive" | "success" | "warning"> = {
   draft: "outline",
   unpaid: "destructive",
-  partially_paid: "default",
-  paid: "secondary",
+  partially_paid: "warning",
+  paid: "success",
   cancelled: "destructive",
 };
 

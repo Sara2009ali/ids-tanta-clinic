@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AuditLogEntry } from "@/types/domain";
 import { humanizeAuditAction } from "@/components/patients/patient-timeline";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -22,9 +23,7 @@ function summarizeChanges(changes: AuditLogEntry["changes"]): string {
 export function PatientAuditHistory({ auditEntries }: { auditEntries: AuditLogEntry[] }) {
   if (auditEntries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No audit history recorded for this patient yet.
-      </div>
+      <EmptyState title={"No audit history recorded for this patient yet."} />
     );
   }
 

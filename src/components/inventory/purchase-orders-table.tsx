@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PurchaseOrderStatusBadge } from "@/components/inventory/purchase-order-status-badge";
 import type { PurchaseOrderStatus } from "@/types/domain";
 import type { PurchaseOrderForList } from "@/lib/inventory/queries";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -11,9 +12,7 @@ function formatDate(iso: string): string {
 export function PurchaseOrdersTable({ orders }: { orders: PurchaseOrderForList[] }) {
   if (orders.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No purchase orders yet.
-      </div>
+      <EmptyState title={"No purchase orders yet."} />
     );
   }
 

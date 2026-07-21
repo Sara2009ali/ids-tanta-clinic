@@ -1,0 +1,63 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { NAV_ITEMS, isNavItemActive, visibleNavItems } from "@/components/layout/nav-items";
+import type { StaffRole } from "@/types/domain";
+
+/**
+ * Sheet-based drawer for viewports below `md`, where Sidebar (sidebar.tsx)
+ * is `hidden` — reuses the same NAV_ITEMS/visibility logic so the two never
+ * drift, and the existing Sheet primitive rather than a new dependency.
+ * Closes itself on navigation since a Link click doesn't dismiss a Sheet.
+ */
+export function MobileNav({ permissions, role }: { permissions: string[]; role: StaffRole }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const items = visibleNavItems(NAV_ITEMS, permissions, role);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation menu" />}>
+        <Menu className="size-4" />
+      </SheetTrigger>
+      <SheetContent side="left" className="w-3/4 max-w-xs p-0">
+        <SheetHeader className="border-b border-border">
+          <SheetTitle className="flex items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
+              IT
+            </span>
+            IDS Tanta
+          </SheetTitle>
+        </SheetHeader>
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {items.map(({ href, label, icon: Icon }) => {
+            const active = isNavItemActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground/70 hover:bg-accent/60 hover:text-accent-foreground",
+                )}
+              >
+                <Icon className="size-4" />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
+}

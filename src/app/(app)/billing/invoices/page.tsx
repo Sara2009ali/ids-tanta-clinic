@@ -1,8 +1,8 @@
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { InvoicesFilters } from "@/components/billing/invoices-filters";
 import { InvoicesTable } from "@/components/billing/invoices-table";
-import { InvoicesPagination } from "@/components/billing/invoices-pagination";
-import type { InvoicesQueryParams } from "@/components/billing/invoices-query-params";
+import { Pagination } from "@/components/ui/pagination";
+import { buildInvoicesHref, type InvoicesQueryParams } from "@/components/billing/invoices-query-params";
 import { searchInvoices } from "@/lib/billing/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -48,7 +48,7 @@ export default async function InvoicesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
           <p className="text-sm text-muted-foreground">
@@ -63,7 +63,12 @@ export default async function InvoicesPage({
       <InvoicesTable rows={rows} hasFilters={hasFilters} />
 
       {totalCount > 0 && (
-        <InvoicesPagination page={page} pageSize={pageSize} totalCount={totalCount} baseParams={baseParams} />
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          buildHref={(p) => buildInvoicesHref(baseParams, { page: String(p) })}
+        />
       )}
     </div>
   );

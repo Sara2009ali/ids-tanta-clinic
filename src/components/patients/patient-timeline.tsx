@@ -1,15 +1,35 @@
+import Link from "next/link";
 import {
   Archive,
   ArchiveRestore,
+  CalendarDays,
   FileMinus,
   FilePlus,
   Pencil,
   PlusCircle,
+  Receipt,
+  Stethoscope,
   Trash2,
   TriangleAlert,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
-import type { AuditLogEntry, PatientMedicalAlert } from "@/types/domain";
+import type { ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
+import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
+import { STATUS_BADGE_VARIANT } from "@/components/appointments/todays-schedule";
+import { formatCurrency } from "@/lib/billing/format";
+import type { InvoiceListRow, PatientPaymentRow } from "@/lib/billing/queries";
+import type { ScheduleRow } from "@/lib/appointments/queries";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  APPOINTMENT_STATUS_LABELS,
+  type AppointmentStatus,
+  type AuditLogEntry,
+  type PatientMedicalAlert,
+  type TreatmentRecord,
+  type VisitType,
+} from "@/types/domain";
 
 /** Human-readable label for an audit_log `action` string. Falls back to the raw value. */
 export function humanizeAuditAction(action: string): string {
@@ -41,6 +61,10 @@ interface TimelineEntry {
   icon: LucideIcon;
   title: string;
   tone?: "default" | "destructive" | "warning";
+  /** Reuses each entity's own existing status badge (InvoiceStatusBadge, appointments' STATUS_BADGE_VARIANT) rather than a new one per entry type. */
+  badge?: ReactNode;
+  /** Only set when the caller already knows the viewer can reach it — see the component doc comment. */
+  link?: string;
 }
 
 function formatTimestamp(iso: string): string {
@@ -68,12 +92,35 @@ function formatRelative(iso: string): string {
   return formatTimestamp(iso);
 }
 
+/**
+ * The unified patient history feed — audit trail, medical alerts,
+ * treatments, appointments, invoices, and payments, merged into one
+ * reverse-chronological list. Every optional prop below defaults to []
+ * and is expected to already be permission-filtered by the caller (an
+ * empty array when the viewer lacks the relevant permission) — this
+ * component never checks permissions itself, same "gate the data, not the
+ * component" split treatmentRecords already established. `link` is only
+ * ever set on an entry when the caller already knows the viewer can reach
+ * that destination (invoices are only passed in when canViewBilling is
+ * true), so this component can render every `link` unconditionally without
+ * its own authorization check.
+ */
 export function PatientTimeline({
   auditEntries,
   alerts,
+  treatmentRecords = [],
+  visitTypes = [],
+  appointments = [],
+  invoices = [],
+  payments = [],
 }: {
   auditEntries: AuditLogEntry[];
   alerts: PatientMedicalAlert[];
+  treatmentRecords?: TreatmentRecord[];
+  visitTypes?: VisitType[];
+  appointments?: ScheduleRow[];
+  invoices?: InvoiceListRow[];
+  payments?: PatientPaymentRow[];
 }) {
   const entries: TimelineEntry[] = [
     ...auditEntries.map((entry) => ({
@@ -95,13 +142,46 @@ export function PatientTimeline({
       title: `Medical alert added: ${alert.label}`,
       tone: alert.severity === "critical" ? ("destructive" as const) : ("warning" as const),
     })),
+    ...treatmentRecords.map((record) => ({
+      id: `treatment-${record.id}`,
+      date: record.created_at,
+      icon: Stethoscope,
+      title: `Treatment recorded: ${visitTypes.find((v) => v.id === record.visit_type_id)?.name ?? "Procedure"}`,
+      tone: "default" as const,
+    })),
+    ...appointments.map((appointment) => ({
+      id: `appointment-${appointment.id}`,
+      date: appointment.scheduled_start,
+      icon: CalendarDays,
+      title: `Appointment: ${appointment.visit_type_name} with Dr. ${appointment.doctor_name}`,
+      tone: "default" as const,
+      badge: (
+        <Badge variant={STATUS_BADGE_VARIANT[appointment.status as AppointmentStatus]}>
+          {APPOINTMENT_STATUS_LABELS[appointment.status as AppointmentStatus]}
+        </Badge>
+      ),
+    })),
+    ...invoices.map((invoice) => ({
+      id: `invoice-${invoice.id}`,
+      date: invoice.issued_date,
+      icon: Receipt,
+      title: `Invoice ${invoice.invoice_number} issued — ${formatCurrency(invoice.total)}`,
+      tone: "default" as const,
+      badge: <InvoiceStatusBadge status={invoice.status} />,
+      link: `/billing/invoices/${invoice.id}`,
+    })),
+    ...payments.map((payment) => ({
+      id: `payment-${payment.id}`,
+      date: payment.paid_at,
+      icon: Wallet,
+      title: `Payment received: ${formatCurrency(Number(payment.amount))} (${payment.invoice_number})`,
+      tone: "default" as const,
+    })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No activity recorded for this patient yet.
-      </div>
+      <EmptyState title={"No activity recorded for this patient yet."} />
     );
   }
 
@@ -109,6 +189,18 @@ export function PatientTimeline({
     <ol className="relative space-y-0 border-l border-border pl-6">
       {entries.map((entry) => {
         const Icon = entry.icon;
+        const content = (
+          <div className="flex flex-col gap-0.5 pt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="text-sm font-medium">{entry.title}</p>
+              {entry.badge}
+            </div>
+            <p className="text-xs text-muted-foreground" title={formatTimestamp(entry.date)}>
+              {formatRelative(entry.date)}
+            </p>
+          </div>
+        );
+
         return (
           <li key={entry.id} className="relative pb-6 last:pb-0">
             <span
@@ -122,12 +214,13 @@ export function PatientTimeline({
             >
               <Icon className="size-3.5" />
             </span>
-            <div className="flex flex-col gap-0.5 pt-0.5">
-              <p className="text-sm font-medium">{entry.title}</p>
-              <p className="text-xs text-muted-foreground" title={formatTimestamp(entry.date)}>
-                {formatRelative(entry.date)}
-              </p>
-            </div>
+            {entry.link ? (
+              <Link href={entry.link} className="block rounded-lg hover:bg-accent/40">
+                {content}
+              </Link>
+            ) : (
+              content
+            )}
           </li>
         );
       })}

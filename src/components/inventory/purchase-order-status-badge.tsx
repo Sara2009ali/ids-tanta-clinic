@@ -2,13 +2,17 @@ import { Badge } from "@/components/ui/badge";
 import { PURCHASE_ORDER_STATUS_LABELS, type PurchaseOrderStatus } from "@/types/domain";
 
 // Mirrors InvoiceStatusBadge's exact shape and variant reasoning: draft is
-// neutral, ordered/partially_received are in-progress, received is the
-// settled/positive state, cancelled is destructive.
-const STATUS_BADGE_VARIANT: Record<PurchaseOrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
+// neutral, ordered is in-progress (default), partially_received is
+// in-progress-with-partial-completion (warning), received is the
+// settled/positive state (success), cancelled is destructive.
+const STATUS_BADGE_VARIANT: Record<
+  PurchaseOrderStatus,
+  "default" | "secondary" | "outline" | "destructive" | "success" | "warning"
+> = {
   draft: "outline",
   ordered: "default",
-  partially_received: "default",
-  received: "secondary",
+  partially_received: "warning",
+  received: "success",
   cancelled: "destructive",
 };
 

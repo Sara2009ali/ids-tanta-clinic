@@ -2,14 +2,19 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@/types/domain";
 import type { ScheduleRow } from "@/lib/appointments/queries";
+import { EmptyState } from "@/components/ui/empty-state";
 
-const STATUS_BADGE_VARIANT: Record<AppointmentStatus, "default" | "secondary" | "outline" | "destructive"> = {
+/** Exported so other appointment-status displays (e.g. PatientTimeline) use the exact same colors instead of re-declaring this map. */
+export const STATUS_BADGE_VARIANT: Record<
+  AppointmentStatus,
+  "default" | "secondary" | "outline" | "destructive" | "success"
+> = {
   scheduled: "outline",
   confirmed: "secondary",
   checked_in: "secondary",
   waiting: "default",
   in_treatment: "default",
-  completed: "secondary",
+  completed: "success",
   cancelled: "destructive",
   no_show: "destructive",
 };
@@ -30,9 +35,7 @@ export function TodaysSchedule({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        {emptyMessage}
-      </div>
+      <EmptyState title={emptyMessage} />
     );
   }
 

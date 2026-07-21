@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Boxes, CalendarClock, Package } from "lucide-react";
+import { Boxes, CalendarClock, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +13,7 @@ import { getProductDetail, listProducts } from "@/lib/inventory/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { INVENTORY_UNIT_LABELS, type InventoryUnit } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -37,13 +37,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Inventory", href: "/inventory" },
+          { label: "Products", href: "/inventory/products" },
+          { label: product.name },
+        ]}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/inventory/products" />}>
-            <ArrowLeft className="size-4" />
-            Products
-          </Button>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{product.name}</h1>
             <Badge variant={product.is_active ? "secondary" : "outline"}>
               {product.is_active ? "Active" : "Disabled"}
@@ -90,9 +94,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
         <TabsContent value="purchases" className="pt-6">
           {purchaseOrderItems.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-              No purchase history for this product yet.
-            </div>
+            <EmptyState title={"No purchase history for this product yet."} />
           ) : (
             <div className="overflow-hidden rounded-xl border border-border">
               <Table>

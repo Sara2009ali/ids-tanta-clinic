@@ -23,6 +23,8 @@ export function LoginForm() {
           autoComplete="username"
           placeholder="you@idstanta.com"
           required
+          aria-invalid={!!state.error}
+          aria-describedby={state.error ? "login-error" : undefined}
         />
       </div>
       <div className="space-y-2">
@@ -33,10 +35,12 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
+          aria-invalid={!!state.error}
+          aria-describedby={state.error ? "login-error" : undefined}
         />
       </div>
       {state.error && (
-        <p className="text-sm text-destructive" role="alert">
+        <p id="login-error" className="text-sm text-destructive" role="alert">
           {state.error}
         </p>
       )}

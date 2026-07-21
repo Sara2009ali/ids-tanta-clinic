@@ -1,7 +1,7 @@
 // Plain utility, deliberately kept out of any "use client" file — it's
 // called from both Server Components (patients/page.tsx, patients-table.tsx)
-// and Client Components (patients-filters.tsx, patients-pagination.tsx), and
-// a client module's exports can't be called directly from server code.
+// and Client Components (patients-filters.tsx), and a client module's
+// exports can't be called directly from server code.
 export interface PatientsQueryParams {
   query?: string;
   gender?: string;

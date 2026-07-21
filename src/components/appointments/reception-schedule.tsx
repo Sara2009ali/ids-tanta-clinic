@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { AppointmentRowActions } from "@/components/appointments/appointment-row-actions";
 import type { ScheduleRow } from "@/lib/appointments/queries";
-import type { Chair, VisitType } from "@/types/domain";
+import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
 import type { DoctorOption } from "@/lib/patients/queries";
 
 type FilterKey = "all" | "upcoming" | "completed" | "cancelled" | "no_show";
@@ -46,12 +46,14 @@ export function ReceptionSchedule({
   doctors,
   chairs,
   visitTypes,
+  treatmentRecordsByAppointmentId,
   permissions,
 }: {
   rows: ScheduleRow[];
   doctors: DoctorOption[];
   chairs: Chair[];
   visitTypes: VisitType[];
+  treatmentRecordsByAppointmentId: Record<string, TreatmentRecord[]>;
   permissions: string[];
 }) {
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -91,6 +93,7 @@ export function ReceptionSchedule({
             doctors={doctors}
             chairs={chairs}
             visitTypes={visitTypes}
+            treatmentRecords={treatmentRecordsByAppointmentId[row.id] ?? []}
             permissions={permissions}
           />
         )}

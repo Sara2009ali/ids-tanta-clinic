@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency } from "@/lib/billing/format";
 import type { PatientPaymentRow } from "@/lib/billing/queries";
 import { PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, type PaymentMethod, type PaymentType } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -23,9 +24,7 @@ function formatTimestamp(iso: string): string {
 export function PatientPaymentsHistory({ payments }: { payments: PatientPaymentRow[] }) {
   if (payments.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No payments recorded yet.
-      </div>
+      <EmptyState title={"No payments recorded yet."} />
     );
   }
 

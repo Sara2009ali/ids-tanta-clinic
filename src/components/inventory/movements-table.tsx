@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { INVENTORY_MOVEMENT_TYPE_LABELS, type InventoryMovementType } from "@/types/domain";
 import type { MovementForHistory } from "@/lib/inventory/queries";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // receive is a gain (secondary/positive), consumption/expiration are a
 // loss (outline/destructive), adjustment can go either way so it stays
@@ -37,9 +38,7 @@ export function MovementsTable({
 }) {
   if (movements.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        {emptyMessage}
-      </div>
+      <EmptyState title={emptyMessage} />
     );
   }
 

@@ -3,13 +3,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { formatCurrency } from "@/lib/billing/format";
 import type { InvoiceListRow } from "@/lib/billing/queries";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function InvoicesTable({ rows, hasFilters }: { rows: InvoiceListRow[]; hasFilters: boolean }) {
   if (rows.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        {hasFilters ? "No invoices match these filters." : "No invoices yet."}
-      </div>
+      <EmptyState title={hasFilters ? "No invoices match these filters." : "No invoices yet."} />
     );
   }
 

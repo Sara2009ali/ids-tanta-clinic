@@ -6,7 +6,7 @@ import { listDoctors, searchPatients } from "@/lib/patients/queries";
 import { PatientsFilters } from "@/components/patients/patients-filters";
 import { buildPatientsHref, type PatientsQueryParams } from "@/components/patients/patients-query-params";
 import { PatientsTable } from "@/components/patients/patients-table";
-import { PatientsPagination } from "@/components/patients/patients-pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { PatientStatus } from "@/types/domain";
@@ -89,7 +89,7 @@ export default async function PatientsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Patients</h1>
           <p className="text-sm text-muted-foreground">
@@ -117,11 +117,11 @@ export default async function PatientsPage({
       />
 
       {totalCount > 0 && (
-        <PatientsPagination
+        <Pagination
           page={page}
           pageSize={pageSize}
           totalCount={totalCount}
-          baseParams={baseParams}
+          buildHref={(p) => buildPatientsHref(baseParams, { page: String(p) })}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { formatCurrency } from "@/lib/billing/format";
+import { typography } from "@/lib/typography";
 import { getBillingDashboardCounts, searchInvoices } from "@/lib/billing/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -42,11 +43,14 @@ export default async function BillingDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Outstanding Balance" value={formatCurrency(counts.outstandingTotal)} icon={AlertCircle} />
-        <StatCard label="Paid This Month" value={formatCurrency(counts.paidThisMonth)} icon={Wallet} />
-        <StatCard label="Unpaid Invoices" value={counts.unpaidCount} icon={FileText} />
-        <StatCard label="Draft Invoices" value={counts.draftCount} icon={FilePlus2} />
+      <div className="space-y-3">
+        <h2 className={typography.eyebrow}>Overview</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Outstanding Balance" value={formatCurrency(counts.outstandingTotal)} icon={AlertCircle} />
+          <StatCard label="Paid This Month" value={formatCurrency(counts.paidThisMonth)} icon={Wallet} />
+          <StatCard label="Unpaid Invoices" value={counts.unpaidCount} icon={FileText} />
+          <StatCard label="Draft Invoices" value={counts.draftCount} icon={FilePlus2} />
+        </div>
       </div>
 
       <Card>

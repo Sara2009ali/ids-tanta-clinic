@@ -10,6 +10,8 @@ import {
 } from "@/lib/patients/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PatientStatusBadge } from "@/components/patients/status-badge";
@@ -21,9 +23,13 @@ import { PatientAuditHistory } from "@/components/patients/patient-audit-history
 import { InvoicesTable } from "@/components/billing/invoices-table";
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { PatientPaymentsHistory } from "@/components/billing/patient-payments-history";
+import { TreatmentRecordsList } from "@/components/treatments/treatment-records-list";
+import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { getPatientPayments, searchInvoices } from "@/lib/billing/queries";
+import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
+import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import type { PatientFileType } from "@/types/domain";
 
 export default async function PatientProfilePage({
@@ -49,6 +55,15 @@ export default async function PatientProfilePage({
   const [invoicesResult, patientPayments] = canViewBilling
     ? await Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
     : [null, []];
+
+  const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
+  const canEditClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_EDIT);
+  const [treatmentRecords, visitTypes] = canViewClinical
+    ? await Promise.all([getTreatmentRecordsForPatient(patient.id), listVisitTypes()])
+    : [[], []];
+
+  const canViewAppointments = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_VIEW);
+  const appointments = canViewAppointments ? await getAppointmentsForPatient(patient.id) : [];
 
   const [photoUrl, ...fileUrls] = await getPatientFileUrls([
     patient.photo_path,
@@ -80,6 +95,10 @@ export default async function PatientProfilePage({
 
   return (
     <div className="space-y-6">
+      <Breadcrumb
+        items={[{ label: "Patients", href: "/patients" }, { label: patient.full_name ?? "Patient" }]}
+      />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
           <Avatar size="lg" className="size-16">
@@ -119,8 +138,8 @@ export default async function PatientProfilePage({
           <TabsTrigger value="timeline">Treatment Timeline</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="audit">Audit History</TabsTrigger>
-          <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>
-          <TabsTrigger value="appointments">Appointments</TabsTrigger>
+          {canViewClinical && <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>}
+          {canViewAppointments && <TabsTrigger value="appointments">Appointments</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="invoices">Invoices</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="payments">Payments</TabsTrigger>}
         </TabsList>
@@ -169,11 +188,7 @@ export default async function PatientProfilePage({
                       <Badge
                         key={key}
                         variant="outline"
-                        className={
-                          isSet
-                            ? "border-warning/30 bg-warning/15 text-amber-700 dark:text-amber-400"
-                            : "text-muted-foreground"
-                        }
+                        className={isSet ? "border-warning/30 bg-warning/15 text-warning-text" : "text-muted-foreground"}
                       >
                         {medicalFlagLabel(key)}: {isSet ? "Yes" : "No"}
                       </Badge>
@@ -206,7 +221,15 @@ export default async function PatientProfilePage({
         </TabsContent>
 
         <TabsContent value="timeline" className="pt-6">
-          <PatientTimeline auditEntries={auditEntries} alerts={alerts} />
+          <PatientTimeline
+            auditEntries={auditEntries}
+            alerts={alerts}
+            treatmentRecords={treatmentRecords}
+            visitTypes={visitTypes}
+            appointments={appointments}
+            invoices={invoicesResult?.rows ?? []}
+            payments={patientPayments}
+          />
         </TabsContent>
 
         <TabsContent value="files" className="space-y-8 pt-6">
@@ -253,12 +276,22 @@ export default async function PatientProfilePage({
           <PatientAuditHistory auditEntries={auditEntries} />
         </TabsContent>
 
-        <TabsContent value="clinical-notes" className="pt-6">
-          <EmptyTab text="Clinical notes will appear here once the Clinical module ships." />
-        </TabsContent>
-        <TabsContent value="appointments" className="pt-6">
-          <EmptyTab text="Appointments will appear here once the Scheduling module ships." />
-        </TabsContent>
+        {canViewClinical && (
+          <TabsContent value="clinical-notes" className="pt-6">
+            <TreatmentRecordsList
+              records={treatmentRecords}
+              visitTypes={visitTypes}
+              doctors={doctors}
+              canEdit={canEditClinical}
+              emptyMessage="No treatment recorded for this patient yet."
+            />
+          </TabsContent>
+        )}
+        {canViewAppointments && (
+          <TabsContent value="appointments" className="pt-6">
+            <TodaysSchedule rows={appointments} emptyMessage="No appointments recorded for this patient yet." />
+          </TabsContent>
+        )}
         {canViewBilling && invoicesResult && (
           <TabsContent value="invoices" className="space-y-4 pt-6">
             <div className="flex justify-end">
@@ -312,9 +345,5 @@ function ListField({ label, items }: { label: string; items: string[] }) {
 }
 
 function EmptyTab({ text }: { text: string }) {
-  return (
-    <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-      {text}
-    </div>
-  );
+  return <EmptyState title={text} />;
 }

@@ -17,6 +17,7 @@ export type Appointment = Database["public"]["Tables"]["appointments"]["Row"];
 export type AppointmentStatusHistory = Database["public"]["Tables"]["appointment_status_history"]["Row"];
 export type VisitType = Database["public"]["Tables"]["visit_types"]["Row"];
 export type Chair = Database["public"]["Tables"]["chairs"]["Row"];
+export type TreatmentRecord = Database["public"]["Tables"]["treatment_records"]["Row"];
 
 export type DoctorWeeklyHours = Database["public"]["Tables"]["doctor_weekly_hours"]["Row"];
 export type DoctorVacation = Database["public"]["Tables"]["doctor_vacations"]["Row"];
@@ -29,6 +30,10 @@ export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 export type CompensationRule = Database["public"]["Tables"]["compensation_rules"]["Row"];
 export type DoctorEarning = Database["public"]["Tables"]["doctor_earnings"]["Row"];
 export type DoctorSettlement = Database["public"]["Tables"]["doctor_settlements"]["Row"];
+
+export type NotificationSource = Database["public"]["Tables"]["notification_sources"]["Row"];
+export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
+export type NotificationRecipient = Database["public"]["Tables"]["notification_recipients"]["Row"];
 
 export type InventoryCategory = Database["public"]["Tables"]["inventory_categories"]["Row"];
 export type InventorySupplier = Database["public"]["Tables"]["inventory_suppliers"]["Row"];
@@ -55,6 +60,16 @@ export type PaymentType = "payment" | "refund";
 // never a new column, mirroring payments.type's own extensibility.
 export type CompensationRuleType = "percentage" | "fixed" | "hybrid";
 export type CompensationEntryType = "earning" | "reversal" | "correction" | "unresolved";
+
+// notifications.type / notifications.priority / notification_recipients.status
+// (0016_notifications.sql) — same text + check convention: a new type or
+// priority level is a check-constraint widening, never a new column.
+// requires_action is a separate boolean column, not a type value — severity
+// and "has an attached action" are independent axes per the approved
+// architecture review.
+export type NotificationType = "info" | "success" | "warning" | "critical" | "system";
+export type NotificationPriority = "low" | "normal" | "high" | "urgent";
+export type NotificationRecipientStatus = "unread" | "read" | "dismissed" | "archived";
 
 // inventory_products.unit / purchase_orders.status / inventory_movements.movement_type
 // (0019_inventory.sql) — same text + check convention as every other

@@ -20,6 +20,7 @@ import {
 import { voidPayment } from "@/lib/billing/actions";
 import { formatCurrency } from "@/lib/billing/format";
 import { PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, type Payment, type PaymentMethod, type PaymentType } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -59,9 +60,7 @@ export function PaymentsHistory({
 
   if (payments.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No payments recorded yet.
-      </div>
+      <EmptyState title={"No payments recorded yet."} />
     );
   }
 

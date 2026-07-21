@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
 import {
   Select,
   SelectContent,
@@ -60,15 +61,6 @@ interface PatientFormProps {
   doctors: DoctorOption[];
 }
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return (
-    <p className="text-sm text-destructive" role="alert">
-      {message}
-    </p>
-  );
-}
-
 export function PatientForm({ mode, patientId, defaultValues, doctors }: PatientFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -100,8 +92,7 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
           <CardDescription>Core identifying and contact details.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="first_name">First name *</Label>
+          <FormField label="First name" htmlFor="first_name" required error={fieldErrors.first_name}>
             <Input
               id="first_name"
               name="first_name"
@@ -109,10 +100,8 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
               defaultValue={defaultValues?.first_name ?? ""}
               aria-invalid={!!fieldErrors.first_name}
             />
-            <FieldError message={fieldErrors.first_name} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="last_name">Last name *</Label>
+          </FormField>
+          <FormField label="Last name" htmlFor="last_name" required error={fieldErrors.last_name}>
             <Input
               id="last_name"
               name="last_name"
@@ -120,10 +109,8 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
               defaultValue={defaultValues?.last_name ?? ""}
               aria-invalid={!!fieldErrors.last_name}
             />
-            <FieldError message={fieldErrors.last_name} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="date_of_birth">Date of birth</Label>
+          </FormField>
+          <FormField label="Date of birth" htmlFor="date_of_birth" error={fieldErrors.date_of_birth}>
             <div className="flex items-center gap-3">
               <Input
                 id="date_of_birth"
@@ -139,10 +126,8 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
                 <span className="whitespace-nowrap text-sm text-muted-foreground">Age: {age}</span>
               )}
             </div>
-            <FieldError message={fieldErrors.date_of_birth} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="gender">Gender</Label>
+          </FormField>
+          <FormField label="Gender" htmlFor="gender" error={fieldErrors.gender}>
             <Select name="gender" defaultValue={defaultValues?.gender ?? undefined}>
               <SelectTrigger id="gender" className="w-full">
                 <SelectValue placeholder="Select gender" />
@@ -154,10 +139,8 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
                 <SelectItem value="unspecified">Prefer not to say</SelectItem>
               </SelectContent>
             </Select>
-            <FieldError message={fieldErrors.gender} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+          </FormField>
+          <FormField label="Phone" htmlFor="phone" error={fieldErrors.phone}>
             <Input
               id="phone"
               name="phone"
@@ -165,10 +148,8 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
               defaultValue={defaultValues?.phone ?? ""}
               aria-invalid={!!fieldErrors.phone}
             />
-            <FieldError message={fieldErrors.phone} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+          </FormField>
+          <FormField label="Email" htmlFor="email" error={fieldErrors.email}>
             <Input
               id="email"
               name="email"
@@ -176,42 +157,39 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
               defaultValue={defaultValues?.email ?? ""}
               aria-invalid={!!fieldErrors.email}
             />
-            <FieldError message={fieldErrors.email} />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="address">Address</Label>
+          </FormField>
+          <FormField label="Address" htmlFor="address" error={fieldErrors.address} className="sm:col-span-2">
             <Input id="address" name="address" defaultValue={defaultValues?.address ?? ""} />
-            <FieldError message={fieldErrors.address} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="national_id">National ID</Label>
+          </FormField>
+          <FormField label="National ID" htmlFor="national_id" error={fieldErrors.national_id}>
             <Input id="national_id" name="national_id" defaultValue={defaultValues?.national_id ?? ""} />
-            <FieldError message={fieldErrors.national_id} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="occupation">Occupation</Label>
+          </FormField>
+          <FormField label="Occupation" htmlFor="occupation" error={fieldErrors.occupation}>
             <Input id="occupation" name="occupation" defaultValue={defaultValues?.occupation ?? ""} />
-            <FieldError message={fieldErrors.occupation} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="emergency_contact_name">Emergency contact name</Label>
+          </FormField>
+          <FormField
+            label="Emergency contact name"
+            htmlFor="emergency_contact_name"
+            error={fieldErrors.emergency_contact_name}
+          >
             <Input
               id="emergency_contact_name"
               name="emergency_contact_name"
               defaultValue={defaultValues?.emergency_contact_name ?? ""}
             />
-            <FieldError message={fieldErrors.emergency_contact_name} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="emergency_contact_phone">Emergency contact phone</Label>
+          </FormField>
+          <FormField
+            label="Emergency contact phone"
+            htmlFor="emergency_contact_phone"
+            error={fieldErrors.emergency_contact_phone}
+          >
             <Input
               id="emergency_contact_phone"
               name="emergency_contact_phone"
               type="tel"
               defaultValue={defaultValues?.emergency_contact_phone ?? ""}
             />
-            <FieldError message={fieldErrors.emergency_contact_phone} />
-          </div>
+          </FormField>
         </CardContent>
       </Card>
 
@@ -222,33 +200,30 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="allergies">Allergies</Label>
+            <FormField label="Allergies" htmlFor="allergies">
               <Input
                 id="allergies"
                 name="allergies"
                 placeholder="Penicillin, Latex"
                 defaultValue={defaultValues?.allergies ?? ""}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="current_medications">Current medications</Label>
+            </FormField>
+            <FormField label="Current medications" htmlFor="current_medications">
               <Input
                 id="current_medications"
                 name="current_medications"
                 placeholder="Aspirin, Metformin"
                 defaultValue={defaultValues?.current_medications ?? ""}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="medical_conditions">Medical conditions</Label>
+            </FormField>
+            <FormField label="Medical conditions" htmlFor="medical_conditions">
               <Input
                 id="medical_conditions"
                 name="medical_conditions"
                 placeholder="Asthma"
                 defaultValue={defaultValues?.medical_conditions ?? ""}
               />
-            </div>
+            </FormField>
           </div>
 
           <div className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -262,10 +237,9 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
             ))}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="clinical_notes">Notes</Label>
+          <FormField label="Notes" htmlFor="clinical_notes">
             <Textarea id="clinical_notes" name="clinical_notes" defaultValue={defaultValues?.clinical_notes ?? ""} />
-          </div>
+          </FormField>
         </CardContent>
       </Card>
 
@@ -275,42 +249,37 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
           <CardDescription>Reason for visit, referral, and coverage.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="chief_complaint">Chief complaint</Label>
+          <FormField label="Chief complaint" htmlFor="chief_complaint" className="sm:col-span-2">
             <Textarea
               id="chief_complaint"
               name="chief_complaint"
               defaultValue={defaultValues?.chief_complaint ?? ""}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="referral_source">Referral source</Label>
+          </FormField>
+          <FormField label="Referral source" htmlFor="referral_source">
             <Input
               id="referral_source"
               name="referral_source"
               defaultValue={defaultValues?.referral_source ?? ""}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="preferred_dentist_id">Preferred dentist</Label>
+          </FormField>
+          <FormField label="Preferred dentist" htmlFor="preferred_dentist_id">
             <DoctorSelect doctors={doctors} defaultValue={defaultValues?.preferred_dentist_id} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="insurance_provider">Insurance provider</Label>
+          </FormField>
+          <FormField label="Insurance provider" htmlFor="insurance_provider">
             <Input
               id="insurance_provider"
               name="insurance_provider"
               defaultValue={defaultValues?.insurance_provider ?? ""}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="insurance_policy_number">Insurance policy number</Label>
+          </FormField>
+          <FormField label="Insurance policy number" htmlFor="insurance_policy_number">
             <Input
               id="insurance_policy_number"
               name="insurance_policy_number"
               defaultValue={defaultValues?.insurance_policy_number ?? ""}
             />
-          </div>
+          </FormField>
         </CardContent>
       </Card>
 

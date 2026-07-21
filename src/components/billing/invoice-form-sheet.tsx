@@ -24,16 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FieldError, FormField } from "@/components/ui/form-field";
 import { PatientPicker, type SelectedPatient } from "@/components/appointments/patient-picker";
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return (
-    <p className="text-sm text-destructive" role="alert">
-      {message}
-    </p>
-  );
-}
 
 function emptyItem(): InvoiceItemInputValues {
   return { description: "", quantity: 1, unit_price: 0, discount_amount: 0 };
@@ -179,7 +171,12 @@ export function InvoiceFormSheet({
           <input type="hidden" name="patient_id" value={patient?.id ?? ""} />
 
           <div className="space-y-2">
-            <Label>Patient *</Label>
+            <Label>
+              Patient
+              <span aria-hidden="true" className="text-destructive">
+                *
+              </span>
+            </Label>
             {lockPatient ? (
               <div className="rounded-lg border border-input bg-muted/50 px-2.5 py-1.5 text-sm">
                 {patient?.full_name}
@@ -191,7 +188,12 @@ export function InvoiceFormSheet({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Items *</Label>
+              <Label>
+                Items
+                <span aria-hidden="true" className="text-destructive">
+                  *
+                </span>
+              </Label>
               <Button type="button" size="sm" variant="outline" onClick={addItem}>
                 <Plus className="size-3.5" />
                 Add item
@@ -255,8 +257,7 @@ export function InvoiceFormSheet({
             <FieldError message={fieldErrors.items} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tax_percent">Tax %</Label>
+          <FormField label="Tax %" htmlFor="tax_percent" error={fieldErrors.tax_percent}>
             <Input
               id="tax_percent"
               name="tax_percent"
@@ -269,13 +270,11 @@ export function InvoiceFormSheet({
               aria-invalid={!!fieldErrors.tax_percent}
               className="w-32"
             />
-            <FieldError message={fieldErrors.tax_percent} />
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+          <FormField label="Notes" htmlFor="notes">
             <Textarea id="notes" name="notes" defaultValue={invoice?.notes ?? ""} />
-          </div>
+          </FormField>
 
           <div className="mt-auto space-y-1 rounded-xl bg-muted p-3 text-sm">
             <div className="flex justify-between">

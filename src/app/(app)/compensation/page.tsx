@@ -4,11 +4,8 @@ import { AlertCircle, FileWarning, HandCoins, Wallet } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompensationAuditHistory } from "@/components/compensation/compensation-audit-history";
-import { CompensationRulesTable } from "@/components/compensation/compensation-rules-table";
-import { MyCompensationEarningsTable } from "@/components/compensation/my-compensation-earnings-table";
-import { MyStatementsTable } from "@/components/compensation/my-statements-table";
+import { DoctorCompensationPanel } from "@/components/compensation/doctor-compensation-panel";
 import { formatCurrency } from "@/lib/billing/format";
 import {
   getClinicCompensationSummary,
@@ -23,7 +20,8 @@ import {
 import { listVisitTypes } from "@/lib/appointments/queries";
 import { requireStaff } from "@/lib/auth/session";
 import { getCurrentPermissions } from "@/lib/authz/session";
-import { hasAnyPermission, hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { hasAnyPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 import type { StaffProfile } from "@/types/domain";
 
 /**
@@ -41,7 +39,7 @@ export default async function CompensationPage() {
   const permissions = await getCurrentPermissions();
 
   if (hasAnyPermission(permissions, [PERMISSIONS.COMPENSATION_VIEW, PERMISSIONS.COMPENSATION_MANAGE])) {
-    return <CompensationAdminDashboard permissions={permissions} />;
+    return <CompensationAdminDashboard />;
   }
 
   if (staff.role === "doctor") {
@@ -51,15 +49,13 @@ export default async function CompensationPage() {
   redirect("/dashboard");
 }
 
-async function CompensationAdminDashboard({ permissions }: { permissions: string[] }) {
+async function CompensationAdminDashboard() {
   const [summary, doctorTotals, auditEntries, unresolved] = await Promise.all([
     getClinicCompensationSummary(),
     getDoctorsPendingTotals(),
     getCompensationAuditEntries(),
     getUnresolvedCompensationEntries(),
   ]);
-
-  const canManage = hasPermission(permissions, PERMISSIONS.COMPENSATION_MANAGE);
 
   return (
     <div className="space-y-6">
@@ -75,20 +71,17 @@ async function CompensationAdminDashboard({ permissions }: { permissions: string
           <Button variant="outline" render={<Link href="/compensation/unresolved" />}>
             Unresolved
           </Button>
-          {canManage && (
-            <Button render={<Link href="/compensation/settlements" />}>
-              <HandCoins className="size-4" />
-              Settlements
-            </Button>
-          )}
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Pending" value={formatCurrency(summary.pendingTotal)} icon={Wallet} />
-        <StatCard label="Settled This Month" value={formatCurrency(summary.settledThisMonthTotal)} icon={HandCoins} />
-        <StatCard label="Unresolved Entries" value={summary.unresolvedCount} icon={FileWarning} />
-        <StatCard label="Active Rules" value={summary.activeRulesCount} icon={AlertCircle} />
+      <div className="space-y-3">
+        <h2 className={typography.eyebrow}>Overview</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Pending" value={formatCurrency(summary.pendingTotal)} icon={Wallet} />
+          <StatCard label="Settled This Month" value={formatCurrency(summary.settledThisMonthTotal)} icon={HandCoins} />
+          <StatCard label="Unresolved Entries" value={summary.unresolvedCount} icon={FileWarning} />
+          <StatCard label="Active Rules" value={summary.activeRulesCount} icon={AlertCircle} />
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -147,10 +140,10 @@ async function CompensationAdminDashboard({ permissions }: { permissions: string
 
 /**
  * Dentist self-service view — read-only, scoped entirely to this doctor's own
- * rows. No SetCompensationRuleSheet, no Replace/Close, no settlement-run or
- * unresolved-resolve action is imported here at all; CompensationRulesTable is
- * reused with canManage always false, which already suppresses its Actions
- * column and every mutation control on its own.
+ * rows. canManage is always false, which makes DoctorCompensationPanel's
+ * CompensationRulesTable suppress its Actions column and every mutation
+ * control on its own; no SetCompensationRuleSheet, Replace/Close, settlement-
+ * run, or unresolved-resolve action is reachable from this view at all.
  */
 async function MyCompensationView({ doctor }: { doctor: StaffProfile }) {
   const [summary, earnings, rules, visitTypes, settlements] = await Promise.all([
@@ -168,9 +161,7 @@ async function MyCompensationView({ doctor }: { doctor: StaffProfile }) {
     getDoctorSettlements(doctor.id),
   ]);
 
-  const pendingEarnings = earnings.filter((entry) => !entry.settlement_id);
-  const activeRules = rules.filter((rule) => !rule.effective_to);
-  const doctorOption = [{ id: doctor.id, full_name: doctor.full_name }];
+  const doctorOptions = [{ id: doctor.id, full_name: doctor.full_name }];
 
   return (
     <div className="space-y-6">
@@ -179,69 +170,15 @@ async function MyCompensationView({ doctor }: { doctor: StaffProfile }) {
         <p className="text-sm text-muted-foreground">Your earnings, rates, and settlement statements.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Pending" value={formatCurrency(summary.pendingTotal)} icon={Wallet} />
-        <StatCard label="Settled (Lifetime)" value={formatCurrency(summary.settledTotal)} icon={HandCoins} />
-        <StatCard label="Unresolved" value={summary.unresolvedCount} icon={FileWarning} />
-      </div>
-
-      <Tabs defaultValue="pending">
-        <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="all">All Earnings</TabsTrigger>
-          <TabsTrigger value="rates">My Rates</TabsTrigger>
-          <TabsTrigger value="statements">Statements</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending" className="pt-6">
-          <MyCompensationEarningsTable
-            earnings={pendingEarnings}
-            rules={rules}
-            visitTypes={visitTypes}
-            emptyMessage="No pending earnings right now."
-          />
-        </TabsContent>
-
-        <TabsContent value="all" className="pt-6">
-          <MyCompensationEarningsTable
-            earnings={earnings}
-            rules={rules}
-            visitTypes={visitTypes}
-            emptyMessage="No compensation activity yet."
-          />
-        </TabsContent>
-
-        <TabsContent value="rates" className="pt-6">
-          <Tabs defaultValue="active">
-            <TabsList>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-            </TabsList>
-            <TabsContent value="active" className="pt-6">
-              <CompensationRulesTable
-                rules={activeRules}
-                doctors={doctorOption}
-                visitTypes={visitTypes}
-                canManage={false}
-                mode="active"
-              />
-            </TabsContent>
-            <TabsContent value="history" className="pt-6">
-              <CompensationRulesTable
-                rules={rules}
-                doctors={doctorOption}
-                visitTypes={visitTypes}
-                canManage={false}
-                mode="history"
-              />
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-
-        <TabsContent value="statements" className="pt-6">
-          <MyStatementsTable settlements={settlements} earnings={earnings} rules={rules} visitTypes={visitTypes} />
-        </TabsContent>
-      </Tabs>
+      <DoctorCompensationPanel
+        summary={summary}
+        earnings={earnings}
+        rules={rules}
+        visitTypes={visitTypes}
+        settlements={settlements}
+        doctorOptions={doctorOptions}
+        canManage={false}
+      />
     </div>
   );
 }

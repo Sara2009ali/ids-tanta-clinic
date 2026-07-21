@@ -1,17 +1,22 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { buildPatientsHref, type PatientsQueryParams } from "@/components/patients/patients-query-params";
 
-export function PatientsPagination({
+/**
+ * Shared Previous/Next pagination bar — replaces the two near-identical
+ * patients-pagination.tsx/invoices-pagination.tsx implementations. Callers
+ * keep their own query-param shape by passing a buildHref(page) function
+ * rather than this component knowing about any specific filter set.
+ */
+export function Pagination({
   page,
   pageSize,
   totalCount,
-  baseParams,
+  buildHref,
 }: {
   page: number;
   pageSize: number;
   totalCount: number;
-  baseParams: PatientsQueryParams;
+  buildHref: (page: number) => string;
 }) {
   const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
   const hasPrev = page > 1;
@@ -24,11 +29,7 @@ export function PatientsPagination({
       </p>
       <div className="flex items-center gap-2">
         {hasPrev ? (
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={buildPatientsHref(baseParams, { page: String(page - 1) })} scroll={false} />}
-          >
+          <Button variant="outline" size="sm" render={<Link href={buildHref(page - 1)} scroll={false} />}>
             Previous
           </Button>
         ) : (
@@ -37,11 +38,7 @@ export function PatientsPagination({
           </Button>
         )}
         {hasNext ? (
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={buildPatientsHref(baseParams, { page: String(page + 1) })} scroll={false} />}
-          >
+          <Button variant="outline" size="sm" render={<Link href={buildHref(page + 1)} scroll={false} />}>
             Next
           </Button>
         ) : (

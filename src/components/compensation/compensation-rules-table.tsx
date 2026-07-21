@@ -25,6 +25,7 @@ import { COMPENSATION_RULE_TYPE_LABELS, type CompensationRule, type Compensation
 import type { CompensationRuleConfig } from "@/lib/compensation/calculations";
 import type { DoctorOption } from "@/lib/patients/queries";
 import type { VisitType } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function describeConfig(type: CompensationRuleType, config: CompensationRuleConfig): string {
   if (type === "percentage") return `${(config as { rate: number }).rate}%`;
@@ -43,12 +44,15 @@ export function CompensationRulesTable({
   visitTypes,
   canManage,
   mode,
+  hasFilters = false,
 }: {
   rules: CompensationRule[];
   doctors: DoctorOption[];
   visitTypes: VisitType[];
   canManage: boolean;
   mode: "active" | "history";
+  /** True when the (already-filtered) `rules` array reflects active search/filter params, not just an empty clinic — changes the empty-state copy. */
+  hasFilters?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -72,9 +76,15 @@ export function CompensationRulesTable({
 
   if (rules.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        {mode === "active" ? "No active compensation rules yet." : "No rate changes yet."}
-      </div>
+      <EmptyState
+        title={
+          hasFilters
+            ? "No rules match these filters."
+            : mode === "active"
+              ? "No active compensation rules yet."
+              : "No rate changes yet."
+        }
+      />
     );
   }
 

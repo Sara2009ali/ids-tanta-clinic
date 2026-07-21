@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/billing/format";
 import { getExpiringSoonItems, getInventoryDashboardSummary, getLowStockProducts } from "@/lib/inventory/queries";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -56,9 +57,7 @@ export default async function InventoryReportPage() {
       <div>
         <h2 className="mb-2 text-sm font-medium">Low stock</h2>
         {lowStock.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-            Nothing is running low right now.
-          </div>
+          <EmptyState title={"Nothing is running low right now."} />
         ) : (
           <div className="overflow-hidden rounded-xl border border-border">
             <Table>
@@ -94,9 +93,7 @@ export default async function InventoryReportPage() {
       <div>
         <h2 className="mb-2 text-sm font-medium">Expiring within 30 days</h2>
         {expiringSoon.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-            Nothing is expiring soon.
-          </div>
+          <EmptyState title={"Nothing is expiring soon."} />
         ) : (
           <div className="overflow-hidden rounded-xl border border-border">
             <Table>

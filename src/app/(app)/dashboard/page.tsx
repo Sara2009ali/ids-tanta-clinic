@@ -28,6 +28,7 @@ import {
 import { listDoctors } from "@/lib/patients/queries";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -70,20 +71,29 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Today's Appointments" value={counts.todayTotal} icon={CalendarDays} />
-        <StatCard label="Waiting Patients" value={counts.waiting} icon={Clock} />
-        <StatCard label="In Treatment" value={counts.inTreatment} icon={Activity} />
-        <StatCard label="Completed Today" value={counts.completedToday} icon={CheckCircle2} />
-        <StatCard label="Cancelled Today" value={counts.cancelledToday} icon={XCircle} />
-        <StatCard label="No Show Today" value={counts.noShowToday} icon={UserX} />
-        <StatCard label="New Patients Today" value={counts.newPatientsToday} icon={UserPlus} />
-        <StatCard
-          label="Active Patients"
-          value={totalPatients ?? 0}
-          icon={Users}
-          hint={`${newPatientsThisWeek ?? 0} new in last 7 days`}
-        />
+      <div className="space-y-3">
+        <h2 className={typography.eyebrow}>Today</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Today's Appointments" value={counts.todayTotal} icon={CalendarDays} />
+          <StatCard label="Waiting Patients" value={counts.waiting} icon={Clock} />
+          <StatCard label="In Treatment" value={counts.inTreatment} icon={Activity} />
+          <StatCard label="Completed Today" value={counts.completedToday} icon={CheckCircle2} />
+          <StatCard label="Cancelled Today" value={counts.cancelledToday} icon={XCircle} />
+          <StatCard label="No Show Today" value={counts.noShowToday} icon={UserX} />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className={typography.eyebrow}>Patients</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="New Patients Today" value={counts.newPatientsToday} icon={UserPlus} />
+          <StatCard
+            label="Active Patients"
+            value={totalPatients ?? 0}
+            icon={Users}
+            hint={`${newPatientsThisWeek ?? 0} new in last 7 days`}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

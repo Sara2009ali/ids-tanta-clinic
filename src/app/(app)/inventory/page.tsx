@@ -13,6 +13,7 @@ import {
 } from "@/lib/inventory/queries";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 function formatExpirationDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -46,11 +47,14 @@ export default async function InventoryDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active Products" value={summary.activeProductCount} icon={Package} />
-        <StatCard label="Low Stock" value={summary.lowStockCount} icon={AlertTriangle} />
-        <StatCard label="Expiring Soon" value={summary.expiringSoonCount} icon={CalendarClock} />
-        <StatCard label="Estimated Stock Value" value={formatCurrency(summary.estimatedStockValue)} icon={Warehouse} />
+      <div className="space-y-3">
+        <h2 className={typography.eyebrow}>Overview</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Active Products" value={summary.activeProductCount} icon={Package} />
+          <StatCard label="Low Stock" value={summary.lowStockCount} icon={AlertTriangle} />
+          <StatCard label="Expiring Soon" value={summary.expiringSoonCount} icon={CalendarClock} />
+          <StatCard label="Estimated Stock Value" value={formatCurrency(summary.estimatedStockValue)} icon={Warehouse} />
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

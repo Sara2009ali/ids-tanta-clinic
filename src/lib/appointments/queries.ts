@@ -28,6 +28,34 @@ export async function listChairs(): Promise<Chair[]> {
   return data ?? [];
 }
 
+export interface VisitTypeForManagement extends VisitType {
+  clinic_name: string | null;
+}
+
+/**
+ * Every visit type (active and disabled) with its clinic's name joined in,
+ * for the Visit Types Management page. Distinct from `listVisitTypes()` —
+ * that one stays exactly as-is for the booking dropdown, which must only
+ * ever offer active procedures. Mirrors `listChairsForManagement()` exactly.
+ */
+export async function listVisitTypesForManagement(): Promise<VisitTypeForManagement[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("visit_types")
+    .select("*, clinics ( name )")
+    .order("name");
+
+  if (error) {
+    console.error("listVisitTypesForManagement failed", error);
+    return [];
+  }
+
+  return ((data ?? []) as unknown as (VisitType & { clinics: { name: string } | null })[]).map((row) => {
+    const { clinics, ...visitType } = row;
+    return { ...visitType, clinic_name: clinics?.name ?? null };
+  });
+}
+
 export interface ChairForManagement extends Chair {
   clinic_name: string | null;
 }
@@ -200,33 +228,20 @@ interface ScheduleQueryRow {
   visit_types: { name: string; color: string } | null;
 }
 
-/** Schedule for [startIso, endIsoExclusive), oldest-first, with patient/doctor/chair/visit-type names already joined in. */
-export async function getScheduleForRange(
-  startIso: string,
-  endIsoExclusive: string,
-): Promise<ScheduleRow[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("appointments")
-    .select(
-      `id, scheduled_start, scheduled_end, status, priority, is_emergency, patient_id, doctor_id,
-       chair_id, visit_type_id, chief_complaint, notes,
-       patients ( full_name ),
-       staff_profiles!appointments_doctor_id_fkey ( full_name ),
-       chairs ( label ),
-       visit_types ( name, color )`,
-    )
-    .gte("scheduled_start", startIso)
-    .lt("scheduled_start", endIsoExclusive)
-    .is("deleted_at", null)
-    .order("scheduled_start", { ascending: true });
+// Shared by getScheduleForRange() and getAppointmentsForPatient() — same
+// select shape and row transformation either way, they only differ in
+// which WHERE clause and sort order scopes the rows. Extracted here rather
+// than duplicated, since it's now used by two query functions doing
+// structurally identical work.
+const APPOINTMENT_SCHEDULE_SELECT = `id, scheduled_start, scheduled_end, status, priority, is_emergency, patient_id, doctor_id,
+   chair_id, visit_type_id, chief_complaint, notes,
+   patients ( full_name ),
+   staff_profiles!appointments_doctor_id_fkey ( full_name ),
+   chairs ( label ),
+   visit_types ( name, color )`;
 
-  if (error) {
-    console.error("getScheduleForRange failed", error);
-    return [];
-  }
-
-  return ((data ?? []) as unknown as ScheduleQueryRow[]).map((row) => ({
+function mapScheduleRow(row: ScheduleQueryRow): ScheduleRow {
+  return {
     id: row.id,
     scheduled_start: row.scheduled_start,
     scheduled_end: row.scheduled_end,
@@ -244,12 +259,52 @@ export async function getScheduleForRange(
     visit_type_color: row.visit_types?.color ?? "#6366f1",
     chief_complaint: row.chief_complaint,
     notes: row.notes,
-  }));
+  };
+}
+
+/** Schedule for [startIso, endIsoExclusive), oldest-first, with patient/doctor/chair/visit-type names already joined in. */
+export async function getScheduleForRange(
+  startIso: string,
+  endIsoExclusive: string,
+): Promise<ScheduleRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(APPOINTMENT_SCHEDULE_SELECT)
+    .gte("scheduled_start", startIso)
+    .lt("scheduled_start", endIsoExclusive)
+    .is("deleted_at", null)
+    .order("scheduled_start", { ascending: true });
+
+  if (error) {
+    console.error("getScheduleForRange failed", error);
+    return [];
+  }
+
+  return ((data ?? []) as unknown as ScheduleQueryRow[]).map(mapScheduleRow);
 }
 
 /** Today's full schedule — a thin wrapper around `getScheduleForRange` for the Reception Dashboard. */
 export async function getTodaysSchedule(): Promise<ScheduleRow[]> {
   return getScheduleForRange(startOfTodayIso(), startOfTomorrowIso());
+}
+
+/** One patient's full appointment history, most recent first — for Patient Profile's Appointments tab and Timeline. Same select/row-mapping as getScheduleForRange(), scoped by patient instead of a date range. */
+export async function getAppointmentsForPatient(patientId: string): Promise<ScheduleRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("appointments")
+    .select(APPOINTMENT_SCHEDULE_SELECT)
+    .eq("patient_id", patientId)
+    .is("deleted_at", null)
+    .order("scheduled_start", { ascending: false });
+
+  if (error) {
+    console.error("getAppointmentsForPatient failed", error);
+    return [];
+  }
+
+  return ((data ?? []) as unknown as ScheduleQueryRow[]).map(mapScheduleRow);
 }
 
 export interface RecentActivityRow {

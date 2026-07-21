@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { listDoctors } from "@/lib/patients/queries";
-import type { AuditLogEntry, CompensationRule, DoctorEarning, DoctorSettlement } from "@/types/domain";
+import type { AuditLogEntry, CompensationRule, DoctorEarning, DoctorSettlement, Payment } from "@/types/domain";
 
 export interface CompensationRulesParams {
   /** Omit for every rule in the clinic; pass to scope to one doctor's rules (their own overrides plus clinic-wide defaults, per the RLS shape). */
@@ -73,19 +73,54 @@ export async function getDoctorSettlements(doctorId: string): Promise<DoctorSett
  * Clinic-wide list of payments that generated no compensation because no
  * rule matched — the data-layer foundation for the administrative warning
  * called for in the approved architecture (Doctor Compensation Phase 1,
- * clarification 1). No page consumes this yet; that's Phase 3+.
+ * clarification 1). Consumed by the Unresolved Compensation page.
+ *
+ * resolve_compensation_entry() (0015) never mutates the original
+ * 'unresolved' row when a gap is filled — it only appends a 'correction'
+ * row for the same payment_id, matching this ledger's "never mutate,
+ * always add" rule. So an 'unresolved' row alone doesn't mean "still
+ * unresolved"; a payment_id with a 'correction' row already has one. A
+ * payment_id can't carry both an 'unresolved' row and a *void-driven*
+ * 'correction' row (that path requires a pre-existing 'earning'/'reversal'
+ * row for the same payment_id, which an 'unresolved' payment never has),
+ * so any 'correction' sharing a payment_id with an 'unresolved' row can
+ * only have come from a manual resolve — safe to exclude here.
  */
 export async function getUnresolvedCompensationEntries(): Promise<DoctorEarning[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("doctor_earnings")
-    .select("*")
-    .eq("entry_type", "unresolved")
-    .order("created_at", { ascending: false });
+  const [{ data, error }, { data: corrections, error: correctionsError }] = await Promise.all([
+    supabase.from("doctor_earnings").select("*").eq("entry_type", "unresolved").order("created_at", { ascending: false }),
+    supabase.from("doctor_earnings").select("payment_id").eq("entry_type", "correction"),
+  ]);
 
   if (error) {
     console.error("getUnresolvedCompensationEntries failed", error);
+    return [];
+  }
+  if (correctionsError) {
+    console.error("getUnresolvedCompensationEntries: correction lookup failed", correctionsError);
+    return data ?? [];
+  }
+
+  const resolvedPaymentIds = new Set((corrections ?? []).map((row) => row.payment_id));
+  return (data ?? []).filter((entry) => !resolvedPaymentIds.has(entry.payment_id));
+}
+
+/**
+ * Plain amount lookup for a set of payments — display-only context for the
+ * Unresolved Compensation screen (an unresolved doctor_earnings row's own
+ * `amount` is always 0, since no rule matched). Not a Billing feature; just
+ * a direct read of the same `payments` table Billing itself writes to.
+ */
+export async function getPaymentsByIds(paymentIds: string[]): Promise<Pick<Payment, "id" | "amount">[]> {
+  if (paymentIds.length === 0) return [];
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.from("payments").select("id, amount").in("id", paymentIds);
+
+  if (error) {
+    console.error("getPaymentsByIds failed", error);
     return [];
   }
   return data ?? [];

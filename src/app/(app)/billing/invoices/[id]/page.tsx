@@ -9,6 +9,7 @@ import { InvoiceDetailActions } from "@/components/billing/invoice-detail-action
 import { InvoiceItemsSummary } from "@/components/billing/invoice-items-summary";
 import { PaymentsHistory } from "@/components/billing/payments-history";
 import { InvoiceAuditHistory } from "@/components/billing/invoice-audit-history";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +28,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Billing", href: "/billing" },
+          { label: "Invoices", href: "/billing/invoices" },
+          { label: invoice.invoice_number },
+        ]}
+      />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">

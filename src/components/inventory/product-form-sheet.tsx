@@ -7,8 +7,8 @@ import { Loader2, Plus } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormField } from "@/components/ui/form-field";
 import { createProduct, updateProduct } from "@/lib/inventory/actions";
 import { INVENTORY_UNIT_LABELS, type InventoryCategory, type InventorySupplier, type InventoryUnit } from "@/types/domain";
 import type { ProductForManagement } from "@/lib/inventory/queries";
@@ -106,8 +106,7 @@ export function ProductFormSheet({
         </SheetHeader>
 
         <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
-          <div className="space-y-2">
-            <Label htmlFor="product_name">Name *</Label>
+          <FormField label="Name" htmlFor="product_name" required error={fieldErrors.name}>
             <Input
               id="product_name"
               name="name"
@@ -115,17 +114,11 @@ export function ProductFormSheet({
               onChange={(event) => setName(event.target.value)}
               aria-invalid={!!fieldErrors.name}
             />
-            {fieldErrors.name && (
-              <p className="text-sm text-destructive" role="alert">
-                {fieldErrors.name}
-              </p>
-            )}
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <Label>Category</Label>
+          <FormField label="Category" htmlFor="product_category">
             <Select value={categoryId || NO_CATEGORY} onValueChange={(v) => setCategoryId(!v || v === NO_CATEGORY ? "" : v)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="product_category" className="w-full">
                 <SelectValue placeholder="No category" />
               </SelectTrigger>
               <SelectContent>
@@ -137,12 +130,11 @@ export function ProductFormSheet({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <Label>Default supplier</Label>
+          <FormField label="Default supplier" htmlFor="product_supplier">
             <Select value={supplierId || NO_SUPPLIER} onValueChange={(v) => setSupplierId(!v || v === NO_SUPPLIER ? "" : v)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="product_supplier" className="w-full">
                 <SelectValue placeholder="No default supplier" />
               </SelectTrigger>
               <SelectContent>
@@ -154,13 +146,12 @@ export function ProductFormSheet({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Unit *</Label>
+            <FormField label="Unit" htmlFor="product_unit" required>
               <Select value={unit} onValueChange={(v) => v && setUnit(v as InventoryUnit)}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="product_unit" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,15 +162,19 @@ export function ProductFormSheet({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="product_sku">SKU</Label>
+            </FormField>
+            <FormField label="SKU" htmlFor="product_sku">
               <Input id="product_sku" name="sku" value={sku} onChange={(event) => setSku(event.target.value)} />
-            </div>
+            </FormField>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="product_reorder_threshold">Reorder threshold *</Label>
+          <FormField
+            label="Reorder threshold"
+            htmlFor="product_reorder_threshold"
+            required
+            description="A low-stock alert appears once stock falls to or below this quantity."
+            error={fieldErrors.reorder_threshold}
+          >
             <Input
               id="product_reorder_threshold"
               name="reorder_threshold"
@@ -190,15 +185,7 @@ export function ProductFormSheet({
               onChange={(event) => setReorderThreshold(event.target.value)}
               aria-invalid={!!fieldErrors.reorder_threshold}
             />
-            <p className="text-xs text-muted-foreground">
-              A low-stock alert appears once stock falls to or below this quantity.
-            </p>
-            {fieldErrors.reorder_threshold && (
-              <p className="text-sm text-destructive" role="alert">
-                {fieldErrors.reorder_threshold}
-              </p>
-            )}
-          </div>
+          </FormField>
 
           <div className="mt-auto flex justify-end gap-2 pt-2 pb-4">
             <SheetClose render={<Button type="button" variant="outline" disabled={pending} />}>Cancel</SheetClose>

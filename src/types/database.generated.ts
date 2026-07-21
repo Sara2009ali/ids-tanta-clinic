@@ -1081,6 +1081,157 @@ export type Database = {
           },
         ]
       }
+      notification_recipients: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          notification_id: string
+          read_at: string | null
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          notification_id: string
+          read_at?: string | null
+          staff_id: string
+          status?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          notification_id?: string
+          read_at?: string | null
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_recipients_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_recipients_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_sources: {
+        Row: {
+          created_at: string
+          default_priority: string
+          default_type: string
+          id: string
+          key: string
+          label: string
+          module: string
+        }
+        Insert: {
+          created_at?: string
+          default_priority: string
+          default_type: string
+          id?: string
+          key: string
+          label: string
+          module: string
+        }
+        Update: {
+          created_at?: string
+          default_priority?: string
+          default_type?: string
+          id?: string
+          key?: string
+          label?: string
+          module?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          action_label: string | null
+          action_url: string | null
+          body: string | null
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          priority: string
+          requires_action: boolean
+          source: string
+          title: string
+          type: string
+        }
+        Insert: {
+          action_label?: string | null
+          action_url?: string | null
+          body?: string | null
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          priority: string
+          requires_action?: boolean
+          source: string
+          title: string
+          type: string
+        }
+        Update: {
+          action_label?: string | null
+          action_url?: string | null
+          body?: string | null
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          priority?: string
+          requires_action?: boolean
+          source?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_source_fkey"
+            columns: ["source"]
+            isOneToOne: false
+            referencedRelation: "notification_sources"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       patient_clinical_info: {
         Row: {
           allergies: string[]
@@ -1719,6 +1870,91 @@ export type Database = {
           },
         ]
       }
+      treatment_records: {
+        Row: {
+          appointment_id: string
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          doctor_id: string
+          id: string
+          notes: string | null
+          patient_id: string
+          updated_at: string
+          visit_type_id: string
+        }
+        Insert: {
+          appointment_id: string
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          doctor_id: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          updated_at?: string
+          visit_type_id: string
+        }
+        Update: {
+          appointment_id?: string
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          doctor_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          updated_at?: string
+          visit_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_records_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_records_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_records_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_records_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visit_types: {
         Row: {
           clinic_id: string
@@ -1769,10 +2005,32 @@ export type Database = {
         Args: { p_config: Json; p_subtotal: number; p_type: string }
         Returns: number
       }
+      create_notification: {
+        Args: {
+          p_action_label?: string
+          p_action_url?: string
+          p_body?: string
+          p_clinic_id: string
+          p_created_by?: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_priority: string
+          p_recipient_staff_ids: string[]
+          p_requires_action?: boolean
+          p_source: string
+          p_title: string
+          p_type: string
+        }
+        Returns: string
+      }
       current_permissions: { Args: never; Returns: string[] }
       recalculate_invoice_totals: {
         Args: { target_invoice_id: string }
         Returns: undefined
+      }
+      report_revenue_series: {
+        Args: { p_bucket: string; p_clinic_id: string; p_end: string; p_start: string }
+        Returns: { bucket_start: string; revenue: number }[]
       }
       resolve_compensation_entry: {
         Args: { p_earning_id: string }

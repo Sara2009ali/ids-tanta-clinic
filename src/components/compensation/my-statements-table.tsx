@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { MyCompensationEarningsTable } from "@/components/compensation/my-compensation-earnings-table";
 import { formatCurrency } from "@/lib/billing/format";
 import type { CompensationRule, DoctorEarning, DoctorSettlement, VisitType } from "@/types/domain";
+import { EmptyState } from "@/components/ui/empty-state";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -35,9 +36,7 @@ export function MyStatementsTable({
 
   if (settlements.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
-        No settlement statements yet. Your first statement will appear here once your earnings are settled.
-      </div>
+      <EmptyState title={"No settlement statements yet. Your first statement will appear here once your earnings are settled."} />
     );
   }
 

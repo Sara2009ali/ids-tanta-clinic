@@ -1,5 +1,6 @@
 import { Armchair, CalendarDays, CheckCircle2, Clock } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { typography } from "@/lib/typography";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { QuickPatientSearch } from "@/components/appointments/quick-patient-search";
@@ -12,9 +13,11 @@ import {
   listChairs,
   listVisitTypes,
 } from "@/lib/appointments/queries";
+import { getTreatmentRecordsForAppointments } from "@/lib/treatments/queries";
 import { listDoctors } from "@/lib/patients/queries";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import type { TreatmentRecord } from "@/types/domain";
 
 /**
  * The primary operational screen for front-desk staff. Deliberately built
@@ -43,6 +46,16 @@ export default async function ReceptionWorkspacePage() {
     counts.todayTotal - counts.completedToday - counts.cancelledToday - counts.noShowToday,
   );
 
+  // Only fetched when the viewer can actually see it — clinical data has no
+  // business being queried for a role that will never be shown it, same
+  // discipline the Reports hub already applies to its own permission-gated
+  // KPIs.
+  const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
+  const treatmentRecordsMap = canViewClinical
+    ? await getTreatmentRecordsForAppointments(schedule.map((row) => row.id))
+    : new Map<string, TreatmentRecord[]>();
+  const treatmentRecordsByAppointmentId = Object.fromEntries(treatmentRecordsMap);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -58,11 +71,14 @@ export default async function ReceptionWorkspacePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Today's Appointments" value={counts.todayTotal} icon={CalendarDays} />
-        <StatCard label="Patients Checked In" value={counts.checkedIn} icon={CheckCircle2} />
-        <StatCard label="Remaining Today" value={remainingToday} icon={Clock} />
-        <StatCard label="Available Chairs" value={counts.availableChairsCount} icon={Armchair} />
+      <div className="space-y-3">
+        <h2 className={typography.eyebrow}>Today</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Today's Appointments" value={counts.todayTotal} icon={CalendarDays} />
+          <StatCard label="Patients Checked In" value={counts.checkedIn} icon={CheckCircle2} />
+          <StatCard label="Remaining Today" value={remainingToday} icon={Clock} />
+          <StatCard label="Available Chairs" value={counts.availableChairsCount} icon={Armchair} />
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -76,6 +92,7 @@ export default async function ReceptionWorkspacePage() {
               doctors={doctors}
               chairs={chairs}
               visitTypes={visitTypes}
+              treatmentRecordsByAppointmentId={treatmentRecordsByAppointmentId}
               permissions={permissions}
             />
           </CardContent>

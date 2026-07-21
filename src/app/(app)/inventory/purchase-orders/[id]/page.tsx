@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PurchaseOrderStatusBadge } from "@/components/inventory/purchase-order-status-badge";
 import { PurchaseOrderDetailActions } from "@/components/inventory/purchase-order-detail-actions";
@@ -33,18 +31,22 @@ export default async function PurchaseOrderDetailPage({ params }: { params: Prom
   const status = order.status as PurchaseOrderStatus;
   const totalCost = order.items.reduce((sum, item) => sum + Number(item.quantity_ordered) * Number(item.unit_cost), 0);
 
+  const orderLabel = order.reference_number || `PO-${order.id.slice(0, 8)}`;
+
   return (
     <div className="space-y-6">
+      <Breadcrumb
+        items={[
+          { label: "Inventory", href: "/inventory" },
+          { label: "Purchase Orders", href: "/inventory/purchase-orders" },
+          { label: orderLabel },
+        ]}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/inventory/purchase-orders" />}>
-            <ArrowLeft className="size-4" />
-            Purchase Orders
-          </Button>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {order.reference_number || `PO-${order.id.slice(0, 8)}`}
-            </h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{orderLabel}</h1>
             <PurchaseOrderStatusBadge status={status} />
           </div>
           <p className="text-sm text-muted-foreground">
