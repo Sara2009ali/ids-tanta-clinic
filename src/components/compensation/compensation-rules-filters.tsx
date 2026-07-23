@@ -65,7 +65,7 @@ export function CompensationRulesFilters({
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-      <div className="relative sm:max-w-xs sm:flex-1">
+      <div className="relative sm:min-w-56 sm:max-w-sm sm:flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchText}
@@ -76,6 +76,11 @@ export function CompensationRulesFilters({
       </div>
 
       <Select
+        items={{
+          [ALL_VALUE]: "All doctors",
+          [DOCTOR_FILTER_CLINIC_WIDE]: "Clinic-wide only",
+          ...Object.fromEntries(doctors.map((d) => [d.id, `Dr. ${d.full_name}`])),
+        }}
         value={value.doctorId || ALL_VALUE}
         onValueChange={(v) => navigate({ doctorId: !v || v === ALL_VALUE ? undefined : v })}
       >
@@ -94,6 +99,11 @@ export function CompensationRulesFilters({
       </Select>
 
       <Select
+        items={{
+          [ALL_VALUE]: "All procedures",
+          [VISIT_TYPE_FILTER_ALL_PROCEDURES]: "Applies to every procedure",
+          ...Object.fromEntries(visitTypes.map((vt) => [vt.id, vt.name])),
+        }}
         value={value.visitTypeId || ALL_VALUE}
         onValueChange={(v) => navigate({ visitTypeId: !v || v === ALL_VALUE ? undefined : v })}
       >
@@ -111,7 +121,11 @@ export function CompensationRulesFilters({
         </SelectContent>
       </Select>
 
-      <Select value={value.type || ALL_VALUE} onValueChange={(v) => navigate({ type: !v || v === ALL_VALUE ? undefined : v })}>
+      <Select
+        items={{ [ALL_VALUE]: "All types", ...Object.fromEntries(RULE_TYPE_OPTIONS.map((o) => [o.value, o.label])) }}
+        value={value.type || ALL_VALUE}
+        onValueChange={(v) => navigate({ type: !v || v === ALL_VALUE ? undefined : v })}
+      >
         <SelectTrigger className="w-full sm:w-40">
           <SelectValue placeholder="Type" />
         </SelectTrigger>

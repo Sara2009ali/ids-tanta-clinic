@@ -87,7 +87,7 @@ export default async function DashboardPage() {
           <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className={typography.eyebrow}>Today&apos;s appointments</p>
-              <p className="mt-1 text-5xl font-semibold tracking-tight tabular-nums">{counts.todayTotal}</p>
+              <p className="font-heading mt-1 text-5xl font-medium tracking-tight tabular-nums">{counts.todayTotal}</p>
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-2 sm:flex-col sm:items-end sm:gap-1.5">
               {TODAY_STATUS_BREAKDOWN.map(({ key, label, dot }) => (
@@ -109,56 +109,57 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      {/* Today's Schedule is the actual clinical work happening right now —
+          it gets the full width of the page, not a shared column, since
+          it's the single most operationally important thing on this screen. */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
+          {schedule.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {schedule.length} appointment{schedule.length === 1 ? "" : "s"}
+            </span>
+          )}
+        </CardHeader>
+        <CardContent>
+          <TodaysSchedule rows={schedule} />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
+            <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent>
-            <TodaysSchedule rows={schedule} />
+          <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {canCreateAppointment && (
+              <AppointmentFormSheet doctors={doctors} chairs={chairs} visitTypes={visitTypes} />
+            )}
+            {canCreatePatient && (
+              <Button variant="outline" render={<Link href="/patients/new" />}>
+                <UserPlus className="size-4" />
+                New Patient
+              </Button>
+            )}
+            <Button variant="outline" render={<Link href="/patients" />}>
+              <Search className="size-4" />
+              Patient Search
+            </Button>
+            <Button variant="outline" render={<Link href="/appointments" />}>
+              <CalendarDays className="size-4" />
+              View Calendar
+            </Button>
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {canCreateAppointment && (
-                <AppointmentFormSheet
-                  doctors={doctors}
-                  chairs={chairs}
-                  visitTypes={visitTypes}
-                  className="w-full justify-start"
-                />
-              )}
-              {canCreatePatient && (
-                <Button variant="outline" className="w-full justify-start" render={<Link href="/patients/new" />}>
-                  <UserPlus className="size-4" />
-                  New Patient
-                </Button>
-              )}
-              <Button variant="outline" className="w-full justify-start" render={<Link href="/patients" />}>
-                <Search className="size-4" />
-                Patient Search
-              </Button>
-              <Button variant="outline" className="w-full justify-start" render={<Link href="/appointments" />}>
-                <CalendarDays className="size-4" />
-                View Calendar
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RecentActivityFeed rows={activity} />
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentActivityFeed rows={activity} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

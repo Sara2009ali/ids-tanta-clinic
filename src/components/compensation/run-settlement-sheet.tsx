@@ -106,7 +106,7 @@ export function RunSettlementSheet({ doctorId, doctorName }: { doctorId: string;
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="period_start">Period start *</Label>

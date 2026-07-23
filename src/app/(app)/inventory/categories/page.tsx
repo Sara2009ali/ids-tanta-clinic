@@ -6,6 +6,7 @@ import { CategoriesManager } from "@/components/inventory/categories-manager";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { listCategoriesForManagement } from "@/lib/inventory/queries";
+import { typography } from "@/lib/typography";
 
 export default async function InventoryCategoriesPage() {
   await requirePermission(PERMISSIONS.INVENTORY_VIEW);
@@ -21,7 +22,7 @@ export default async function InventoryCategoriesPage() {
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
+          <h1 className={typography.pageTitle}>Categories</h1>
           <p className="text-sm text-muted-foreground">Group products for easier filtering and reporting.</p>
         </div>
       </div>

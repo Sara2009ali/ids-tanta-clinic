@@ -43,7 +43,7 @@ export function VisitTypesFilters({ value }: { value: VisitTypesQueryParams }) {
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-      <div className="relative sm:max-w-xs sm:flex-1">
+      <div className="relative sm:min-w-56 sm:max-w-sm sm:flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchText}
@@ -54,6 +54,7 @@ export function VisitTypesFilters({ value }: { value: VisitTypesQueryParams }) {
       </div>
 
       <Select
+        items={{ [ALL_VALUE]: "All statuses", active: "Active", inactive: "Disabled" }}
         value={value.status || ALL_VALUE}
         onValueChange={(v) => navigate({ status: !v || v === ALL_VALUE ? undefined : (v as "active" | "inactive") })}
       >

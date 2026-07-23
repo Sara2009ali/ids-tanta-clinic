@@ -92,10 +92,14 @@ export function PurchaseOrderFormSheet({
           <SheetDescription>Order stock from a supplier — receive it later once it arrives.</SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           <div className="space-y-2">
             <Label>Supplier *</Label>
-            <Select value={supplierId} onValueChange={(v) => v && setSupplierId(v)}>
+            <Select
+              items={Object.fromEntries(suppliers.map((s) => [s.id, s.name]))}
+              value={supplierId}
+              onValueChange={(v) => v && setSupplierId(v)}
+            >
               <SelectTrigger className="w-full" aria-invalid={!!fieldErrors.supplier_id}>
                 <SelectValue placeholder="Select a supplier" />
               </SelectTrigger>
@@ -154,7 +158,11 @@ export function PurchaseOrderFormSheet({
                 <div key={index} className="grid grid-cols-12 items-end gap-2 rounded-lg border border-border p-2">
                   <div className="col-span-5 space-y-1">
                     <Label className="text-xs">Product</Label>
-                    <Select value={item.product_id} onValueChange={(v) => v && updateItem(index, { product_id: v })}>
+                    <Select
+                      items={Object.fromEntries(products.map((p) => [p.id, p.name]))}
+                      value={item.product_id}
+                      onValueChange={(v) => v && updateItem(index, { product_id: v })}
+                    >
                       <SelectTrigger className="h-8 w-full">
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>

@@ -12,6 +12,8 @@ import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { APPOINTMENT_STATUS_LABELS, type AppointmentStatus } from "@/types/domain";
 import { EmptyState } from "@/components/ui/empty-state";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -60,7 +62,7 @@ export default async function AppointmentsReportPage({
           <ArrowLeft className="size-4" />
           Reports
         </Button>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Appointments</h1>
+        <h1 className={cn("mt-1", typography.pageTitle)}>Appointments</h1>
         <p className="text-sm text-muted-foreground">Volume, cancellations, and no-shows.</p>
       </div>
 

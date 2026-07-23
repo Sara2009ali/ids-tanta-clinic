@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CircleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -47,7 +48,8 @@ function FormField({
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="text-sm text-destructive" role="alert">
+    <p className="flex items-center gap-1 text-xs text-destructive" role="alert">
+      <CircleAlert className="size-3 shrink-0" />
       {message}
     </p>
   );

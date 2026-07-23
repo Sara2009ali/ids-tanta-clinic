@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-serif);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -57,6 +57,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --shadow-elevation-low: var(--elevation-low);
   --shadow-elevation-high: var(--elevation-high);
+  --shadow-elevation-featured: var(--elevation-featured);
 }
 
 :root {
@@ -98,6 +99,10 @@
      high = hover/lifted state for genuinely interactive cards only. */
   --elevation-low: 0 1px 2px oklch(0.22 0.02 60 / 0.04), 0 1px 1px oklch(0.22 0.02 60 / 0.03);
   --elevation-high: 0 12px 32px oklch(0.22 0.02 60 / 0.10), 0 2px 8px oklch(0.22 0.02 60 / 0.06);
+  /* Third, sparingly-used tier for the one or two deliberately "featured" cards per
+     screen (e.g. a gold-highlighted KPI) — same depth as elevation-high plus a faint
+     warm glow, so it reads as a genuine premium moment rather than a bigger shadow. */
+  --elevation-featured: 0 16px 40px oklch(0.22 0.02 60 / 0.12), 0 2px 8px oklch(0.22 0.02 60 / 0.06), 0 0 0 1px oklch(0.78 0.09 85 / 0.12);
   --sidebar: oklch(0.98 0.004 75);
   --sidebar-foreground: oklch(0.22 0.015 60);
   --sidebar-primary: oklch(0.32 0.09 158);
@@ -146,6 +151,7 @@
      rather than a muddy dark blur. */
   --elevation-low: 0 1px 2px oklch(0 0 0 / 0.16), 0 1px 1px oklch(0 0 0 / 0.12);
   --elevation-high: 0 12px 32px oklch(0 0 0 / 0.32), 0 2px 8px oklch(0 0 0 / 0.24);
+  --elevation-featured: 0 16px 40px oklch(0 0 0 / 0.4), 0 2px 8px oklch(0 0 0 / 0.28), 0 0 0 1px oklch(0.8 0.1 85 / 0.16);
   --sidebar: oklch(0.13 0.008 60);
   --sidebar-foreground: oklch(0.96 0.004 70);
   --sidebar-primary: oklch(0.68 0.12 158);
@@ -165,6 +171,14 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Skeleton shimmer sweep — see ui/skeleton.tsx. A moving highlight band reads
+   as "the product is actively working" rather than a static pulsing block. */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 

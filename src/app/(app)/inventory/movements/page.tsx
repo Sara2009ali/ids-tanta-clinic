@@ -7,6 +7,7 @@ import { ConsumptionFormSheet } from "@/components/inventory/consumption-form-sh
 import { getInventoryMovements, listProducts } from "@/lib/inventory/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 const MOVEMENTS_PAGE_LIMIT = 100;
 
@@ -26,7 +27,7 @@ export default async function InventoryMovementsPage() {
             <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Movements</h1>
+            <h1 className={typography.pageTitle}>Movements</h1>
             <p className="text-sm text-muted-foreground">Every stock change, clinic-wide.</p>
           </div>
         </div>

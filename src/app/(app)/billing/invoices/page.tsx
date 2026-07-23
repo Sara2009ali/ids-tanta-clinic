@@ -7,6 +7,7 @@ import { searchInvoices } from "@/lib/billing/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { InvoiceStatus } from "@/types/domain";
+import { typography } from "@/lib/typography";
 
 const PAGE_SIZE = 20;
 const STATUS_VALUES = new Set<InvoiceStatus>(["draft", "unpaid", "partially_paid", "paid", "cancelled"]);
@@ -50,7 +51,7 @@ export default async function InvoicesPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
+          <h1 className={typography.pageTitle}>Invoices</h1>
           <p className="text-sm text-muted-foreground">
             {totalCount} invoice{totalCount === 1 ? "" : "s"}
           </p>

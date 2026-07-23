@@ -60,7 +60,7 @@ export default async function ReceptionWorkspacePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Reception Workspace</h1>
+          <h1 className={typography.pageTitle}>Reception Workspace</h1>
           <p className="text-sm text-muted-foreground">Today&apos;s front-desk operations at a glance.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -81,32 +81,33 @@ export default async function ReceptionWorkspacePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ReceptionSchedule
-              rows={schedule}
-              doctors={doctors}
-              chairs={chairs}
-              visitTypes={visitTypes}
-              treatmentRecordsByAppointmentId={treatmentRecordsByAppointmentId}
-              permissions={permissions}
-            />
-          </CardContent>
-        </Card>
+      {/* Today's Schedule is the actual front-desk work happening right now —
+          full width, same weight it gets on the Dashboard, rather than
+          squeezed into two-thirds of the row next to a lighter-weight card. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReceptionSchedule
+            rows={schedule}
+            doctors={doctors}
+            chairs={chairs}
+            visitTypes={visitTypes}
+            treatmentRecordsByAppointmentId={treatmentRecordsByAppointmentId}
+            permissions={permissions}
+          />
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentActivityFeed rows={activity} />
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RecentActivityFeed rows={activity} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

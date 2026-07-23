@@ -6,6 +6,7 @@ import { ChairsManager } from "@/components/appointments/chairs-manager";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { listChairsForManagement } from "@/lib/appointments/queries";
+import { typography } from "@/lib/typography";
 
 export default async function ChairsPage() {
   // Hard-gated (redirects non-admins to /dashboard), same as
@@ -26,7 +27,7 @@ export default async function ChairsPage() {
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Chairs</h1>
+          <h1 className={typography.pageTitle}>Chairs</h1>
           <p className="text-sm text-muted-foreground">
             Add, rename, enable/disable, or remove treatment chairs.
           </p>

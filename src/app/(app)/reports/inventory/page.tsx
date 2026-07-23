@@ -8,6 +8,8 @@ import { getExpiringSoonItems, getInventoryDashboardSummary, getLowStockProducts
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { EmptyState } from "@/components/ui/empty-state";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -38,7 +40,7 @@ export default async function InventoryReportPage() {
             <ArrowLeft className="size-4" />
             Reports
           </Button>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Inventory</h1>
+          <h1 className={cn("mt-1", typography.pageTitle)}>Inventory</h1>
           <p className="text-sm text-muted-foreground">Stock value, low stock, and expiring items.</p>
         </div>
         <Button variant="outline" render={<Link href="/inventory" />}>

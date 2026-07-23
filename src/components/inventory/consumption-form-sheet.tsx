@@ -65,11 +65,15 @@ export function ConsumptionFormSheet({ products, defaultProductId }: { products:
           <SheetDescription>Record supplies used during patient care.</SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           {!defaultProductId && (
             <div className="space-y-2">
               <Label>Product *</Label>
-              <Select value={productId} onValueChange={(v) => v && setProductId(v)}>
+              <Select
+                items={Object.fromEntries(products.map((p) => [p.id, p.name]))}
+                value={productId}
+                onValueChange={(v) => v && setProductId(v)}
+              >
                 <SelectTrigger className="w-full" aria-invalid={!!fieldErrors.product_id}>
                   <SelectValue placeholder="Select a product" />
                 </SelectTrigger>

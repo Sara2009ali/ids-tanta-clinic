@@ -2,6 +2,12 @@
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatCurrency } from "@/lib/billing/format";
+import {
+  chartAxisTick,
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+} from "@/lib/chart-theme";
 
 export interface RevenueChartPoint {
   label: string;
@@ -32,13 +38,13 @@ export function RevenueChart({ data }: { data: RevenueChartPoint[] }) {
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+            tick={chartAxisTick}
             axisLine={{ stroke: "var(--border)" }}
             tickLine={false}
             minTickGap={24}
           />
           <YAxis
-            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+            tick={chartAxisTick}
             axisLine={false}
             tickLine={false}
             tickFormatter={compactNumber}
@@ -46,17 +52,9 @@ export function RevenueChart({ data }: { data: RevenueChartPoint[] }) {
           />
           <Tooltip
             cursor={{ stroke: "var(--border)" }}
-            contentStyle={{
-              background: "var(--popover)",
-              color: "var(--popover-foreground)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "var(--elevation-high)",
-              fontSize: 13,
-              padding: "8px 12px",
-            }}
-            labelStyle={{ color: "var(--muted-foreground)", fontSize: 12, marginBottom: 2 }}
-            itemStyle={{ padding: 0 }}
+            contentStyle={chartTooltipContentStyle}
+            labelStyle={chartTooltipLabelStyle}
+            itemStyle={chartTooltipItemStyle}
             formatter={(value) => [formatCurrency(Number(value)), "Revenue"]}
           />
           <Area

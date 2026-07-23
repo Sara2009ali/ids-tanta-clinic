@@ -42,7 +42,11 @@ export function TreatmentRecordForm({ appointmentId, visitTypes }: { appointment
     <form action={handleSubmit} className="space-y-3 rounded-xl border border-border p-3">
       <div className="space-y-1.5">
         <Label htmlFor="treatment_visit_type_id">Procedure performed *</Label>
-        <Select value={visitTypeId} onValueChange={(v) => v && setVisitTypeId(v)}>
+        <Select
+          items={Object.fromEntries(visitTypes.map((vt) => [vt.id, vt.name]))}
+          value={visitTypeId}
+          onValueChange={(v) => v && setVisitTypeId(v)}
+        >
           <SelectTrigger id="treatment_visit_type_id" className="w-full" aria-invalid={!!error}>
             <SelectValue placeholder="Select a procedure" />
           </SelectTrigger>

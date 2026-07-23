@@ -63,7 +63,7 @@ export function PatientHeaderActions({
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
       {canEdit && (
         <Button variant="outline" render={<Link href={`/patients/${patientId}/edit`} />}>
           <Pencil className="size-4" />

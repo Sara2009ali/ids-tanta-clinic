@@ -22,6 +22,8 @@ import { formatCurrency } from "@/lib/billing/format";
 import type { InvoiceListRow, PatientPaymentRow } from "@/lib/billing/queries";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 import { EmptyState } from "@/components/ui/empty-state";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
   type AppointmentStatus,
@@ -90,6 +92,35 @@ function formatRelative(iso: string): string {
   if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
   if (diffDay < 30) return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
   return formatTimestamp(iso);
+}
+
+/** Groups an already-sorted (newest/most-future first) entry list into reverse-chronological day/week/month buckets for scanability — pure display grouping, doesn't touch how the entries themselves were built or ordered. */
+function periodLabel(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000);
+
+  if (diffDays < 0) return "Upcoming";
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return "This week";
+  if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) return "This month";
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function groupByPeriod<T extends { date: string }>(entries: T[]): { label: string; entries: T[] }[] {
+  const groups: { label: string; entries: T[] }[] = [];
+  for (const entry of entries) {
+    const label = periodLabel(entry.date);
+    const current = groups[groups.length - 1];
+    if (current && current.label === label) {
+      current.entries.push(entry);
+    } else {
+      groups.push({ label, entries: [entry] });
+    }
+  }
+  return groups;
 }
 
 /**
@@ -185,45 +216,54 @@ export function PatientTimeline({
     );
   }
 
-  return (
-    <ol className="relative space-y-0 border-l border-border pl-6">
-      {entries.map((entry) => {
-        const Icon = entry.icon;
-        const content = (
-          <div className="flex flex-col gap-0.5 pt-0.5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <p className="text-sm font-medium">{entry.title}</p>
-              {entry.badge}
-            </div>
-            <p className="text-xs text-muted-foreground" title={formatTimestamp(entry.date)}>
-              {formatRelative(entry.date)}
-            </p>
-          </div>
-        );
+  const groups = groupByPeriod(entries);
 
-        return (
-          <li key={entry.id} className="relative pb-6 last:pb-0">
-            <span
-              className={`absolute -left-[calc(1.5rem+5px)] flex size-6 items-center justify-center rounded-full ring-4 ring-background ${
-                entry.tone === "destructive"
-                  ? "bg-destructive/10 text-destructive"
-                  : entry.tone === "warning"
-                    ? "bg-warning/15 text-warning-text"
-                    : "bg-muted text-muted-foreground"
-              }`}
-            >
-              <Icon className="size-3.5" />
-            </span>
-            {entry.link ? (
-              <Link href={entry.link} className="block rounded-lg hover:bg-accent/40">
-                {content}
-              </Link>
-            ) : (
-              content
-            )}
-          </li>
-        );
-      })}
-    </ol>
+  return (
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <div key={group.label}>
+          <p className={cn(typography.eyebrow, "mb-3")}>{group.label}</p>
+          <ol className="relative space-y-0 border-l border-border pl-6">
+            {group.entries.map((entry) => {
+              const Icon = entry.icon;
+              const content = (
+                <div className="flex flex-col gap-0.5 pt-0.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="text-sm font-medium">{entry.title}</p>
+                    {entry.badge}
+                  </div>
+                  <p className="text-xs text-muted-foreground" title={formatTimestamp(entry.date)}>
+                    {formatRelative(entry.date)}
+                  </p>
+                </div>
+              );
+
+              return (
+                <li key={entry.id} className="relative pb-5 last:pb-0">
+                  <span
+                    className={`absolute -left-[calc(1.5rem+5px)] flex size-6 items-center justify-center rounded-full ring-4 ring-background ${
+                      entry.tone === "destructive"
+                        ? "bg-destructive/10 text-destructive"
+                        : entry.tone === "warning"
+                          ? "bg-warning/15 text-warning-text"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <Icon className="size-3.5" />
+                  </span>
+                  {entry.link ? (
+                    <Link href={entry.link} className="-m-1 block rounded-lg p-1 transition-colors hover:bg-muted/50">
+                      {content}
+                    </Link>
+                  ) : (
+                    content
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      ))}
+    </div>
   );
 }

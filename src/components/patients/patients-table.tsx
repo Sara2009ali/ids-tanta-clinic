@@ -49,7 +49,7 @@ function SortableHeader({
     <Link
       href={href}
       scroll={false}
-      className="inline-flex items-center gap-1 text-foreground hover:text-foreground/80"
+      className={`inline-flex items-center gap-1 hover:text-foreground ${isActive ? "text-foreground" : "text-muted-foreground"}`}
     >
       {label}
       {isActive ? (
@@ -85,9 +85,75 @@ export function PatientsTable({
   const canCreatePatient = hasPermission(permissions, PERMISSIONS.PATIENTS_CREATE);
   const doctorNameById = new Map(doctors.map((doctor) => [doctor.id, doctor.full_name]));
 
+  if (rows.length === 0) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-border">
+        {hasFilters ? (
+          <EmptyState
+            title="No patients match your filters"
+            description="Try widening your search or clearing a filter to see more results."
+            action={
+              <Link href="/patients" className="text-sm font-medium text-primary hover:underline">
+                Clear filters
+              </Link>
+            }
+          />
+        ) : (
+          <EmptyState
+            illustration="people"
+            title="No patients yet"
+            description="Once you register your first patient, their profile, appointments, and billing history will all show up here."
+            action={
+              canCreatePatient && (
+                <Button render={<Link href="/patients/new" />} size="sm">
+                  Add Patient
+                </Button>
+              )
+            }
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border border-border">
-      <Table>
+    <>
+      {/* Card list — small screens, where a 7-column table would force horizontal
+          scrolling and a raw browser scrollbar onto what should be a glanceable list. */}
+      <ul className="space-y-2.5 md:hidden">
+        {rows.map((patient) => {
+          const doctorName = patient.preferred_dentist_id
+            ? doctorNameById.get(patient.preferred_dentist_id)
+            : undefined;
+
+          return (
+            <li key={patient.id}>
+              <Link
+                href={`/patients/${patient.id}`}
+                className="flex items-center gap-3 rounded-xl bg-card p-3.5 ring-1 ring-foreground/10 shadow-elevation-low"
+              >
+                <Avatar>
+                  <AvatarFallback>{initials(patient.full_name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium">{patient.full_name}</p>
+                    <PatientStatusBadge status={patient.status} />
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {patient.patient_number}
+                    {patient.phone ? ` · ${patient.phone}` : ""}
+                    {doctorName ? ` · Dr. ${doctorName}` : ""}
+                  </p>
+                </div>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden overflow-hidden rounded-xl border border-border md:block">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>
@@ -126,36 +192,6 @@ export function PatientsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.length === 0 && (
-            <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={7} className="p-0">
-                {hasFilters ? (
-                  <EmptyState
-                    title="No patients match your filters"
-                    description="Try widening your search or clearing a filter to see more results."
-                    action={
-                      <Link href="/patients" className="text-sm font-medium text-primary hover:underline">
-                        Clear filters
-                      </Link>
-                    }
-                  />
-                ) : (
-                  <EmptyState
-                    illustration="people"
-                    title="No patients yet"
-                    description="Once you register your first patient, their profile, appointments, and billing history will all show up here."
-                    action={
-                      canCreatePatient && (
-                        <Button render={<Link href="/patients/new" />} size="sm">
-                          Add Patient
-                        </Button>
-                      )
-                    }
-                  />
-                )}
-              </TableCell>
-            </TableRow>
-          )}
           {rows.map((patient) => {
             const doctorName = patient.preferred_dentist_id
               ? doctorNameById.get(patient.preferred_dentist_id)
@@ -166,7 +202,7 @@ export function PatientsTable({
                 <TableCell className="p-0">
                   <Link
                     href={`/patients/${patient.id}`}
-                    className="flex items-center gap-3 px-2 py-2.5"
+                    className="flex items-center gap-3 px-3 py-2.5"
                   >
                     <Avatar>
                       <AvatarFallback>{initials(patient.full_name)}</AvatarFallback>
@@ -200,7 +236,8 @@ export function PatientsTable({
             );
           })}
         </TableBody>
-      </Table>
-    </div>
+        </Table>
+      </div>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { PatientStatus } from "@/types/domain";
+import { typography } from "@/lib/typography";
 
 const PAGE_SIZE = 20;
 const SORTABLE_COLUMNS = new Set(["name", "last_visit_at", "status", "created_at"]);
@@ -91,7 +92,7 @@ export default async function PatientsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Patients</h1>
+          <h1 className={typography.pageTitle}>Patients</h1>
           <p className="text-sm text-muted-foreground">
             {totalCount} patient{totalCount === 1 ? "" : "s"}
           </p>

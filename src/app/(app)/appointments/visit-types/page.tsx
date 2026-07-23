@@ -8,6 +8,7 @@ import type { VisitTypesQueryParams } from "@/components/appointments/visit-type
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { listVisitTypesForManagement, type VisitTypeForManagement } from "@/lib/appointments/queries";
+import { typography } from "@/lib/typography";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -64,7 +65,7 @@ export default async function VisitTypesPage({
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Procedures</h1>
+          <h1 className={typography.pageTitle}>Procedures</h1>
           <p className="text-sm text-muted-foreground">
             Add, rename, enable/disable, or remove the procedures your clinic offers.
           </p>

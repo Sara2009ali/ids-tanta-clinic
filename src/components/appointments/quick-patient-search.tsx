@@ -71,7 +71,7 @@ export function QuickPatientSearch() {
       </div>
 
       {open && searchText.length > 0 && (
-        <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md">
+        <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-elevation-high">
           {searching && <p className="px-2 py-1.5 text-sm text-muted-foreground">Searching…</p>}
           {!searching && results.length === 0 && (
             <p className="px-2 py-1.5 text-sm text-muted-foreground">No patients found.</p>

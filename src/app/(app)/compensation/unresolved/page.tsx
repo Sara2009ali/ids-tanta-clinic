@@ -14,6 +14,8 @@ import { listDoctors } from "@/lib/patients/queries";
 import { listVisitTypes } from "@/lib/appointments/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 // Generous heuristic, not a guarantee: enough rule_missing audit rows to
 // cover every unresolved entry at this app's established scale. See the
@@ -101,7 +103,7 @@ export default async function UnresolvedCompensationPage({
             <ArrowLeft className="size-4" />
             Compensation
           </Button>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Unresolved Compensation</h1>
+          <h1 className={cn("mt-1", typography.pageTitle)}>Unresolved Compensation</h1>
           <p className="text-sm text-muted-foreground">Payments recorded with no matching compensation rate.</p>
         </div>
         <Button variant="outline" render={<Link href="/compensation/rules" />}>

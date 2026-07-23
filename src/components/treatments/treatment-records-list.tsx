@@ -172,7 +172,11 @@ export function TreatmentRecordsList({
                     <TableCell colSpan={columnCount} className="bg-muted/30">
                       {isEditing ? (
                         <div className="space-y-3 py-2">
-                          <Select value={editVisitTypeId} onValueChange={(v) => v && setEditVisitTypeId(v)}>
+                          <Select
+                            items={Object.fromEntries(visitTypes.map((vt) => [vt.id, vt.name]))}
+                            value={editVisitTypeId}
+                            onValueChange={(v) => v && setEditVisitTypeId(v)}
+                          >
                             <SelectTrigger className="w-full sm:w-64">
                               <SelectValue />
                             </SelectTrigger>

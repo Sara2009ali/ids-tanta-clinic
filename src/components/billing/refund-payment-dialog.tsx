@@ -86,7 +86,11 @@ export function RefundPaymentDialog({
 
           <div className="space-y-2">
             <Label>Method *</Label>
-            <Select value={method} onValueChange={(value) => setMethod(value as PaymentMethod)}>
+            <Select
+              items={Object.fromEntries(METHOD_OPTIONS.map((v) => [v, PAYMENT_METHOD_LABELS[v]]))}
+              value={method}
+              onValueChange={(value) => setMethod(value as PaymentMethod)}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

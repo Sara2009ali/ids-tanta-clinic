@@ -6,6 +6,7 @@ import { SuppliersManager } from "@/components/inventory/suppliers-manager";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { listSuppliersForManagement } from "@/lib/inventory/queries";
+import { typography } from "@/lib/typography";
 
 export default async function InventorySuppliersPage() {
   await requirePermission(PERMISSIONS.INVENTORY_VIEW);
@@ -21,7 +22,7 @@ export default async function InventorySuppliersPage() {
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Suppliers</h1>
+          <h1 className={typography.pageTitle}>Suppliers</h1>
           <p className="text-sm text-muted-foreground">Who the clinic orders products from.</p>
         </div>
       </div>

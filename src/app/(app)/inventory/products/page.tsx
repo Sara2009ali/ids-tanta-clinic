@@ -8,6 +8,7 @@ import type { ProductsQueryParams } from "@/components/inventory/products-query-
 import { listCategories, listProductsForManagement, listSuppliers, type ProductForManagement } from "@/lib/inventory/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -60,7 +61,7 @@ export default async function ProductsPage({
             <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
+            <h1 className={typography.pageTitle}>Products</h1>
             <p className="text-sm text-muted-foreground">The clinic&apos;s inventory catalog.</p>
           </div>
         </div>

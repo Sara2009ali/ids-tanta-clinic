@@ -8,9 +8,9 @@
  */
 export const typography = {
   /** Top-level page heading, e.g. "Patients", "Billing". */
-  pageTitle: "text-2xl font-semibold tracking-tight",
+  pageTitle: "font-heading text-3xl font-medium tracking-tight",
   /** Section heading within a page, above a card group or table. */
-  sectionTitle: "text-base font-medium",
+  sectionTitle: "font-heading text-lg font-medium",
   /** Small uppercase label grouping a cluster of stat cards or a page section — e.g. "Today", "Overview". */
   eyebrow: "text-xs font-medium tracking-wide text-muted-foreground uppercase",
   /** Card/Dialog/Sheet title — matches ui/card.tsx's CardTitle sizing. */
@@ -21,6 +21,7 @@ export const typography = {
   subtitle: "text-sm text-muted-foreground",
   /** Small metadata/caption text (timestamps, counts). */
   caption: "text-xs text-muted-foreground",
-  /** Large tabular numbers, e.g. stat card values. */
-  statValue: "text-2xl font-semibold tabular-nums",
+  /** Large tabular numbers, e.g. stat card values. Serif weight is deliberately
+   *  restrained (medium, not semibold) — an editorial numeral, not a shout. */
+  statValue: "font-heading text-2xl font-medium tabular-nums",
 } as const;

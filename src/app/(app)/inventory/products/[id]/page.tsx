@@ -14,6 +14,7 @@ import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { INVENTORY_UNIT_LABELS, type InventoryUnit } from "@/types/domain";
 import { EmptyState } from "@/components/ui/empty-state";
+import { typography } from "@/lib/typography";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -48,7 +49,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{product.name}</h1>
+            <h1 className={typography.pageTitle}>{product.name}</h1>
             <Badge variant={product.is_active ? "secondary" : "outline"}>
               {product.is_active ? "Active" : "Disabled"}
             </Badge>

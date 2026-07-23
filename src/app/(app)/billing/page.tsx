@@ -8,6 +8,7 @@ import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { formatCurrency } from "@/lib/billing/format";
 import { typography } from "@/lib/typography";
+import { interactiveRowCard } from "@/lib/interactive-styles";
 import { getBillingDashboardCounts, searchInvoices } from "@/lib/billing/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -32,10 +33,10 @@ export default async function BillingDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
+          <h1 className={typography.pageTitle}>Billing</h1>
           <p className="text-sm text-muted-foreground">Invoices, payments, and outstanding balances.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" render={<Link href="/billing/invoices" />}>
             <FileText className="size-4" />
             All Invoices
@@ -72,7 +73,7 @@ export default async function BillingDashboardPage() {
                 <Link
                   key={row.id}
                   href={`/billing/invoices/${row.id}`}
-                  className="flex items-center gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10 shadow-elevation-low transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-muted/50 hover:shadow-elevation-high"
+                  className={interactiveRowCard}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">

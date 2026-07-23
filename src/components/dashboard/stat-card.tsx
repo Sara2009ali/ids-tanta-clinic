@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 export function StatCard({
@@ -19,28 +20,25 @@ export function StatCard({
   highlight?: "gold";
 }) {
   return (
-    <Card className={cn(highlight === "gold" && "ring-gold/40")}>
-      <CardContent className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p
-            className={cn(
-              "mt-1 text-2xl font-semibold tabular-nums",
-              unavailable && "text-muted-foreground/50",
-            )}
-          >
-            {value}
-          </p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    <Card className={cn(highlight === "gold" && "ring-gold/40 shadow-elevation-featured")}>
+      <CardContent>
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Icon className="size-3.5 shrink-0" />
+          <p className="truncate text-sm">{label}</p>
+          {highlight === "gold" && (
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-gold" />
+          )}
         </div>
-        <div
+        <p
           className={cn(
-            "flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground",
-            highlight === "gold" && "bg-gold/15 text-gold-text",
+            "mt-2",
+            typography.statValue,
+            unavailable && "text-muted-foreground/50",
           )}
         >
-          <Icon className="size-4" />
-        </div>
+          {value}
+        </p>
+        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       </CardContent>
     </Card>
   );

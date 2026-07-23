@@ -31,7 +31,7 @@ export function RevenueBucketSelect({
   }
 
   return (
-    <Select value={value} onValueChange={(v) => v && navigate(v)}>
+    <Select items={BUCKET_LABELS} value={value} onValueChange={(v) => v && navigate(v)}>
       <SelectTrigger className="w-36">
         <SelectValue />
       </SelectTrigger>

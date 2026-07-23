@@ -14,6 +14,7 @@ import {
   listDoctorVacations,
   listDoctorWeeklyHours,
 } from "@/lib/appointments/queries";
+import { typography } from "@/lib/typography";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -55,7 +56,7 @@ export default async function DoctorSchedulePage({
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Doctor Schedules</h1>
+          <h1 className={typography.pageTitle}>Doctor Schedules</h1>
           <p className="text-sm text-muted-foreground">Weekly hours, vacations, and one-off exceptions.</p>
         </div>
       </div>

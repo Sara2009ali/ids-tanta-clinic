@@ -17,6 +17,7 @@ import {
 } from "@/lib/appointments/calendar-dates";
 import { getScheduleForRange, listChairs, listVisitTypes } from "@/lib/appointments/queries";
 import { listDoctors } from "@/lib/patients/queries";
+import { typography } from "@/lib/typography";
 
 const VIEWS = new Set<CalendarView>(["day", "week", "month"]);
 
@@ -52,10 +53,10 @@ export default async function AppointmentsPage({
     <div className="flex h-full flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Appointments</h1>
+          <h1 className={typography.pageTitle}>Appointments</h1>
           <p className="text-sm text-muted-foreground">{formatViewLabel(view, anchor)}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canManageSchedules && (
             <Button variant="outline" render={<Link href="/appointments/doctor-schedule" />}>
               <CalendarClock className="size-4" />

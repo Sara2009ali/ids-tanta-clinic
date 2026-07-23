@@ -188,7 +188,11 @@ export function AppointmentFormFields({
 
       <div className="space-y-2">
         <Label htmlFor="priority">Priority</Label>
-        <Select name="priority" defaultValue={defaultPriority}>
+        <Select
+          name="priority"
+          items={{ normal: "Normal", high: "High", urgent: "Urgent" }}
+          defaultValue={defaultPriority}
+        >
           <SelectTrigger id="priority" className="w-full">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>

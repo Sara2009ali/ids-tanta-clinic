@@ -7,7 +7,7 @@ export default function InvoiceDetailLoading() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Skeleton className="h-7 w-28" />
+            <Skeleton className="h-9 w-28" />
             <Skeleton className="h-5 w-16 rounded-full" />
           </div>
           <Skeleton className="h-4 w-40" />

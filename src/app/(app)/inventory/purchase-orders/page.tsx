@@ -6,6 +6,7 @@ import { PurchaseOrdersTable } from "@/components/inventory/purchase-orders-tabl
 import { listProducts, listPurchaseOrders, listSuppliers } from "@/lib/inventory/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 export default async function PurchaseOrdersPage() {
   await requirePermission(PERMISSIONS.INVENTORY_VIEW);
@@ -22,7 +23,7 @@ export default async function PurchaseOrdersPage() {
             <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Purchase Orders</h1>
+            <h1 className={typography.pageTitle}>Purchase Orders</h1>
             <p className="text-sm text-muted-foreground">Orders placed with suppliers, and what&apos;s been received.</p>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Pencil, X } from "lucide-react";
+import { HandCoins, Loader2, Pencil, X } from "lucide-react";
 
 import { closeCompensationRule } from "@/lib/compensation/actions";
 import { SetCompensationRuleSheet } from "@/components/compensation/set-compensation-rule-sheet";
@@ -75,8 +75,10 @@ export function CompensationRulesTable({
   }
 
   if (rules.length === 0) {
+    const noFilterAndActive = !hasFilters && mode === "active";
     return (
       <EmptyState
+        icon={HandCoins}
         title={
           hasFilters
             ? "No rules match these filters."
@@ -84,6 +86,14 @@ export function CompensationRulesTable({
               ? "No active compensation rules yet."
               : "No rate changes yet."
         }
+        description={
+          hasFilters
+            ? "Try widening your search or clearing a filter to see more results."
+            : noFilterAndActive
+              ? "Set a rate for a doctor, a procedure, or the whole clinic — every appointment billed after that is compensated automatically."
+              : undefined
+        }
+        action={noFilterAndActive && canManage && <SetCompensationRuleSheet doctors={doctors} visitTypes={visitTypes} />}
       />
     );
   }

@@ -22,6 +22,8 @@ import { requireStaff } from "@/lib/auth/session";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasAnyPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { typography } from "@/lib/typography";
+import { interactiveRowCard } from "@/lib/interactive-styles";
+import { cn } from "@/lib/utils";
 import type { StaffProfile } from "@/types/domain";
 
 /**
@@ -61,10 +63,10 @@ async function CompensationAdminDashboard() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Compensation</h1>
+          <h1 className={typography.pageTitle}>Compensation</h1>
           <p className="text-sm text-muted-foreground">Doctor earnings, rates, and settlements.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" render={<Link href="/compensation/rules" />}>
             Rules
           </Button>
@@ -91,16 +93,18 @@ async function CompensationAdminDashboard() {
           </CardHeader>
           <CardContent>
             {doctorTotals.length > 0 ? (
-              <ul className="space-y-2">
+              <div className="space-y-2">
                 {doctorTotals.slice(0, 10).map((doctor) => (
-                  <li key={doctor.doctorId} className="flex items-center justify-between text-sm">
-                    <Link href={`/compensation/doctors/${doctor.doctorId}`} className="hover:underline">
-                      Dr. {doctor.fullName}
-                    </Link>
+                  <Link
+                    key={doctor.doctorId}
+                    href={`/compensation/doctors/${doctor.doctorId}`}
+                    className={cn(interactiveRowCard, "justify-between text-sm")}
+                  >
+                    <span className="font-medium">Dr. {doctor.fullName}</span>
                     <span className="tabular-nums">{formatCurrency(doctor.pendingTotal)}</span>
-                  </li>
+                  </Link>
                 ))}
-              </ul>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">No pending earnings right now.</p>
             )}
@@ -166,7 +170,7 @@ async function MyCompensationView({ doctor }: { doctor: StaffProfile }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">My Compensation</h1>
+        <h1 className={typography.pageTitle}>My Compensation</h1>
         <p className="text-sm text-muted-foreground">Your earnings, rates, and settlement statements.</p>
       </div>
 

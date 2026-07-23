@@ -105,7 +105,7 @@ export function ProductFormSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           <FormField label="Name" htmlFor="product_name" required error={fieldErrors.name}>
             <Input
               id="product_name"
@@ -117,7 +117,11 @@ export function ProductFormSheet({
           </FormField>
 
           <FormField label="Category" htmlFor="product_category">
-            <Select value={categoryId || NO_CATEGORY} onValueChange={(v) => setCategoryId(!v || v === NO_CATEGORY ? "" : v)}>
+            <Select
+              items={{ [NO_CATEGORY]: "No category", ...Object.fromEntries(categories.map((c) => [c.id, c.name])) }}
+              value={categoryId || NO_CATEGORY}
+              onValueChange={(v) => setCategoryId(!v || v === NO_CATEGORY ? "" : v)}
+            >
               <SelectTrigger id="product_category" className="w-full">
                 <SelectValue placeholder="No category" />
               </SelectTrigger>
@@ -133,7 +137,11 @@ export function ProductFormSheet({
           </FormField>
 
           <FormField label="Default supplier" htmlFor="product_supplier">
-            <Select value={supplierId || NO_SUPPLIER} onValueChange={(v) => setSupplierId(!v || v === NO_SUPPLIER ? "" : v)}>
+            <Select
+              items={{ [NO_SUPPLIER]: "No default supplier", ...Object.fromEntries(suppliers.map((s) => [s.id, s.name])) }}
+              value={supplierId || NO_SUPPLIER}
+              onValueChange={(v) => setSupplierId(!v || v === NO_SUPPLIER ? "" : v)}
+            >
               <SelectTrigger id="product_supplier" className="w-full">
                 <SelectValue placeholder="No default supplier" />
               </SelectTrigger>
@@ -150,7 +158,7 @@ export function ProductFormSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Unit" htmlFor="product_unit" required>
-              <Select value={unit} onValueChange={(v) => v && setUnit(v as InventoryUnit)}>
+              <Select items={INVENTORY_UNIT_LABELS} value={unit} onValueChange={(v) => v && setUnit(v as InventoryUnit)}>
                 <SelectTrigger id="product_unit" className="w-full">
                   <SelectValue />
                 </SelectTrigger>

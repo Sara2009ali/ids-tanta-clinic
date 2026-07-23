@@ -5,6 +5,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { formatPatientName } from "@/lib/patients/utils";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 export default async function EditPatientPage({
   params,
@@ -63,7 +64,7 @@ export default async function EditPatientPage({
       />
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className={typography.pageTitle}>
           Edit Patient — {formatPatientName(patient)}
         </h1>
         <p className="text-sm text-muted-foreground">Update the patient&apos;s record.</p>

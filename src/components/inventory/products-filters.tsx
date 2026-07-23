@@ -41,12 +41,13 @@ export function ProductsFilters({ value, categories }: { value: ProductsQueryPar
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-      <div className="relative sm:max-w-xs sm:flex-1">
+      <div className="relative sm:min-w-56 sm:max-w-sm sm:flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={searchText} onChange={handleSearchChange} placeholder="Search products..." className="pl-9" />
       </div>
 
       <Select
+        items={{ [ALL_VALUE]: "All categories", ...Object.fromEntries(categories.map((c) => [c.id, c.name])) }}
         value={value.categoryId || ALL_VALUE}
         onValueChange={(v) => navigate({ categoryId: !v || v === ALL_VALUE ? undefined : v })}
       >
@@ -64,6 +65,7 @@ export function ProductsFilters({ value, categories }: { value: ProductsQueryPar
       </Select>
 
       <Select
+        items={{ [ALL_VALUE]: "All statuses", active: "Active", inactive: "Disabled" }}
         value={value.status || ALL_VALUE}
         onValueChange={(v) => navigate({ status: !v || v === ALL_VALUE ? undefined : (v as "active" | "inactive") })}
       >
@@ -78,6 +80,7 @@ export function ProductsFilters({ value, categories }: { value: ProductsQueryPar
       </Select>
 
       <Select
+        items={{ [ALL_VALUE]: "All stock levels", "1": "Low stock only" }}
         value={value.lowStock ?? ALL_VALUE}
         onValueChange={(v) => navigate({ lowStock: !v || v === ALL_VALUE ? undefined : "1" })}
       >

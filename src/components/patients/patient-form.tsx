@@ -128,7 +128,11 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
             </div>
           </FormField>
           <FormField label="Gender" htmlFor="gender" error={fieldErrors.gender}>
-            <Select name="gender" defaultValue={defaultValues?.gender ?? undefined}>
+            <Select
+              name="gender"
+              items={{ male: "Male", female: "Female", other: "Other", unspecified: "Prefer not to say" }}
+              defaultValue={defaultValues?.gender ?? undefined}
+            >
               <SelectTrigger id="gender" className="w-full">
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>

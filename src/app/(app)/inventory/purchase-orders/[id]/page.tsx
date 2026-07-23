@@ -9,6 +9,7 @@ import { getPurchaseOrderDetail } from "@/lib/inventory/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { PurchaseOrderStatus } from "@/types/domain";
+import { typography } from "@/lib/typography";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -46,7 +47,7 @@ export default async function PurchaseOrderDetailPage({ params }: { params: Prom
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{orderLabel}</h1>
+            <h1 className={typography.pageTitle}>{orderLabel}</h1>
             <PurchaseOrderStatusBadge status={status} />
           </div>
           <p className="text-sm text-muted-foreground">

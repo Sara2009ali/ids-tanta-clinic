@@ -31,6 +31,7 @@ export function ChairSelect({
   return (
     <Select
       name={name}
+      items={{ [UNASSIGNED_CHAIR_VALUE]: "Unassigned", ...Object.fromEntries(chairs.map((c) => [c.id, c.label])) }}
       defaultValue={defaultValue ?? UNASSIGNED_CHAIR_VALUE}
       onValueChange={(value) => {
         if (value) onValueChange?.(value);

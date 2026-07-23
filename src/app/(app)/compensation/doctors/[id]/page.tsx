@@ -12,6 +12,7 @@ import { listDoctors } from "@/lib/patients/queries";
 import { listVisitTypes } from "@/lib/appointments/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 export default async function DoctorCompensationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission(PERMISSIONS.COMPENSATION_VIEW);
@@ -49,7 +50,7 @@ export default async function DoctorCompensationDetailPage({ params }: { params:
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dr. {doctor.full_name}</h1>
+          <h1 className={typography.pageTitle}>Dr. {doctor.full_name}</h1>
           <p className="text-sm text-muted-foreground">Earnings, rates, and settlement statements.</p>
         </div>
         {canManage && <RunSettlementSheet doctorId={doctor.id} doctorName={doctor.full_name} />}

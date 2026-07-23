@@ -142,7 +142,7 @@ export function SetCompensationRuleSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           <div className="space-y-2">
             <Label>Doctor</Label>
             {isReplacing ? (
@@ -153,6 +153,10 @@ export function SetCompensationRuleSheet({
               </div>
             ) : (
               <Select
+                items={{
+                  [ALL_DOCTORS]: "All doctors (clinic-wide)",
+                  ...Object.fromEntries(doctors.map((d) => [d.id, `Dr. ${d.full_name}`])),
+                }}
                 value={doctorId || ALL_DOCTORS}
                 onValueChange={(v) => setDoctorId(!v || v === ALL_DOCTORS ? "" : v)}
               >
@@ -181,6 +185,10 @@ export function SetCompensationRuleSheet({
               </div>
             ) : (
               <Select
+                items={{
+                  [ALL_PROCEDURES]: "All procedures",
+                  ...Object.fromEntries(visitTypes.map((vt) => [vt.id, vt.name])),
+                }}
                 value={visitTypeId || ALL_PROCEDURES}
                 onValueChange={(v) => setVisitTypeId(!v || v === ALL_PROCEDURES ? "" : v)}
               >
@@ -208,7 +216,11 @@ export function SetCompensationRuleSheet({
 
           <div className="space-y-2">
             <Label>Type *</Label>
-            <Select value={type} onValueChange={(v) => v && setType(v as CompensationRuleType)}>
+            <Select
+              items={COMPENSATION_RULE_TYPE_LABELS}
+              value={type}
+              onValueChange={(v) => v && setType(v as CompensationRuleType)}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

@@ -11,6 +11,7 @@ import { PaymentsHistory } from "@/components/billing/payments-history";
 import { InvoiceAuditHistory } from "@/components/billing/invoice-audit-history";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { typography } from "@/lib/typography";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission(PERMISSIONS.BILLING_VIEW);
@@ -39,7 +40,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{invoice.invoice_number}</h1>
+            <h1 className={typography.pageTitle}>{invoice.invoice_number}</h1>
             <InvoiceStatusBadge status={invoice.status} />
           </div>
           <p className="text-sm text-muted-foreground">

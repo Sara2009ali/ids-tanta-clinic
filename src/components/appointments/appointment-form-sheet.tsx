@@ -75,7 +75,7 @@ export function AppointmentFormSheet({
           <SheetDescription>Book a patient into the schedule.</SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           <AppointmentFormFields
             key={open ? "open" : "closed"}
             doctors={doctors}

@@ -16,6 +16,8 @@ import { listVisitTypes } from "@/lib/appointments/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { CompensationRule, VisitType } from "@/types/domain";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -102,7 +104,7 @@ export default async function CompensationRulesPage({
             <ArrowLeft className="size-4" />
             Compensation
           </Button>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Compensation Rules</h1>
+          <h1 className={cn("mt-1", typography.pageTitle)}>Compensation Rules</h1>
           <p className="text-sm text-muted-foreground">What each doctor earns, per procedure.</p>
         </div>
         {canManage && <SetCompensationRuleSheet doctors={doctors} visitTypes={visitTypes} />}

@@ -19,7 +19,11 @@ export function DoctorSelect({
   name?: string;
 }) {
   return (
-    <Select name={name} defaultValue={defaultValue ?? undefined}>
+    <Select
+      name={name}
+      items={Object.fromEntries(doctors.map((d) => [d.id, `Dr. ${d.full_name}`]))}
+      defaultValue={defaultValue ?? undefined}
+    >
       <SelectTrigger id={id} className="w-full">
         <SelectValue placeholder={doctors.length ? "Select a doctor" : "No doctors yet"} />
       </SelectTrigger>

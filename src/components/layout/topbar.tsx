@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserMenu } from "@/components/layout/user-menu";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { PageTitle } from "@/components/layout/page-title";
+import { QuickPatientSearch } from "@/components/appointments/quick-patient-search";
 import { NotificationBellServer } from "@/components/notifications/notification-bell-server";
 import type { StaffRole } from "@/types/domain";
 
@@ -15,9 +17,13 @@ export function Topbar({
   permissions: string[];
 }) {
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4 sm:gap-4 sm:px-6">
+    <header className="relative z-10 flex h-16 shrink-0 items-center gap-3 border-b border-border/70 bg-background px-4 shadow-elevation-low sm:gap-4 sm:px-6">
       <MobileNav permissions={permissions} role={role} />
-      <div className="ml-auto flex items-center gap-2">
+      <PageTitle />
+      <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="hidden lg:block">
+          <QuickPatientSearch />
+        </div>
         <Suspense fallback={<Skeleton className="size-8 rounded-lg" />}>
           <NotificationBellServer />
         </Suspense>

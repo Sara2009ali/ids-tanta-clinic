@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Inbox } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { EMPTY_STATE_ILLUSTRATIONS, type EmptyStateIllustrationName } from "@/components/ui/empty-state-illustration";
@@ -32,6 +33,9 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   const Illustration = illustration ? EMPTY_STATE_ILLUSTRATIONS[illustration] : undefined;
+  // Every empty state gets at least a subtle icon — a bare heading with no visual
+  // anchor reads as an unstyled placeholder rather than a designed "nothing here" moment.
+  const ResolvedIcon = Icon ?? Inbox;
 
   return (
     <div
@@ -45,11 +49,9 @@ function EmptyState({
       {Illustration ? (
         <Illustration className="mb-1 h-[66px] w-auto" />
       ) : (
-        Icon && (
-          <div className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-            <Icon className="size-4" />
-          </div>
-        )
+        <div className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+          <ResolvedIcon className="size-4" />
+        </div>
       )}
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">{title}</p>

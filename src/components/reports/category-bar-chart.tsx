@@ -1,6 +1,12 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  chartAxisTick,
+  chartTooltipContentStyle,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+} from "@/lib/chart-theme";
 
 export interface CategoryBarChartPoint {
   label: string;
@@ -22,7 +28,7 @@ export function CategoryBarChart({
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+            tick={chartAxisTick}
             axisLine={{ stroke: "var(--border)" }}
             tickLine={false}
             interval={0}
@@ -31,7 +37,7 @@ export function CategoryBarChart({
             height={48}
           />
           <YAxis
-            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+            tick={chartAxisTick}
             axisLine={false}
             tickLine={false}
             width={40}
@@ -39,17 +45,9 @@ export function CategoryBarChart({
           />
           <Tooltip
             cursor={{ fill: "var(--muted)" }}
-            contentStyle={{
-              background: "var(--popover)",
-              color: "var(--popover-foreground)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "var(--elevation-high)",
-              fontSize: 13,
-              padding: "8px 12px",
-            }}
-            labelStyle={{ color: "var(--muted-foreground)", fontSize: 12, marginBottom: 2 }}
-            itemStyle={{ padding: 0 }}
+            contentStyle={chartTooltipContentStyle}
+            labelStyle={chartTooltipLabelStyle}
+            itemStyle={chartTooltipItemStyle}
             formatter={(value) => [valueFormatter(Number(value)), "Count"]}
           />
           <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={48} />

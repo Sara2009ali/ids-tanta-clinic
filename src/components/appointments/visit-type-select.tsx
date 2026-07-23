@@ -23,6 +23,19 @@ export function VisitTypeSelect({
   return (
     <Select
       name={name}
+      items={Object.fromEntries(
+        visitTypes.map((visitType) => [
+          visitType.id,
+          <span key={visitType.id} className="flex items-center gap-1.5">
+            <span
+              className="size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: visitType.color }}
+              aria-hidden
+            />
+            {visitType.name}
+          </span>,
+        ]),
+      )}
       defaultValue={defaultValue ?? undefined}
       onValueChange={(value) => {
         if (value) onValueChange?.(value);

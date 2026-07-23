@@ -30,6 +30,7 @@ export function UnresolvedCompensationFilters({
 
   return (
     <Select
+      items={{ [ALL_VALUE]: "All doctors", ...Object.fromEntries(doctors.map((d) => [d.id, `Dr. ${d.full_name}`])) }}
       value={value.doctorId || ALL_VALUE}
       onValueChange={(v) => navigate({ doctorId: !v || v === ALL_VALUE ? undefined : v })}
     >

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Receipt, Wallet } from "lucide-react";
+import { ArrowLeft, LineChart, Receipt, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -13,6 +13,8 @@ import { defaultReportRange } from "@/lib/reports/date-range";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { EmptyState } from "@/components/ui/empty-state";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 const VALID_BUCKETS: RevenueBucketGranularity[] = ["day", "week", "month", "year"];
 
@@ -59,7 +61,7 @@ export default async function RevenueReportPage({
           <ArrowLeft className="size-4" />
           Reports
         </Button>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Revenue</h1>
+        <h1 className={cn("mt-1", typography.pageTitle)}>Revenue</h1>
         <p className="text-sm text-muted-foreground">Completed payments and outstanding balances.</p>
       </div>
 
@@ -78,7 +80,7 @@ export default async function RevenueReportPage({
       {!staff.clinic_id ? (
         <EmptyState title="Your account isn't assigned to a clinic yet." />
       ) : series.length === 0 ? (
-        <EmptyState title={"No revenue recorded in this period."} />
+        <EmptyState icon={LineChart} title={"No revenue recorded in this period."} />
       ) : (
         <div className="space-y-4">
           <RevenueChart

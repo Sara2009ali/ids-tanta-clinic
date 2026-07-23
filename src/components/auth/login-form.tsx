@@ -44,7 +44,7 @@ export function LoginForm() {
           {state.error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="mt-1 w-full" disabled={pending}>
         {pending && <Loader2 className="size-4 animate-spin" />}
         Sign in
       </Button>

@@ -166,7 +166,7 @@ export function InvoiceFormSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
+        <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
           <input type="hidden" name="appointment_id" value={initialAppointmentId ?? invoice?.appointment_id ?? ""} />
           <input type="hidden" name="patient_id" value={patient?.id ?? ""} />
 

@@ -6,6 +6,7 @@ import { MarkAllReadButton } from "@/components/notifications/mark-all-read-butt
 import { NotificationList } from "@/components/notifications/notification-list";
 import type { NotificationListItem } from "@/lib/notifications/queries";
 import type { NotificationRecipientStatus } from "@/types/domain";
+import { typography } from "@/lib/typography";
 
 /**
  * Owns the single source of truth for the page's notification list so both
@@ -30,7 +31,7 @@ export function NotificationsPageClient({ initialItems }: { initialItems: Notifi
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
+          <h1 className={typography.pageTitle}>Notifications</h1>
           <p className="text-sm text-muted-foreground">Updates across the clinic that need your attention.</p>
         </div>
         {unreadItems.length > 0 && <MarkAllReadButton onSuccess={markAllRead} />}

@@ -103,7 +103,7 @@ export function AppointmentEditSheet({
           <SheetDescription>Update {appointment.patient_name}&apos;s appointment.</SheetDescription>
         </SheetHeader>
 
-        <Tabs defaultValue="details" className="flex flex-1 flex-col overflow-y-auto px-4">
+        <Tabs defaultValue="details" className="flex flex-1 flex-col overflow-y-auto px-5">
           {canViewClinical && (
             <TabsList className="mb-2 self-start">
               <TabsTrigger value="details">Details</TabsTrigger>

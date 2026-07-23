@@ -10,6 +10,8 @@ import { listDoctors } from "@/lib/patients/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { EmptyState } from "@/components/ui/empty-state";
+import { typography } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -76,7 +78,7 @@ export default async function DoctorsReportPage({
           <ArrowLeft className="size-4" />
           Reports
         </Button>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Doctors</h1>
+        <h1 className={cn("mt-1", typography.pageTitle)}>Doctors</h1>
         <p className="text-sm text-muted-foreground">
           Production and collections by doctor, ranked highest first. &quot;Unattributed&quot; covers invoices with no
           linked appointment.

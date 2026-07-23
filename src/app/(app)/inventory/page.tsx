@@ -14,6 +14,8 @@ import {
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { typography } from "@/lib/typography";
+import { interactiveRowCard } from "@/lib/interactive-styles";
+import { cn } from "@/lib/utils";
 
 function formatExpirationDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -34,10 +36,10 @@ export default async function InventoryDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Inventory</h1>
+          <h1 className={typography.pageTitle}>Inventory</h1>
           <p className="text-sm text-muted-foreground">Products, purchasing, and stock levels.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" render={<Link href="/inventory/products" />}>
             Products
           </Button>
@@ -64,18 +66,20 @@ export default async function InventoryDashboardPage() {
           </CardHeader>
           <CardContent>
             {lowStock.length > 0 ? (
-              <ul className="space-y-2">
+              <div className="space-y-2">
                 {lowStock.slice(0, 10).map((product) => (
-                  <li key={product.id} className="flex items-center justify-between text-sm">
-                    <Link href={`/inventory/products/${product.id}`} className="hover:underline">
-                      {product.name}
-                    </Link>
+                  <Link
+                    key={product.id}
+                    href={`/inventory/products/${product.id}`}
+                    className={cn(interactiveRowCard, "justify-between text-sm")}
+                  >
+                    <span className="font-medium">{product.name}</span>
                     <span className="tabular-nums text-muted-foreground">
                       {product.stock_level} / {product.reorder_threshold} {product.unit}
                     </span>
-                  </li>
+                  </Link>
                 ))}
-              </ul>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">Nothing is running low right now.</p>
             )}
@@ -88,18 +92,20 @@ export default async function InventoryDashboardPage() {
           </CardHeader>
           <CardContent>
             {expiringSoon.length > 0 ? (
-              <ul className="space-y-2">
+              <div className="space-y-2">
                 {expiringSoon.slice(0, 10).map((item) => (
-                  <li key={item.id} className="flex items-center justify-between text-sm">
-                    <Link href={`/inventory/products/${item.product_id}`} className="hover:underline">
-                      {item.product_name}
-                    </Link>
+                  <Link
+                    key={item.id}
+                    href={`/inventory/products/${item.product_id}`}
+                    className={cn(interactiveRowCard, "justify-between text-sm")}
+                  >
+                    <span className="font-medium">{item.product_name}</span>
                     <span className="tabular-nums text-muted-foreground">
                       {item.quantity_remaining} · {formatExpirationDate(item.expiration_date)}
                     </span>
-                  </li>
+                  </Link>
                 ))}
-              </ul>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">Nothing is expiring soon.</p>
             )}

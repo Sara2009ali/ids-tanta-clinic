@@ -25,12 +25,26 @@ export function WeekView({ rows, start }: { rows: ScheduleRow[]; start: Date }) 
           const isToday = key === today;
 
           return (
-            <div key={key} className="flex min-h-64 flex-col gap-2 rounded-xl border border-border p-2">
-              <p className={cn("text-xs font-medium", isToday ? "text-primary" : "text-muted-foreground")}>
+            <div
+              key={key}
+              className={cn(
+                "flex min-h-72 flex-col gap-2 rounded-xl border p-2",
+                isToday ? "border-primary/25 bg-primary/[0.03]" : "border-border",
+              )}
+            >
+              <p
+                className={cn(
+                  "flex items-center gap-1.5 text-xs font-medium",
+                  isToday ? "text-primary" : "text-muted-foreground",
+                )}
+              >
                 {DAY_HEADER_FORMATTER.format(day)}
+                {isToday && <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
               </p>
               <div className="flex flex-1 flex-col gap-1.5">
-                {dayRows.length === 0 && <p className="text-xs text-muted-foreground/60">—</p>}
+                {dayRows.length === 0 && (
+                  <p className="m-auto text-xs text-muted-foreground/50">No appointments</p>
+                )}
                 {dayRows.map((row) => (
                   <div key={row.id} className="rounded-lg bg-card p-1.5 text-xs ring-1 ring-foreground/10">
                     <div className="flex items-center gap-1">

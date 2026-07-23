@@ -12,8 +12,11 @@ import {
   getRevenueTotal,
 } from "@/lib/reports/queries";
 import { defaultReportRange } from "@/lib/reports/date-range";
+import { cardHoverLift } from "@/lib/interactive-styles";
+import { cn } from "@/lib/utils";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { typography } from "@/lib/typography";
 
 const CATEGORIES = [
   { href: "/reports/revenue", label: "Revenue", description: "Collections and outstanding balances.", icon: Wallet, permission: PERMISSIONS.BILLING_VIEW },
@@ -63,7 +66,7 @@ export default async function ReportsHubPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
+        <h1 className={typography.pageTitle}>Reports</h1>
         <p className="text-sm text-muted-foreground">Clinic performance this month, with drill-downs by category.</p>
       </div>
 
@@ -90,7 +93,7 @@ export default async function ReportsHubPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleCategories.map((category) => (
           <Link key={category.href} href={category.href}>
-            <Card className="h-full transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-accent/40 hover:shadow-elevation-high">
+            <Card className={cn("h-full", cardHoverLift)}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <category.icon className="size-4 text-muted-foreground" />

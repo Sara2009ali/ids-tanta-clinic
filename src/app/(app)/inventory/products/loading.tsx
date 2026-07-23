@@ -10,7 +10,7 @@ export default function ProductsLoading() {
         <div className="flex items-center gap-3">
           <Skeleton className="size-9 rounded-md" />
           <div className="space-y-2">
-            <Skeleton className="h-7 w-28" />
+            <Skeleton className="h-9 w-28" />
             <Skeleton className="h-4 w-56" />
           </div>
         </div>
