@@ -49,6 +49,7 @@ function SortableHeader({
     <Link
       href={href}
       scroll={false}
+      prefetch={false}
       className={`inline-flex items-center gap-1 hover:text-foreground ${isActive ? "text-foreground" : "text-muted-foreground"}`}
     >
       {label}

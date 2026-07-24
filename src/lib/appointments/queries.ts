@@ -113,77 +113,59 @@ export interface DashboardCounts {
   availableChairsCount: number;
 }
 
-/** Reception Dashboard + Reception Workspace stat cards — one round trip per card, run in parallel. */
+/**
+ * Reception Dashboard + Reception Workspace stat cards.
+ *
+ * Every count below derives from a single fetch of today's appointments
+ * (status + chair_id only) instead of one `COUNT` round trip per status —
+ * this used to be 8 separate queries against the same date range, now it's
+ * one query plus the two counts that come from different tables entirely.
+ */
 export async function getDashboardCounts(): Promise<DashboardCounts> {
   const supabase = await createClient();
   const todayStart = startOfTodayIso();
   const todayEnd = startOfTomorrowIso();
 
-  const todayRange = (query: ReturnType<typeof supabase.from>) =>
-    query.gte("scheduled_start", todayStart).lt("scheduled_start", todayEnd);
-
-  const countFor = async (status?: AppointmentStatus | AppointmentStatus[]) => {
-    let query = supabase.from("appointments").select("*", { count: "exact", head: true });
-    query = todayRange(query) as typeof query;
-    if (status) {
-      query = Array.isArray(status) ? query.in("status", status) : query.eq("status", status);
-    }
-    const { count } = await query;
-    return count ?? 0;
-  };
-
-  const [
-    todayTotal,
-    waiting,
-    inTreatment,
-    completedToday,
-    cancelledToday,
-    noShowToday,
-    newPatientsToday,
-    checkedIn,
-    totalActiveChairs,
-    occupiedChairRows,
-  ] = await Promise.all([
-    countFor(),
-    countFor("waiting"),
-    countFor("in_treatment"),
-    countFor("completed"),
-    countFor("cancelled"),
-    countFor("no_show"),
+  const [todaysAppointmentsRes, newPatientsToday, totalActiveChairs] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("status, chair_id")
+      .gte("scheduled_start", todayStart)
+      .lt("scheduled_start", todayEnd),
     supabase
       .from("patients")
       .select("*", { count: "exact", head: true })
       .gte("created_at", todayStart)
       .lt("created_at", todayEnd)
       .then((res) => res.count ?? 0),
-    countFor("checked_in"),
     supabase
       .from("chairs")
       .select("*", { count: "exact", head: true })
       .eq("is_active", true)
       .then((res) => res.count ?? 0),
-    supabase
-      .from("appointments")
-      .select("chair_id")
-      .eq("status", "in_treatment")
-      .not("chair_id", "is", null)
-      .gte("scheduled_start", todayStart)
-      .lt("scheduled_start", todayEnd)
-      .then((res): { chair_id: string }[] => (res.data as { chair_id: string }[] | null) ?? []),
   ]);
 
-  const occupiedChairCount = new Set(occupiedChairRows.map((row) => row.chair_id)).size;
+  const todaysAppointments =
+    (todaysAppointmentsRes.data as { status: AppointmentStatus; chair_id: string | null }[] | null) ?? [];
+  const countFor = (status: AppointmentStatus) =>
+    todaysAppointments.filter((row) => row.status === status).length;
+
+  const occupiedChairCount = new Set(
+    todaysAppointments
+      .filter((row) => row.status === "in_treatment" && row.chair_id)
+      .map((row) => row.chair_id),
+  ).size;
   const availableChairsCount = Math.max(0, totalActiveChairs - occupiedChairCount);
 
   return {
-    todayTotal,
-    waiting,
-    inTreatment,
-    completedToday,
-    cancelledToday,
-    noShowToday,
+    todayTotal: todaysAppointments.length,
+    waiting: countFor("waiting"),
+    inTreatment: countFor("in_treatment"),
+    completedToday: countFor("completed"),
+    cancelledToday: countFor("cancelled"),
+    noShowToday: countFor("no_show"),
     newPatientsToday,
-    checkedIn,
+    checkedIn: countFor("checked_in"),
     availableChairsCount,
   };
 }

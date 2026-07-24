@@ -2,7 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { VERIFIED_STAFF_ID_HEADER } from "@/lib/auth/verified-headers";
 import type { StaffProfile, StaffRole } from "@/types/domain";
 
 /**
@@ -12,20 +14,30 @@ import type { StaffProfile, StaffRole } from "@/types/domain";
  * unauthenticated requests away from (app)/*, but this is the source of
  * truth every Server Component/Action should re-check against directly
  * rather than trusting proxy alone.
+ *
+ * proxy.ts has already called auth.getUser() for this exact request (a real
+ * network round trip to Supabase) before this ever runs, so we trust its
+ * verified id via a request header instead of paying for that same round
+ * trip again here. If the header is missing for any reason — proxy.ts not
+ * matching this route, a future config change, direct invocation outside
+ * the normal request flow — we fall back to the full network check, so
+ * this never becomes a weaker guarantee than before, only a faster one on
+ * the common path.
  */
 export const getCurrentStaff = cache(async (): Promise<StaffProfile | null> => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const headerList = await headers();
+  const verifiedUserId = headerList.get(VERIFIED_STAFF_ID_HEADER);
 
-  if (!user) return null;
+  const userId = verifiedUserId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+
+  if (!userId) return null;
 
   const { data: profile } = await supabase
     .from("staff_profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   return profile;

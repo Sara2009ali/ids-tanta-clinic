@@ -1,7 +1,8 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import type { Database } from "@/types/database.generated";
+import { VERIFIED_STAFF_ID_HEADER } from "@/lib/auth/verified-headers";
 
 const PUBLIC_PATHS = ["/login"];
 
@@ -11,7 +12,7 @@ const PUBLIC_PATHS = ["/login"];
  * Called from proxy.ts (Next.js 16's renamed middleware convention).
  */
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const cookiesToApply: { name: string; value: string; options: CookieOptions }[] = [];
 
   const supabase = createServerClient<Database>(
     env.supabaseUrl,
@@ -25,10 +26,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+          cookiesToApply.push(...cookiesToSet);
         },
       },
     },
@@ -50,6 +48,22 @@ export async function updateSession(request: NextRequest) {
     const dashboardUrl = new URL("/dashboard", request.url);
     return NextResponse.redirect(dashboardUrl);
   }
+
+  // Forward the already-verified user id to the render tree so
+  // getCurrentStaff() can skip calling auth.getUser() a second time for
+  // this same request. Always clear it first — a client can send this
+  // header itself, and `.set()` below only overwrites it when we've just
+  // confirmed a real session, so a spoofed value never survives.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(VERIFIED_STAFF_ID_HEADER);
+  if (user) {
+    requestHeaders.set(VERIFIED_STAFF_ID_HEADER, user.id);
+  }
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  cookiesToApply.forEach(({ name, value, options }) =>
+    response.cookies.set(name, value, options),
+  );
 
   return response;
 }
