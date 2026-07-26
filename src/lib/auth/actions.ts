@@ -22,14 +22,6 @@ export async function login(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    // TEMPORARY DIAGNOSTIC — remove after root-causing the live login failure.
-    console.error("login: signInWithPassword failed", {
-      message: error.message,
-      status: error.status,
-      code: error.code,
-      name: error.name,
-      error,
-    });
     return { error: "Incorrect email or password." };
   }
 

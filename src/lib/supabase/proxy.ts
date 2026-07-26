@@ -4,11 +4,7 @@ import { env } from "@/lib/env";
 import type { Database } from "@/types/database.generated";
 import { VERIFIED_STAFF_ID_HEADER } from "@/lib/auth/verified-headers";
 
-// TEMPORARY: "/debug" only exists so /debug/auth (a temporary diagnostic
-// page — see src/app/debug/auth/) can render without a session. Remove
-// this entry together with that page once the live login issue is
-// diagnosed; it does not change protection for any real app route.
-const PUBLIC_PATHS = ["/login", "/debug"];
+const PUBLIC_PATHS = ["/login"];
 
 /**
  * Refreshes the Supabase session cookie on every request and enforces the
