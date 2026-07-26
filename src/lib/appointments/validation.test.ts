@@ -164,6 +164,48 @@ describe("validateAppointment", () => {
     expect(result.errors.length).toBe(2);
   });
 
+  it("allows editing a same-day appointment that already started, when its scheduledStart is unchanged", () => {
+    // Appointment was at 10:00 (within clinic hours); "now" is 14:00, so it's
+    // already in the past relative to `now` — but the edit isn't changing
+    // *when* it happens, only some other field, so it must still be allowed.
+    const laterNow = new Date("2026-07-05T14:00:00");
+    const pastStart = "2026-07-05T10:00:00";
+    const doctorBookings: ExistingBooking[] = [
+      { id: "appt-self", scheduledStart: pastStart, scheduledEnd: "2026-07-05T10:30:00" },
+    ];
+    const result = validateAppointment({
+      scheduledStart: pastStart,
+      durationMinutes: 30,
+      doctorBookings,
+      chairBookings: [],
+      excludeAppointmentId: "appt-self",
+      originalScheduledStart: pastStart,
+      now: laterNow,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it("still rejects moving that same appointment to a different, still-past time", () => {
+    const laterNow = new Date("2026-07-05T14:00:00");
+    const pastStart = "2026-07-05T10:00:00";
+    const newPastStart = "2026-07-05T10:15:00"; // different from originalScheduledStart, still before `now`
+    const doctorBookings: ExistingBooking[] = [
+      { id: "appt-self", scheduledStart: pastStart, scheduledEnd: "2026-07-05T10:30:00" },
+    ];
+    const result = validateAppointment({
+      scheduledStart: newPastStart,
+      durationMinutes: 30,
+      doctorBookings,
+      chairBookings: [],
+      excludeAppointmentId: "appt-self",
+      originalScheduledStart: pastStart,
+      now: laterNow,
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Appointments can't be scheduled in the past.");
+  });
+
   it("excludes the appointment's own booking via excludeAppointmentId when editing", () => {
     const doctorBookings: ExistingBooking[] = [
       { id: "appt-self", scheduledStart: "2026-07-06T10:00:00", scheduledEnd: "2026-07-06T10:30:00" },

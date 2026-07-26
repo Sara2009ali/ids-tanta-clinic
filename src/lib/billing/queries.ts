@@ -232,13 +232,21 @@ export async function getBillingDashboardCounts(): Promise<BillingDashboardCount
 
   const [outstandingRes, paidRes, unpaidCountRes, draftCountRes] = await Promise.all([
     supabase.from("invoices").select("balance_due").is("deleted_at", null).in("status", ["unpaid", "partially_paid"]),
-    supabase.from("payments").select("amount").is("deleted_at", null).gte("paid_at", monthStart.toISOString()),
+    supabase.from("payments").select("amount, type").is("deleted_at", null).gte("paid_at", monthStart.toISOString()),
     supabase.from("invoices").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "unpaid"),
     supabase.from("invoices").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "draft"),
   ]);
 
   const outstandingTotal = (outstandingRes.data ?? []).reduce((sum, row) => sum + Number(row.balance_due), 0);
-  const paidThisMonth = (paidRes.data ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+  // Nets refunds out instead of summing every row's amount as positive —
+  // amount is always stored positive regardless of type (see
+  // 0012_billing_payment_model.sql's comment), so `type` must be consulted
+  // here the same way recalculate_invoice_totals() does in SQL, or a
+  // refunded payment inflates this figure instead of cancelling it out.
+  const paidThisMonth = (paidRes.data ?? []).reduce(
+    (sum, row) => sum + (row.type === "refund" ? -Number(row.amount) : Number(row.amount)),
+    0,
+  );
 
   return {
     outstandingTotal,

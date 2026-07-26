@@ -116,3 +116,21 @@ export async function findPatientByPhone(clinicId: string, phone: string, exclud
   const { data } = await query.maybeSingle();
   return data;
 }
+
+/** Checks whether an active (non-deleted) patient already has this national ID in the clinic. */
+export async function findPatientByNationalId(clinicId: string, nationalId: string, excludePatientId?: string) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("patients")
+    .select("id, full_name")
+    .eq("clinic_id", clinicId)
+    .eq("national_id", nationalId)
+    .is("deleted_at", null);
+
+  if (excludePatientId) {
+    query = query.neq("id", excludePatientId);
+  }
+
+  const { data } = await query.maybeSingle();
+  return data;
+}

@@ -68,6 +68,14 @@ async function runConflictCheck(
   const availabilityWindows =
     computeAvailabilityWindows(values.scheduled_start, doctorSchedule) ?? undefined;
 
+  // getDoctorBookingsForDay is queried for the *submitted* date, so when
+  // editing without changing the date, the appointment's own pre-edit row
+  // is right there in this same list — no extra query needed to look up
+  // its original scheduled_start for the past-date exemption below.
+  const originalScheduledStart = excludeAppointmentId
+    ? doctorBookings.find((b) => b.id === excludeAppointmentId)?.scheduled_start
+    : undefined;
+
   const result = validateAppointment({
     scheduledStart: values.scheduled_start,
     durationMinutes: values.duration_minutes,
@@ -83,6 +91,7 @@ async function runConflictCheck(
     })),
     excludeAppointmentId,
     availabilityWindows,
+    originalScheduledStart,
   });
 
   if (!result.valid) {
@@ -197,17 +206,33 @@ export async function updateAppointment(
   return { success: true, appointmentId };
 }
 
+// Mirrors AppointmentRowActions' CHECK_IN_ELIGIBLE/COMPLETE_ELIGIBLE/
+// CANCEL_INELIGIBLE sets, which only gate which one-click button makes
+// sense to *show*. These are the server-side authority: the actual
+// transition is only applied if the appointment's current status is still
+// one of these when the UPDATE runs (see setAppointmentStatus below).
+const CHECK_IN_FROM_STATUSES: AppointmentStatus[] = ["scheduled", "confirmed"];
+const COMPLETE_FROM_STATUSES: AppointmentStatus[] = ["checked_in", "waiting", "in_treatment"];
+const CANCEL_FROM_STATUSES: AppointmentStatus[] = ["scheduled", "confirmed", "checked_in", "waiting", "in_treatment"];
+
 /**
  * Shared implementation for the Reception Workspace's one-click status
- * actions (check in / complete / cancel). A plain status update — the
- * appointment_status_history row is written automatically by the existing
- * log_appointment_status_change() trigger (0008_appointments.sql), so
- * there's nothing extra to do here beyond the update itself and the usual
- * audit_log entry.
+ * actions (check in / complete / cancel). The status update is conditioned
+ * on the appointment's current status still being one of `fromStatuses` —
+ * matched atomically in the same UPDATE via `.in("status", fromStatuses)`,
+ * not a separate read-then-write — so two front-desk terminals racing on
+ * the same appointment (e.g. one completing it while the other's stale
+ * page still offers "Check in") can't silently flip it through an invalid
+ * transition; the second, stale request now fails with a clear error
+ * instead of being applied. The appointment_status_history row is written
+ * automatically by the existing log_appointment_status_change() trigger
+ * (0008_appointments.sql), so there's nothing extra to do here beyond the
+ * update itself and the usual audit_log entry.
  */
 async function setAppointmentStatus(
   appointmentId: string,
   status: AppointmentStatus,
+  fromStatuses: AppointmentStatus[],
   permission: Parameters<typeof ensurePermission>[0],
   auditAction: string,
 ): Promise<AppointmentActionState> {
@@ -221,14 +246,22 @@ async function setAppointmentStatus(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("appointments")
     .update({ status, updated_by: staff.id })
-    .eq("id", appointmentId);
+    .eq("id", appointmentId)
+    .in("status", fromStatuses)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     console.error(`${auditAction}: update failed`, error);
     return { error: "Couldn't update the appointment. Please try again." };
+  }
+  if (!data) {
+    return {
+      error: "This appointment's status has already changed — someone else may have updated it. Please refresh and try again.",
+    };
   }
 
   await writeAuditLog(supabase, {
@@ -245,11 +278,23 @@ async function setAppointmentStatus(
 }
 
 export async function checkInAppointment(appointmentId: string): Promise<AppointmentActionState> {
-  return setAppointmentStatus(appointmentId, "checked_in", PERMISSIONS.APPOINTMENTS_EDIT, "appointment.checked_in");
+  return setAppointmentStatus(
+    appointmentId,
+    "checked_in",
+    CHECK_IN_FROM_STATUSES,
+    PERMISSIONS.APPOINTMENTS_EDIT,
+    "appointment.checked_in",
+  );
 }
 
 export async function completeAppointment(appointmentId: string): Promise<AppointmentActionState> {
-  return setAppointmentStatus(appointmentId, "completed", PERMISSIONS.APPOINTMENTS_EDIT, "appointment.completed");
+  return setAppointmentStatus(
+    appointmentId,
+    "completed",
+    COMPLETE_FROM_STATUSES,
+    PERMISSIONS.APPOINTMENTS_EDIT,
+    "appointment.completed",
+  );
 }
 
 /**
@@ -262,5 +307,11 @@ export async function completeAppointment(appointmentId: string): Promise<Appoin
  * policy conditionally requires patients.delete.
  */
 export async function cancelAppointmentStatus(appointmentId: string): Promise<AppointmentActionState> {
-  return setAppointmentStatus(appointmentId, "cancelled", PERMISSIONS.APPOINTMENTS_CANCEL, "appointment.cancelled");
+  return setAppointmentStatus(
+    appointmentId,
+    "cancelled",
+    CANCEL_FROM_STATUSES,
+    PERMISSIONS.APPOINTMENTS_CANCEL,
+    "appointment.cancelled",
+  );
 }

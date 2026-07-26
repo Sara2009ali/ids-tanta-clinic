@@ -170,6 +170,16 @@ export interface AppointmentValidationInput {
   now?: Date;
   workingHours?: WorkingHours;
   /**
+   * The appointment's own scheduled_start before this edit (only relevant
+   * together with excludeAppointmentId). When the submitted scheduledStart
+   * is unchanged, the past-date check below is skipped — editing an
+   * unrelated field (e.g. chief complaint) on a same-day appointment that
+   * has already started must not fail with "can't be scheduled in the
+   * past" just because nothing about *when* it happens actually moved.
+   * Genuinely moving an appointment to a new past time is still rejected.
+   */
+  originalScheduledStart?: string;
+  /**
    * The doctor's actual availability windows for the scheduled date (see
    * `computeAvailabilityWindows`), taking precedence over `workingHours`
    * when provided. Falls back to `[workingHours ?? DEFAULT_CLINIC_HOURS]`
@@ -197,7 +207,8 @@ export function validateAppointment(input: AppointmentValidationInput): Appointm
   if (!Number.isFinite(input.durationMinutes) || input.durationMinutes <= 0) {
     errors.push("Duration must be greater than zero.");
   }
-  if (isInPast(input.scheduledStart, input.now)) {
+  const scheduledStartUnchanged = input.scheduledStart === input.originalScheduledStart;
+  if (!scheduledStartUnchanged && isInPast(input.scheduledStart, input.now)) {
     errors.push("Appointments can't be scheduled in the past.");
   }
   const availabilityWindows = input.availabilityWindows ?? [input.workingHours ?? DEFAULT_CLINIC_HOURS];

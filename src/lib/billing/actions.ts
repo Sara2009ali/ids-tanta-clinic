@@ -22,6 +22,7 @@ import {
   computeInvoiceTotals,
   computeLineTotal,
 } from "@/lib/billing/calculations";
+import { formatCurrency } from "@/lib/billing/format";
 import type { InvoiceStatus } from "@/types/domain";
 
 export interface InvoiceActionState {
@@ -313,7 +314,15 @@ export async function cancelInvoice(invoiceId: string): Promise<InvoiceActionSta
   return { success: true, invoiceId };
 }
 
-/** Soft delete — hides the invoice from lists entirely, distinct from cancel (which keeps it visible as a cancelled record). */
+/**
+ * Soft delete — hides the invoice from lists entirely, distinct from cancel
+ * (which keeps it visible as a cancelled record). Blocked once any money
+ * has been collected against the invoice (mirrors the same paid_amount > 0
+ * guard cancelInvoice already enforces): deleting it would make its
+ * payments rows — still real, still summed into revenue totals — point at
+ * an invoice nobody can find or reconcile against. Refund first, or use
+ * Cancel instead.
+ */
 export async function deleteInvoice(invoiceId: string): Promise<InvoiceActionState> {
   const authz = await ensurePermission(PERMISSIONS.BILLING_EDIT);
   if (!authz.ok) {
@@ -325,6 +334,20 @@ export async function deleteInvoice(invoiceId: string): Promise<InvoiceActionSta
   }
 
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("paid_amount")
+    .eq("id", invoiceId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!existing) {
+    return { error: "Invoice not found." };
+  }
+  if (Number(existing.paid_amount) > 0) {
+    return { error: "This invoice has payments recorded against it. Refund them first, or use Cancel instead of Delete." };
+  }
+
   const { error } = await supabase
     .from("invoices")
     .update({ deleted_at: new Date().toISOString(), updated_by: staff.id })
@@ -361,7 +384,7 @@ export async function recordPayment(invoiceId: string, formData: FormData): Prom
   const supabase = await createClient();
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("status")
+    .select("status, balance_due")
     .eq("id", invoiceId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -376,6 +399,14 @@ export async function recordPayment(invoiceId: string, formData: FormData): Prom
   const parsed = paymentFormSchema.safeParse(paymentFormValuesFromFormData(formData));
   if (!parsed.success) {
     return { error: "Please fix the highlighted fields.", fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+
+  const balanceDue = Number(invoice.balance_due);
+  if (parsed.data.amount > balanceDue) {
+    return {
+      error: "Payment exceeds the balance due.",
+      fieldErrors: { amount: `Can't record more than the ${formatCurrency(balanceDue)} balance due.` },
+    };
   }
 
   const { data: payment, error } = await supabase
@@ -451,7 +482,7 @@ export async function refundPayment(invoiceId: string, formData: FormData): Prom
   if (parsed.data.amount > paidAmount) {
     return {
       error: "Refund exceeds the amount paid.",
-      fieldErrors: { amount: `Can't refund more than the $${paidAmount.toFixed(2)} already paid.` },
+      fieldErrors: { amount: `Can't refund more than the ${formatCurrency(paidAmount)} already paid.` },
     };
   }
 

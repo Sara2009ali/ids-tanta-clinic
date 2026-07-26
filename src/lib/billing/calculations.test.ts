@@ -51,6 +51,17 @@ describe("computeInvoiceTotals", () => {
   it("returns all zeros for an empty item list", () => {
     expect(computeInvoiceTotals([], 15)).toEqual({ subtotal: 0, taxAmount: 0, total: 0 });
   });
+
+  it("rounds an exact-half-cent tax amount the same way Postgres's numeric round() does (half up), not down due to binary float error", () => {
+    // 5.75 * 10% = 0.575 exactly in decimal, which must round to 0.58 — but
+    // 0.575 has no exact binary floating-point representation (it's stored
+    // as ~0.57499999999999996), so a naive Math.round(value * 100) / 100
+    // rounds this down to 0.57 instead, disagreeing with the DB trigger
+    // (recalculate_invoice_totals in 0011_billing.sql), which computes this
+    // using Postgres's exact `numeric` arithmetic and gets 0.58.
+    const items = [{ quantity: 1, unitPrice: 5.75 }];
+    expect(computeInvoiceTotals(items, 10)).toEqual({ subtotal: 5.75, taxAmount: 0.58, total: 6.33 });
+  });
 });
 
 describe("computeBalanceDue", () => {

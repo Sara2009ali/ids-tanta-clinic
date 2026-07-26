@@ -13,8 +13,19 @@
 
 import type { InvoiceStatus } from "@/types/domain";
 
+/**
+ * Rounds to 2dp with a magnitude-scaled epsilon correction, not a bare
+ * `Math.round(value * 100) / 100`. Plain binary floating point can't
+ * represent values like 0.575 exactly (it's ~0.57499999999999996), which
+ * pushes an exact-half-cent case to the wrong side of Math.round — e.g.
+ * 5.75 * 10% naively rounds to 0.57 in JS, while Postgres's exact `numeric`
+ * arithmetic (recalculate_invoice_totals in 0011_billing.sql, the real
+ * source of truth for what's saved) correctly gives 0.58. Without this, the
+ * create/edit form's live total preview can disagree with the saved
+ * invoice by a cent.
+ */
 function round2(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.round((value + Number.EPSILON * Math.abs(value)) * 100) / 100;
 }
 
 export interface InvoiceItemInput {

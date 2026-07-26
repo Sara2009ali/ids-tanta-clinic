@@ -45,10 +45,12 @@ export function InvoiceDetailActions({
 
   const status = invoice.status;
   const paidAmount = Number(invoice.paid_amount);
+  const balanceDue = Number(invoice.balance_due);
   const isDraft = status === "draft";
   const canRecord = canRecordPayment(status);
   const canRefund = canRefundPayment(status) && paidAmount > 0;
   const canCancel = canCancelInvoice(status, paidAmount);
+  const canDelete = paidAmount <= 0;
 
   function handleIssue() {
     startTransition(async () => {
@@ -124,15 +126,22 @@ export function InvoiceDetailActions({
         </Button>
       )}
 
-      <Button variant="destructive" disabled={pending} onClick={() => setDeleteOpen(true)}>
-        <Trash2 className="size-4" />
-        Delete
-      </Button>
+      {canDelete && (
+        <Button variant="destructive" disabled={pending} onClick={() => setDeleteOpen(true)}>
+          <Trash2 className="size-4" />
+          Delete
+        </Button>
+      )}
 
       {isDraft && <InvoiceFormSheet invoice={invoice} open={editOpen} onOpenChange={setEditOpen} />}
 
       {canRecord && (
-        <RecordPaymentDialog invoiceId={invoice.id} open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen} />
+        <RecordPaymentDialog
+          invoiceId={invoice.id}
+          balanceDue={balanceDue}
+          open={recordPaymentOpen}
+          onOpenChange={setRecordPaymentOpen}
+        />
       )}
 
       {canRefund && (
@@ -162,24 +171,26 @@ export function InvoiceDetailActions({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete invoice {invoice.invoice_number}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes the invoice from all lists. This can be undone by a database admin, but not
-              from this UI.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" disabled={pending} onClick={handleDelete}>
-              {pending && <Loader2 className="size-4 animate-spin" />}
-              Delete invoice
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {canDelete && (
+        <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete invoice {invoice.invoice_number}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This removes the invoice from all lists. This can be undone by a database admin, but not
+                from this UI.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" disabled={pending} onClick={handleDelete}>
+                {pending && <Loader2 className="size-4 animate-spin" />}
+                Delete invoice
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

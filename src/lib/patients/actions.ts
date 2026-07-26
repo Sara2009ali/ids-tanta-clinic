@@ -6,7 +6,7 @@ import { ensurePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { writeAuditLog } from "@/lib/audit/log";
 import { patientFormSchema, patientFormValuesFromFormData, type PatientFormValues } from "@/lib/patients/schema";
-import { findPatientByPhone } from "@/lib/patients/queries";
+import { findPatientByPhone, findPatientByNationalId } from "@/lib/patients/queries";
 import type { PatientFileType } from "@/types/domain";
 
 export interface PatientActionState {
@@ -92,6 +92,16 @@ export async function createPatient(formData: FormData): Promise<PatientActionSt
     }
   }
 
+  if (values.national_id) {
+    const existing = await findPatientByNationalId(staff.clinic_id, values.national_id);
+    if (existing) {
+      return {
+        error: `A patient with this national ID already exists (${existing.full_name}).`,
+        fieldErrors: { national_id: "National ID already in use" },
+      };
+    }
+  }
+
   const supabase = await createClient();
   const { data: patient, error } = await supabase
     .from("patients")
@@ -101,6 +111,12 @@ export async function createPatient(formData: FormData): Promise<PatientActionSt
 
   if (error || !patient) {
     if (error?.code === DUPLICATE_KEY_ERROR) {
+      if (error.message?.includes("national_id")) {
+        return {
+          error: "A patient with this national ID already exists.",
+          fieldErrors: { national_id: "National ID already in use" },
+        };
+      }
       return {
         error: "A patient with this phone number already exists.",
         fieldErrors: { phone: "Phone number already in use" },
@@ -162,6 +178,16 @@ export async function updatePatient(patientId: string, formData: FormData): Prom
     }
   }
 
+  if (values.national_id) {
+    const existing = await findPatientByNationalId(staff.clinic_id, values.national_id, patientId);
+    if (existing) {
+      return {
+        error: `A patient with this national ID already exists (${existing.full_name}).`,
+        fieldErrors: { national_id: "National ID already in use" },
+      };
+    }
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("patients")
@@ -170,6 +196,12 @@ export async function updatePatient(patientId: string, formData: FormData): Prom
 
   if (error) {
     if (error.code === DUPLICATE_KEY_ERROR) {
+      if (error.message?.includes("national_id")) {
+        return {
+          error: "A patient with this national ID already exists.",
+          fieldErrors: { national_id: "National ID already in use" },
+        };
+      }
       return {
         error: "A patient with this phone number already exists.",
         fieldErrors: { phone: "Phone number already in use" },

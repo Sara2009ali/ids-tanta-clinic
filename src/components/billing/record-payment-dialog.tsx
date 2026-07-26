@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { recordPayment } from "@/lib/billing/actions";
+import { formatCurrency } from "@/lib/billing/format";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/types/domain";
 
 import {
@@ -35,10 +36,12 @@ function FieldError({ message }: { message?: string }) {
 
 export function RecordPaymentDialog({
   invoiceId,
+  balanceDue,
   open,
   onOpenChange,
 }: {
   invoiceId: string;
+  balanceDue: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -68,13 +71,15 @@ export function RecordPaymentDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record Payment</DialogTitle>
-          <DialogDescription>Log a payment collected against this invoice.</DialogDescription>
+          <DialogDescription>
+            Log a payment collected against this invoice. Balance due: {formatCurrency(balanceDue)}.
+          </DialogDescription>
         </DialogHeader>
 
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="payment-amount">Amount *</Label>
-            <Input id="payment-amount" name="amount" type="number" min={0.01} step={0.01} required />
+            <Input id="payment-amount" name="amount" type="number" min={0.01} max={balanceDue} step={0.01} required />
             <FieldError message={fieldErrors.amount} />
           </div>
 
