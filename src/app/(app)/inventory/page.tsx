@@ -1,14 +1,16 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AlertTriangle, Boxes, CalendarClock, Package, Warehouse } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { MovementsTable } from "@/components/inventory/movements-table";
 import { formatCurrency } from "@/lib/billing/format";
 import {
   getExpiringSoonItems,
-  getInventoryDashboardSummary,
   getInventoryMovements,
+  getInventoryStockValueSummary,
   getLowStockProducts,
 } from "@/lib/inventory/queries";
 import { requirePermission } from "@/lib/authz/session";
@@ -21,34 +23,26 @@ function formatExpirationDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-/** Mirrors /compensation's own dashboard shape exactly: a KPI row, two side-by-side "needs attention" cards, and a recent-activity list. */
-export default async function InventoryDashboardPage() {
-  await requirePermission(PERMISSIONS.INVENTORY_VIEW);
-
-  const [summary, lowStock, expiringSoon, recentMovements] = await Promise.all([
-    getInventoryDashboardSummary(),
+/**
+ * KPIs + the two "needs attention" cards share `lowStock`/`expiringSoon`
+ * (that's the whole point of the dedup fix above this component), so they
+ * stay one Suspense boundary/fetch. Recent Movements queries a completely
+ * separate table and gets its own boundary so it can stream independently.
+ */
+async function InventoryOverviewSection() {
+  const [lowStock, expiringSoon, stockValueSummary] = await Promise.all([
     getLowStockProducts(),
     getExpiringSoonItems(30),
-    getInventoryMovements(10),
+    getInventoryStockValueSummary(),
   ]);
+  const summary = {
+    ...stockValueSummary,
+    lowStockCount: lowStock.length,
+    expiringSoonCount: expiringSoon.length,
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className={typography.pageTitle}>Inventory</h1>
-          <p className="text-sm text-muted-foreground">Products, purchasing, and stock levels.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" render={<Link href="/inventory/products" />}>
-            Products
-          </Button>
-          <Button variant="outline" render={<Link href="/inventory/purchase-orders" />}>
-            Purchase Orders
-          </Button>
-        </div>
-      </div>
-
+    <>
       <div className="space-y-3">
         <h2 className={typography.eyebrow}>Overview</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -112,6 +106,58 @@ export default async function InventoryDashboardPage() {
           </CardContent>
         </Card>
       </div>
+    </>
+  );
+}
+
+async function RecentMovementsSection() {
+  const recentMovements = await getInventoryMovements(10);
+  return <MovementsTable movements={recentMovements} emptyMessage="No stock movements recorded yet." />;
+}
+
+function InventoryOverviewSkeleton() {
+  return (
+    <>
+      <div className="space-y-3">
+        <Skeleton className="h-3 w-16" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
+      </div>
+    </>
+  );
+}
+
+/** Mirrors /compensation's own dashboard shape exactly: a KPI row, two side-by-side "needs attention" cards, and a recent-activity list. */
+export default async function InventoryDashboardPage() {
+  await requirePermission(PERMISSIONS.INVENTORY_VIEW);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className={typography.pageTitle}>Inventory</h1>
+          <p className="text-sm text-muted-foreground">Products, purchasing, and stock levels.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" render={<Link href="/inventory/products" />}>
+            Products
+          </Button>
+          <Button variant="outline" render={<Link href="/inventory/purchase-orders" />}>
+            Purchase Orders
+          </Button>
+        </div>
+      </div>
+
+      <Suspense fallback={<InventoryOverviewSkeleton />}>
+        <InventoryOverviewSection />
+      </Suspense>
 
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -121,7 +167,9 @@ export default async function InventoryDashboardPage() {
             View all
           </Button>
         </div>
-        <MovementsTable movements={recentMovements} emptyMessage="No stock movements recorded yet." />
+        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+          <RecentMovementsSection />
+        </Suspense>
       </div>
     </div>
   );

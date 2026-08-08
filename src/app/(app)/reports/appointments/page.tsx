@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportDateRangeFilter } from "@/components/reports/report-date-range-filter";
-import { CategoryBarChart } from "@/components/reports/category-bar-chart";
+import { CategoryBarChart } from "@/components/reports/category-bar-chart-loader";
 import { getCancellationHistory, getCancellationStats } from "@/lib/reports/queries";
 import { getScheduleForRange } from "@/lib/appointments/queries";
 import { rangeToTimestampBounds, defaultReportRange } from "@/lib/reports/date-range";

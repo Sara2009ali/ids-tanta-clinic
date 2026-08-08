@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportDateRangeFilter } from "@/components/reports/report-date-range-filter";
 import { RevenueBucketSelect } from "@/components/reports/revenue-bucket-select";
-import { RevenueChart } from "@/components/reports/revenue-chart";
+import { RevenueChart } from "@/components/reports/revenue-chart-loader";
 import { formatCurrency } from "@/lib/billing/format";
 import { getBillingDashboardCounts } from "@/lib/billing/queries";
 import { getRevenueSeries, getRevenueTotal, type RevenueBucketGranularity } from "@/lib/reports/queries";

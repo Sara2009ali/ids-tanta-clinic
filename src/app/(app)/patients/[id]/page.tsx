@@ -21,12 +21,13 @@ import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { getPatientPayments, searchInvoices } from "@/lib/billing/queries";
+import type { InvoiceSearchResult, PatientPaymentRow } from "@/lib/billing/queries";
 import { formatCurrency } from "@/lib/billing/format";
 import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
-import type { PatientFileType } from "@/types/domain";
+import type { PatientFileType, TreatmentRecord, VisitType } from "@/types/domain";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 
 /** Kept as its own top-level helper (rather than inline in the component body) so the `Date.now()` call reads as an ordinary function call, not an impure read during render. */
@@ -58,35 +59,49 @@ export default async function PatientProfilePage({
   await requirePermission(PERMISSIONS.PATIENTS_VIEW);
 
   const { id } = await params;
-  const result = await getPatientById(id);
+
+  // patient/doctors/permissions have no interdependency — fetching them as
+  // one Promise.all (instead of getPatientById() then a separate
+  // Promise.all for doctors+permissions) removes one full network
+  // round-trip stage from every profile load.
+  const [result, doctors, permissions] = await Promise.all([
+    getPatientById(id),
+    listDoctors(),
+    getCurrentPermissions(),
+  ]);
 
   if (!result) {
     notFound();
   }
 
   const { patient, clinicalInfo, alerts, files, auditEntries } = result;
-  const [doctors, permissions] = await Promise.all([listDoctors(), getCurrentPermissions()]);
   const preferredDentist = doctors.find((doctor) => doctor.id === patient.preferred_dentist_id);
 
   const canViewBilling = hasPermission(permissions, PERMISSIONS.BILLING_VIEW);
   const canEditBilling = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
-  const [invoicesResult, patientPayments] = canViewBilling
-    ? await Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
-    : [null, []];
-
   const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
   const canEditClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_EDIT);
-  const [treatmentRecords, visitTypes] = canViewClinical
-    ? await Promise.all([getTreatmentRecordsForPatient(patient.id), listVisitTypes()])
-    : [[], []];
-
   const canViewAppointments = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_VIEW);
-  const appointments = canViewAppointments ? await getAppointmentsForPatient(patient.id) : [];
 
-  const [photoUrl, ...fileUrls] = await getPatientFileUrls([
-    patient.photo_path,
-    ...files.map((file) => file.storage_path),
-  ]);
+  // Billing, clinical, appointments, and file URLs each only depend on
+  // `patient`/`files` (already known above) and the permission flags, not
+  // on each other's data — they used to run as four separate sequential
+  // stages purely because they were written one after another. Combining
+  // them into one Promise.all collapses that into a single round-trip
+  // stage instead of four.
+  const [[invoicesResult, patientPayments], [treatmentRecords, visitTypes], appointments, patientFileUrls] =
+    await Promise.all([
+      canViewBilling
+        ? Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
+        : Promise.resolve<[InvoiceSearchResult | null, PatientPaymentRow[]]>([null, []]),
+      canViewClinical
+        ? Promise.all([getTreatmentRecordsForPatient(patient.id), listVisitTypes()])
+        : Promise.resolve<[TreatmentRecord[], VisitType[]]>([[], []]),
+      canViewAppointments ? getAppointmentsForPatient(patient.id) : Promise.resolve<ScheduleRow[]>([]),
+      getPatientFileUrls([patient.photo_path, ...files.map((file) => file.storage_path)]),
+    ]);
+
+  const [photoUrl, ...fileUrls] = patientFileUrls;
 
   const filesWithUrls = files.map((file, index) => ({ ...file, url: fileUrls[index] ?? null }));
 

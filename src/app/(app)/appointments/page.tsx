@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Armchair, CalendarClock, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { CalendarNav } from "@/components/appointments/calendar-nav";
 import { CalendarViewSwitcher } from "@/components/appointments/calendar-view-switcher";
@@ -25,6 +27,44 @@ function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/**
+ * The schedule query (joined across appointments/patients/staff/chairs/visit
+ * types for the whole view range) gets its own Suspense boundary so the
+ * header, nav, and view switcher — gated only on the small catalog queries
+ * (doctors/chairs/visit types/permissions) — can paint first instead of
+ * waiting on the heavier calendar query.
+ */
+async function CalendarBody({
+  view,
+  start,
+  end,
+  anchor,
+}: {
+  view: CalendarView;
+  start: Date;
+  end: Date;
+  anchor: Date;
+}) {
+  const rows = await getScheduleForRange(start.toISOString(), end.toISOString());
+  return (
+    <>
+      {view === "day" && <TodaysSchedule rows={rows} emptyMessage="No appointments scheduled for this day." />}
+      {view === "week" && <WeekView rows={rows} start={start} />}
+      {view === "month" && <MonthView rows={rows} start={start} anchor={anchor} />}
+    </>
+  );
+}
+
+function CalendarBodySkeleton() {
+  return (
+    <div className="grid flex-1 grid-cols-7 gap-2">
+      {Array.from({ length: 7 }).map((_, i) => (
+        <Skeleton key={i} className="h-96 w-full rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
 export default async function AppointmentsPage({
   searchParams,
 }: {
@@ -38,8 +78,7 @@ export default async function AppointmentsPage({
   const anchor = parseDateParam(firstParam(sp.date));
   const { start, end } = getViewRange(view, anchor);
 
-  const [rows, doctors, chairs, visitTypes, permissions] = await Promise.all([
-    getScheduleForRange(start.toISOString(), end.toISOString()),
+  const [doctors, chairs, visitTypes, permissions] = await Promise.all([
     listDoctors(),
     listChairs(),
     listVisitTypes(),
@@ -86,9 +125,9 @@ export default async function AppointmentsPage({
         <CalendarViewSwitcher view={view} anchor={anchor} />
       </div>
 
-      {view === "day" && <TodaysSchedule rows={rows} emptyMessage="No appointments scheduled for this day." />}
-      {view === "week" && <WeekView rows={rows} start={start} />}
-      {view === "month" && <MonthView rows={rows} start={start} anchor={anchor} />}
+      <Suspense fallback={<CalendarBodySkeleton />}>
+        <CalendarBody view={view} start={start} end={end} anchor={anchor} />
+      </Suspense>
     </div>
   );
 }

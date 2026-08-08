@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/billing/format";
-import { getExpiringSoonItems, getInventoryDashboardSummary, getLowStockProducts } from "@/lib/inventory/queries";
+import { getExpiringSoonItems, getInventoryStockValueSummary, getLowStockProducts } from "@/lib/inventory/queries";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,7 +17,7 @@ function formatDate(iso: string): string {
 
 /**
  * A thin Reports lens over Inventory's own numbers — every figure here is
- * getInventoryDashboardSummary()/getLowStockProducts()/getExpiringSoonItems()
+ * getInventoryStockValueSummary()/getLowStockProducts()/getExpiringSoonItems()
  * called directly, not reimplemented, matching the exact "no duplicated
  * reporting logic" relationship Reports already has with Billing/
  * Compensation/Appointments. Same compound-permission gate every other
@@ -26,11 +26,16 @@ function formatDate(iso: string): string {
 export default async function InventoryReportPage() {
   await requirePermission([PERMISSIONS.REPORTS_VIEW, PERMISSIONS.INVENTORY_VIEW]);
 
-  const [summary, lowStock, expiringSoon] = await Promise.all([
-    getInventoryDashboardSummary(),
+  const [lowStock, expiringSoon, stockValueSummary] = await Promise.all([
     getLowStockProducts(),
     getExpiringSoonItems(30),
+    getInventoryStockValueSummary(),
   ]);
+  const summary = {
+    ...stockValueSummary,
+    lowStockCount: lowStock.length,
+    expiringSoonCount: expiringSoon.length,
+  };
 
   return (
     <div className="space-y-6">

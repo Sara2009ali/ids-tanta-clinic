@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   CalendarDays,
   Search,
@@ -9,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { daysAgoIso } from "@/lib/utils";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
@@ -25,6 +27,63 @@ import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
+
+/**
+ * Today's Schedule and Recent Activity each get their own Suspense
+ * boundary (mirroring the one precedent for this in the codebase,
+ * Topbar's NotificationBellServer) so the hero stat, quick actions, and
+ * page header — everything above the fold that doesn't need these two
+ * queries — can paint as soon as the lighter dashboard-counts query
+ * resolves, instead of every card waiting on whichever of the 9 original
+ * parallel queries happens to be slowest.
+ */
+async function TodaysScheduleCard() {
+  const schedule = await getTodaysSchedule();
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
+        {schedule.length > 0 && (
+          <span className="text-sm text-muted-foreground">
+            {schedule.length} appointment{schedule.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </CardHeader>
+      <CardContent>
+        <TodaysSchedule rows={schedule} />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function RecentActivityCard() {
+  const activity = await getRecentActivity();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Recent Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <RecentActivityFeed rows={activity} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function DashboardCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-4 w-28" />
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-xl" />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 const TODAY_STATUS_BREAKDOWN: {
   key: "waiting" | "inTreatment" | "completedToday" | "cancelledToday" | "noShowToday";
@@ -46,8 +105,6 @@ export default async function DashboardPage() {
     { count: totalPatients },
     { count: newPatientsThisWeek },
     counts,
-    schedule,
-    activity,
     doctors,
     chairs,
     visitTypes,
@@ -59,8 +116,6 @@ export default async function DashboardPage() {
       .select("*", { count: "exact", head: true })
       .gte("created_at", sevenDaysAgo),
     getDashboardCounts(),
-    getTodaysSchedule(),
-    getRecentActivity(),
     listDoctors(),
     listChairs(),
     listVisitTypes(),
@@ -112,19 +167,9 @@ export default async function DashboardPage() {
       {/* Today's Schedule is the actual clinical work happening right now —
           it gets the full width of the page, not a shared column, since
           it's the single most operationally important thing on this screen. */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
-          {schedule.length > 0 && (
-            <span className="text-sm text-muted-foreground">
-              {schedule.length} appointment{schedule.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </CardHeader>
-        <CardContent>
-          <TodaysSchedule rows={schedule} />
-        </CardContent>
-      </Card>
+      <Suspense fallback={<DashboardCardSkeleton />}>
+        <TodaysScheduleCard />
+      </Suspense>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -152,14 +197,9 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentActivityFeed rows={activity} />
-          </CardContent>
-        </Card>
+        <Suspense fallback={<DashboardCardSkeleton />}>
+          <RecentActivityCard />
+        </Suspense>
       </div>
     </div>
   );

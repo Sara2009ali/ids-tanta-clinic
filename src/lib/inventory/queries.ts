@@ -320,21 +320,27 @@ export async function getExpiringSoonItems(days = 30): Promise<ExpiringItem[]> {
     .filter((row) => row.quantity_remaining > 0);
 }
 
-export interface InventoryDashboardSummary {
+export interface InventoryStockValueSummary {
   activeProductCount: number;
-  lowStockCount: number;
-  expiringSoonCount: number;
   estimatedStockValue: number;
 }
 
-/** Hub KPI row — one round trip per figure, run in parallel, same shape getBillingDashboardCounts()/getClinicCompensationSummary() already use. */
-export async function getInventoryDashboardSummary(): Promise<InventoryDashboardSummary> {
+/**
+ * Active product count + estimated stock value only — deliberately does
+ * *not* include lowStockCount/expiringSoonCount. Both callers (Inventory
+ * dashboard, Inventory report) already fetch the full
+ * `getLowStockProducts()`/`getExpiringSoonItems()` lists themselves for
+ * their own "needs attention" cards; this used to recompute both counts a
+ * second time internally (each itself a 2-query round trip), silently
+ * doubling every inventory dashboard load's query count. Callers now derive
+ * those two counts from the lists they already fetch and combine them with
+ * this result — all in one flat `Promise.all`, so nothing is serialized.
+ */
+export async function getInventoryStockValueSummary(): Promise<InventoryStockValueSummary> {
   const supabase = await createClient();
 
-  const [productCountRes, lowStock, expiringSoon, movementsRes, itemsRes] = await Promise.all([
+  const [productCountRes, movementsRes, itemsRes] = await Promise.all([
     supabase.from("inventory_products").select("*", { count: "exact", head: true }).eq("is_active", true),
-    getLowStockProducts(),
-    getExpiringSoonItems(30),
     supabase.from("inventory_movements").select("product_id, quantity"),
     supabase
       .from("purchase_order_items")
@@ -363,8 +369,6 @@ export async function getInventoryDashboardSummary(): Promise<InventoryDashboard
 
   return {
     activeProductCount: productCountRes.count ?? 0,
-    lowStockCount: lowStock.length,
-    expiringSoonCount: expiringSoon.length,
     estimatedStockValue,
   };
 }

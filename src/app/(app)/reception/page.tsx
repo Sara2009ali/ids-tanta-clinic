@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { Armchair, CalendarDays, CheckCircle2, Clock } from "lucide-react";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { typography } from "@/lib/typography";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
 import { QuickPatientSearch } from "@/components/appointments/quick-patient-search";
 import { ReceptionSchedule } from "@/components/appointments/reception-schedule";
@@ -14,10 +16,89 @@ import {
   listVisitTypes,
 } from "@/lib/appointments/queries";
 import { getTreatmentRecordsForAppointments } from "@/lib/treatments/queries";
-import { listDoctors } from "@/lib/patients/queries";
+import { listDoctors, type DoctorOption } from "@/lib/patients/queries";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
-import type { TreatmentRecord } from "@/types/domain";
+import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
+
+/**
+ * Today's Schedule (which internally has a real 2-stage dependency —
+ * treatment records depend on which appointment IDs the schedule query
+ * returns) and Recent Activity each get their own Suspense boundary, same
+ * pattern as the Dashboard, so the header/stat cards/quick actions above
+ * them can paint as soon as the lighter `getDashboardCounts()` resolves
+ * instead of waiting on this page's slowest query.
+ */
+async function ReceptionScheduleCard({
+  doctors,
+  chairs,
+  visitTypes,
+  permissions,
+}: {
+  doctors: DoctorOption[];
+  chairs: Chair[];
+  visitTypes: VisitType[];
+  permissions: string[];
+}) {
+  const schedule = await getTodaysSchedule();
+
+  // Only fetched when the viewer can actually see it — clinical data has no
+  // business being queried for a role that will never be shown it, same
+  // discipline the Reports hub already applies to its own permission-gated
+  // KPIs.
+  const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
+  const treatmentRecordsMap = canViewClinical
+    ? await getTreatmentRecordsForAppointments(schedule.map((row) => row.id))
+    : new Map<string, TreatmentRecord[]>();
+  const treatmentRecordsByAppointmentId = Object.fromEntries(treatmentRecordsMap);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ReceptionSchedule
+          rows={schedule}
+          doctors={doctors}
+          chairs={chairs}
+          visitTypes={visitTypes}
+          treatmentRecordsByAppointmentId={treatmentRecordsByAppointmentId}
+          permissions={permissions}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function RecentActivityCard() {
+  const activity = await getRecentActivity();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Recent Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <RecentActivityFeed rows={activity} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReceptionCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-4 w-28" />
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-xl" />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 /**
  * The primary operational screen for front-desk staff. Deliberately built
@@ -30,10 +111,8 @@ import type { TreatmentRecord } from "@/types/domain";
  * highlighting.
  */
 export default async function ReceptionWorkspacePage() {
-  const [counts, schedule, activity, doctors, chairs, visitTypes, permissions] = await Promise.all([
+  const [counts, doctors, chairs, visitTypes, permissions] = await Promise.all([
     getDashboardCounts(),
-    getTodaysSchedule(),
-    getRecentActivity(),
     listDoctors(),
     listChairs(),
     listVisitTypes(),
@@ -45,16 +124,6 @@ export default async function ReceptionWorkspacePage() {
     0,
     counts.todayTotal - counts.completedToday - counts.cancelledToday - counts.noShowToday,
   );
-
-  // Only fetched when the viewer can actually see it — clinical data has no
-  // business being queried for a role that will never be shown it, same
-  // discipline the Reports hub already applies to its own permission-gated
-  // KPIs.
-  const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
-  const treatmentRecordsMap = canViewClinical
-    ? await getTreatmentRecordsForAppointments(schedule.map((row) => row.id))
-    : new Map<string, TreatmentRecord[]>();
-  const treatmentRecordsByAppointmentId = Object.fromEntries(treatmentRecordsMap);
 
   return (
     <div className="space-y-6">
@@ -84,30 +153,13 @@ export default async function ReceptionWorkspacePage() {
       {/* Today's Schedule is the actual front-desk work happening right now —
           full width, same weight it gets on the Dashboard, rather than
           squeezed into two-thirds of the row next to a lighter-weight card. */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ReceptionSchedule
-            rows={schedule}
-            doctors={doctors}
-            chairs={chairs}
-            visitTypes={visitTypes}
-            treatmentRecordsByAppointmentId={treatmentRecordsByAppointmentId}
-            permissions={permissions}
-          />
-        </CardContent>
-      </Card>
+      <Suspense fallback={<ReceptionCardSkeleton />}>
+        <ReceptionScheduleCard doctors={doctors} chairs={chairs} visitTypes={visitTypes} permissions={permissions} />
+      </Suspense>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RecentActivityFeed rows={activity} />
-        </CardContent>
-      </Card>
+      <Suspense fallback={<ReceptionCardSkeleton />}>
+        <RecentActivityCard />
+      </Suspense>
     </div>
   );
 }
