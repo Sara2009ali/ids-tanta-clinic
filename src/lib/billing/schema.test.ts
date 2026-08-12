@@ -51,6 +51,24 @@ describe("invoiceItemInputSchema", () => {
       expect(result.data.unit_price).toBe(150);
     }
   });
+
+  it("defaults visit_type_id to null when omitted (a plain custom item)", () => {
+    const result = invoiceItemInputSchema.safeParse(validItem);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.visit_type_id).toBeNull();
+  });
+
+  it("carries a procedure's visit_type_id through unchanged", () => {
+    const result = invoiceItemInputSchema.safeParse({ ...validItem, visit_type_id: "visit-type-1" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.visit_type_id).toBe("visit-type-1");
+  });
+
+  it("normalizes an empty-string visit_type_id to null", () => {
+    const result = invoiceItemInputSchema.safeParse({ ...validItem, visit_type_id: "" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.visit_type_id).toBeNull();
+  });
 });
 
 describe("invoiceFormSchema", () => {

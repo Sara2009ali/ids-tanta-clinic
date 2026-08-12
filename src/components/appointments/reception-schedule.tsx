@@ -47,6 +47,7 @@ export function ReceptionSchedule({
   chairs,
   visitTypes,
   treatmentRecordsByAppointmentId,
+  invoiceIdByAppointmentId,
   permissions,
 }: {
   rows: ScheduleRow[];
@@ -54,6 +55,7 @@ export function ReceptionSchedule({
   chairs: Chair[];
   visitTypes: VisitType[];
   treatmentRecordsByAppointmentId: Record<string, TreatmentRecord[]>;
+  invoiceIdByAppointmentId: Record<string, string>;
   permissions: string[];
 }) {
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -94,6 +96,7 @@ export function ReceptionSchedule({
             chairs={chairs}
             visitTypes={visitTypes}
             treatmentRecords={treatmentRecordsByAppointmentId[row.id] ?? []}
+            invoiceId={invoiceIdByAppointmentId[row.id] ?? null}
             permissions={permissions}
           />
         )}

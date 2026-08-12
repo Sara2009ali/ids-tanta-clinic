@@ -7,6 +7,7 @@ export type PatientFileType = Database["public"]["Enums"]["patient_file_type"];
 export type AppointmentStatus = Database["public"]["Enums"]["appointment_status"];
 
 export type StaffProfile = Database["public"]["Tables"]["staff_profiles"]["Row"];
+export type DoctorProfile = Database["public"]["Tables"]["doctor_profiles"]["Row"];
 export type Patient = Database["public"]["Tables"]["patients"]["Row"];
 export type PatientClinicalInfo = Database["public"]["Tables"]["patient_clinical_info"]["Row"];
 export type PatientMedicalAlert = Database["public"]["Tables"]["patient_medical_alerts"]["Row"];

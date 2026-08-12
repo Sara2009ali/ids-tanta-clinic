@@ -186,6 +186,8 @@ export interface ScheduleRow {
   visit_type_id: string;
   visit_type_name: string;
   visit_type_color: string;
+  /** The linked procedure's *current* catalog price — there's no separate "price at booking time" concept, appointments never stored one. Only needed by the Reception Workspace's Create Invoice action. */
+  visit_type_price: number;
   /** Only needed by the Reception Workspace's edit sheet; every other consumer ignores these. */
   chief_complaint: string | null;
   notes: string | null;
@@ -207,7 +209,7 @@ interface ScheduleQueryRow {
   patients: { full_name: string } | null;
   staff_profiles: { full_name: string } | null;
   chairs: { label: string } | null;
-  visit_types: { name: string; color: string } | null;
+  visit_types: { name: string; color: string; price: number } | null;
 }
 
 // Shared by getScheduleForRange() and getAppointmentsForPatient() — same
@@ -220,7 +222,7 @@ const APPOINTMENT_SCHEDULE_SELECT = `id, scheduled_start, scheduled_end, status,
    patients ( full_name ),
    staff_profiles!appointments_doctor_id_fkey ( full_name ),
    chairs ( label ),
-   visit_types ( name, color )`;
+   visit_types ( name, color, price )`;
 
 function mapScheduleRow(row: ScheduleQueryRow): ScheduleRow {
   return {
@@ -239,6 +241,7 @@ function mapScheduleRow(row: ScheduleQueryRow): ScheduleRow {
     visit_type_id: row.visit_type_id,
     visit_type_name: row.visit_types?.name ?? "—",
     visit_type_color: row.visit_types?.color ?? "#6366f1",
+    visit_type_price: Number(row.visit_types?.price ?? 0),
     chief_complaint: row.chief_complaint,
     notes: row.notes,
   };

@@ -27,7 +27,7 @@ import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
-import type { PatientFileType, TreatmentRecord, VisitType } from "@/types/domain";
+import type { PatientFileType, TreatmentRecord } from "@/types/domain";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 
 /** Kept as its own top-level helper (rather than inline in the component body) so the `Date.now()` call reads as an ordinary function call, not an impure read during render. */
@@ -88,15 +88,18 @@ export default async function PatientProfilePage({
   // on each other's data — they used to run as four separate sequential
   // stages purely because they were written one after another. Combining
   // them into one Promise.all collapses that into a single round-trip
-  // stage instead of four.
-  const [[invoicesResult, patientPayments], [treatmentRecords, visitTypes], appointments, patientFileUrls] =
+  // stage instead of four. visitTypes is fetched unconditionally (not
+  // gated on canViewClinical) — it's now also needed by the Invoices tab's
+  // procedure picker, and billing.edit holders (e.g. accountant) don't
+  // necessarily hold clinical.view, so gating it on the wrong permission
+  // would silently leave them with an empty picker.
+  const [[invoicesResult, patientPayments], treatmentRecords, visitTypes, appointments, patientFileUrls] =
     await Promise.all([
       canViewBilling
         ? Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
         : Promise.resolve<[InvoiceSearchResult | null, PatientPaymentRow[]]>([null, []]),
-      canViewClinical
-        ? Promise.all([getTreatmentRecordsForPatient(patient.id), listVisitTypes()])
-        : Promise.resolve<[TreatmentRecord[], VisitType[]]>([[], []]),
+      canViewClinical ? getTreatmentRecordsForPatient(patient.id) : Promise.resolve<TreatmentRecord[]>([]),
+      listVisitTypes(),
       canViewAppointments ? getAppointmentsForPatient(patient.id) : Promise.resolve<ScheduleRow[]>([]),
       getPatientFileUrls([patient.photo_path, ...files.map((file) => file.storage_path)]),
     ]);
@@ -353,7 +356,10 @@ export default async function PatientProfilePage({
             <TabsContent value="invoices" className="space-y-4 pt-6">
               <div className="flex justify-end">
                 {canEditBilling && (
-                  <InvoiceFormSheet initialPatient={{ id: patient.id, full_name: patient.full_name ?? "" }} />
+                  <InvoiceFormSheet
+                    initialPatient={{ id: patient.id, full_name: patient.full_name ?? "" }}
+                    visitTypes={visitTypes}
+                  />
                 )}
               </div>
               {invoicesResult.rows.length > 0 ? (

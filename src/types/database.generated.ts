@@ -414,6 +414,7 @@ export type Database = {
           payment_id: string
           rate_snapshot: Json | null
           settlement_id: string | null
+          visit_type_id: string | null
           voided_at: string | null
         }
         Insert: {
@@ -428,6 +429,7 @@ export type Database = {
           payment_id: string
           rate_snapshot?: Json | null
           settlement_id?: string | null
+          visit_type_id?: string | null
           voided_at?: string | null
         }
         Update: {
@@ -442,6 +444,7 @@ export type Database = {
           payment_id?: string
           rate_snapshot?: Json | null
           settlement_id?: string | null
+          visit_type_id?: string | null
           voided_at?: string | null
         }
         Relationships: [
@@ -485,6 +488,71 @@ export type Database = {
             columns: ["settlement_id"]
             isOneToOne: false
             referencedRelation: "doctor_settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_earnings_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctor_profiles: {
+        Row: {
+          bio: string | null
+          clinic_id: string
+          color: string
+          created_at: string
+          default_visit_type_id: string | null
+          doctor_id: string
+          license_number: string | null
+          specialty: string | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          clinic_id: string
+          color?: string
+          created_at?: string
+          default_visit_type_id?: string | null
+          doctor_id: string
+          license_number?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          clinic_id?: string
+          color?: string
+          created_at?: string
+          default_visit_type_id?: string | null
+          doctor_id?: string
+          license_number?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_profiles_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_profiles_default_visit_type_id_fkey"
+            columns: ["default_visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doctor_profiles_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: true
+            referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -937,6 +1005,7 @@ export type Database = {
           quantity: number
           unit_price: number
           updated_at: string
+          visit_type_id: string | null
         }
         Insert: {
           clinic_id: string
@@ -949,6 +1018,7 @@ export type Database = {
           quantity?: number
           unit_price?: number
           updated_at?: string
+          visit_type_id?: string | null
         }
         Update: {
           clinic_id?: string
@@ -961,6 +1031,7 @@ export type Database = {
           quantity?: number
           unit_price?: number
           updated_at?: string
+          visit_type_id?: string | null
         }
         Relationships: [
           {
@@ -975,6 +1046,13 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
             referencedColumns: ["id"]
           },
         ]
@@ -1957,6 +2035,8 @@ export type Database = {
       }
       visit_types: {
         Row: {
+          billing_code: string | null
+          category: string | null
           clinic_id: string
           color: string
           created_at: string
@@ -1964,9 +2044,12 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          price: number
           updated_at: string
         }
         Insert: {
+          billing_code?: string | null
+          category?: string | null
           clinic_id: string
           color?: string
           created_at?: string
@@ -1974,9 +2057,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          price?: number
           updated_at?: string
         }
         Update: {
+          billing_code?: string | null
+          category?: string | null
           clinic_id?: string
           color?: string
           created_at?: string
@@ -1984,6 +2070,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          price?: number
           updated_at?: string
         }
         Relationships: [
@@ -2029,8 +2116,16 @@ export type Database = {
         Returns: undefined
       }
       report_revenue_series: {
-        Args: { p_bucket: string; p_clinic_id: string; p_end: string; p_start: string }
-        Returns: { bucket_start: string; revenue: number }[]
+        Args: {
+          p_bucket: string
+          p_clinic_id: string
+          p_end: string
+          p_start: string
+        }
+        Returns: {
+          bucket_start: string
+          revenue: number
+        }[]
       }
       resolve_compensation_entry: {
         Args: { p_earning_id: string }

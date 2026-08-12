@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckCircle2, LogIn, MoreHorizontal, Pencil, XCircle } from "lucide-react";
+import { CheckCircle2, FileText, LogIn, MoreHorizontal, Pencil, Receipt, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppointmentEditSheet } from "@/components/appointments/appointment-edit-sheet";
+import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { cancelAppointmentStatus, checkInAppointment, completeAppointment } from "@/lib/appointments/actions";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { ScheduleRow } from "@/lib/appointments/queries";
@@ -36,6 +38,12 @@ import type { DoctorOption } from "@/lib/patients/queries";
 const CHECK_IN_ELIGIBLE = new Set(["scheduled", "confirmed"]);
 const COMPLETE_ELIGIBLE = new Set(["checked_in", "waiting", "in_treatment"]);
 const CANCEL_INELIGIBLE = new Set(["completed", "cancelled", "no_show"]);
+// Billing for a visit that never happened is almost always a mistake — the
+// appointment-scoped shortcut is hidden for these; the general New Invoice
+// flow on /billing remains available, unrestricted, for the rare legitimate
+// exception. Every other status (including not-yet-completed, for deposits/
+// prepayment) is eligible — see the Phase 5 proposal for the full reasoning.
+const INVOICE_INELIGIBLE = new Set(["cancelled", "no_show"]);
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -48,6 +56,7 @@ export function AppointmentRowActions({
   visitTypes,
   treatmentRecords,
   permissions,
+  invoiceId,
 }: {
   appointment: ScheduleRow;
   doctors: DoctorOption[];
@@ -55,19 +64,23 @@ export function AppointmentRowActions({
   visitTypes: VisitType[];
   treatmentRecords: TreatmentRecord[];
   permissions: string[];
+  /** This appointment's most recent non-cancelled invoice, if any (Phase 5) — switches the menu between "Create Invoice" and "View Invoice". */
+  invoiceId?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [editOpen, setEditOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
 
   const canEdit = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_EDIT);
   const canCancel = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_CANCEL);
   const canCheckIn = canEdit && CHECK_IN_ELIGIBLE.has(appointment.status);
   const canComplete = canEdit && COMPLETE_ELIGIBLE.has(appointment.status);
   const canCancelNow = canCancel && !CANCEL_INELIGIBLE.has(appointment.status);
+  const canBill = hasPermission(permissions, PERMISSIONS.BILLING_EDIT) && !INVOICE_INELIGIBLE.has(appointment.status);
 
-  if (!canEdit && !canCancel) {
+  if (!canEdit && !canCancel && !canBill) {
     return null;
   }
 
@@ -131,6 +144,16 @@ export function AppointmentRowActions({
               <Pencil /> Edit
             </DropdownMenuItem>
           )}
+          {canBill &&
+            (invoiceId ? (
+              <DropdownMenuItem render={<Link href={`/billing/invoices/${invoiceId}`} />}>
+                <FileText /> View Invoice
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => setCreateInvoiceOpen(true)}>
+                <Receipt /> Create Invoice
+              </DropdownMenuItem>
+            ))}
           {canCancelNow && (
             <>
               <DropdownMenuSeparator />
@@ -152,6 +175,23 @@ export function AppointmentRowActions({
           permissions={permissions}
           open={editOpen}
           onOpenChange={setEditOpen}
+        />
+      )}
+
+      {canBill && !invoiceId && (
+        <InvoiceFormSheet
+          visitTypes={visitTypes}
+          initialPatient={{ id: appointment.patient_id, full_name: appointment.patient_name }}
+          initialAppointmentId={appointment.id}
+          initialItem={{
+            description: appointment.visit_type_name,
+            quantity: 1,
+            unit_price: appointment.visit_type_price,
+            discount_amount: 0,
+            visit_type_id: appointment.visit_type_id,
+          }}
+          open={createInvoiceOpen}
+          onOpenChange={setCreateInvoiceOpen}
         />
       )}
 

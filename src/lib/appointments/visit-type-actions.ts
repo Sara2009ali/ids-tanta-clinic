@@ -50,7 +50,10 @@ export async function createVisitType(formData: FormData): Promise<VisitTypeActi
     .from("visit_types")
     .insert({
       name: parsed.data.name,
+      category: parsed.data.category,
       default_duration_minutes: parsed.data.default_duration_minutes,
+      price: parsed.data.price,
+      billing_code: parsed.data.billing_code,
       color: parsed.data.color,
       clinic_id: staff.clinic_id,
     })
@@ -93,7 +96,10 @@ export async function updateVisitType(visitTypeId: string, formData: FormData): 
     .from("visit_types")
     .update({
       name: parsed.data.name,
+      category: parsed.data.category,
       default_duration_minutes: parsed.data.default_duration_minutes,
+      price: parsed.data.price,
+      billing_code: parsed.data.billing_code,
       color: parsed.data.color,
     })
     .eq("id", visitTypeId);
@@ -152,6 +158,16 @@ export async function toggleVisitTypeActive(visitTypeId: string, isActive: boole
  * exists. This checks first so the failure is a clear, actionable message
  * ("N appointments use this — deactivate instead") rather than a raw
  * Postgres foreign-key-violation error surfacing to the user.
+ *
+ * invoice_items.visit_type_id (0023_invoice_items_visit_type.sql) is
+ * checked here too even though its FK is `on delete set null`, not
+ * `restrict` — the database would happily null it out and let the delete
+ * through. Doing that silently would sever a historical invoice line's
+ * only link back to the procedure it billed, which is exactly the kind of
+ * quiet loss of traceability the "disable instead of delete" convention
+ * exists to prevent everywhere else in this table. Blocking here keeps the
+ * rule consistent: a procedure with any historical usage — scheduling,
+ * compensation, clinical, or billing — is disabled, never deleted.
  */
 export async function deleteVisitType(visitTypeId: string): Promise<VisitTypeActionState> {
   const authz = await ensurePermission(PERMISSIONS.SETTINGS_MANAGE);
@@ -161,15 +177,17 @@ export async function deleteVisitType(visitTypeId: string): Promise<VisitTypeAct
 
   const supabase = await createClient();
 
-  const [appointmentsRes, rulesRes, treatmentRecordsRes] = await Promise.all([
+  const [appointmentsRes, rulesRes, treatmentRecordsRes, invoiceItemsRes] = await Promise.all([
     supabase.from("appointments").select("*", { count: "exact", head: true }).eq("visit_type_id", visitTypeId),
     supabase.from("compensation_rules").select("*", { count: "exact", head: true }).eq("visit_type_id", visitTypeId),
     supabase.from("treatment_records").select("*", { count: "exact", head: true }).eq("visit_type_id", visitTypeId),
+    supabase.from("invoice_items").select("*", { count: "exact", head: true }).eq("visit_type_id", visitTypeId),
   ]);
 
-  const referenceCount = (appointmentsRes.count ?? 0) + (rulesRes.count ?? 0) + (treatmentRecordsRes.count ?? 0);
+  const referenceCount =
+    (appointmentsRes.count ?? 0) + (rulesRes.count ?? 0) + (treatmentRecordsRes.count ?? 0) + (invoiceItemsRes.count ?? 0);
   if (referenceCount > 0) {
-    return { error: "This procedure is used by existing appointments or compensation rules. Disable it instead of deleting." };
+    return { error: "This procedure is used by existing appointments, invoices, or compensation rules. Disable it instead of deleting." };
   }
 
   const { error } = await supabase.from("visit_types").delete().eq("id", visitTypeId);

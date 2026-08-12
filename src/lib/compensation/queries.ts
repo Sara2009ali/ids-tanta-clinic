@@ -69,6 +69,11 @@ export async function getDoctorSettlements(doctorId: string): Promise<DoctorSett
   return data ?? [];
 }
 
+/** payment_id + visit_type_id identify one procedure group's earnings entry — visit_type_id is nullable (the combined custom-item group), so a plain string join keeps `null` distinct from any real id without needing a NULL-safe SQL comparison. */
+function unresolvedGroupKey(paymentId: string, visitTypeId: string | null): string {
+  return `${paymentId}::${visitTypeId ?? "null"}`;
+}
+
 /**
  * Clinic-wide list of payments that generated no compensation because no
  * rule matched — the data-layer foundation for the administrative warning
@@ -77,21 +82,28 @@ export async function getDoctorSettlements(doctorId: string): Promise<DoctorSett
  *
  * resolve_compensation_entry() (0015) never mutates the original
  * 'unresolved' row when a gap is filled — it only appends a 'correction'
- * row for the same payment_id, matching this ledger's "never mutate,
- * always add" rule. So an 'unresolved' row alone doesn't mean "still
- * unresolved"; a payment_id with a 'correction' row already has one. A
- * payment_id can't carry both an 'unresolved' row and a *void-driven*
- * 'correction' row (that path requires a pre-existing 'earning'/'reversal'
- * row for the same payment_id, which an 'unresolved' payment never has),
- * so any 'correction' sharing a payment_id with an 'unresolved' row can
- * only have come from a manual resolve — safe to exclude here.
+ * row for the same (payment_id, visit_type_id), matching this ledger's
+ * "never mutate, always add" rule. So an 'unresolved' row alone doesn't
+ * mean "still unresolved"; a (payment_id, visit_type_id) pair with a
+ * 'correction' row already has one.
+ *
+ * Matched on the pair, not payment_id alone (0026_compensation_procedure_
+ * grouping.sql): one payment can now produce more than one 'unresolved'
+ * row — one per procedure group that lacked a rule — and resolving one
+ * group must not hide a *different* still-unresolved group on the same
+ * payment. A (payment_id, visit_type_id) pair can't carry both an
+ * 'unresolved' row and a *void-driven* 'correction' row for the same pair
+ * (that path requires a pre-existing 'earning'/'reversal' row for the same
+ * pair, which an 'unresolved' group never has), so any 'correction'
+ * sharing a pair with an 'unresolved' row can only have come from a
+ * manual resolve — safe to exclude here.
  */
 export async function getUnresolvedCompensationEntries(): Promise<DoctorEarning[]> {
   const supabase = await createClient();
 
   const [{ data, error }, { data: corrections, error: correctionsError }] = await Promise.all([
     supabase.from("doctor_earnings").select("*").eq("entry_type", "unresolved").order("created_at", { ascending: false }),
-    supabase.from("doctor_earnings").select("payment_id").eq("entry_type", "correction"),
+    supabase.from("doctor_earnings").select("payment_id, visit_type_id").eq("entry_type", "correction"),
   ]);
 
   if (error) {
@@ -103,8 +115,10 @@ export async function getUnresolvedCompensationEntries(): Promise<DoctorEarning[
     return data ?? [];
   }
 
-  const resolvedPaymentIds = new Set((corrections ?? []).map((row) => row.payment_id));
-  return (data ?? []).filter((entry) => !resolvedPaymentIds.has(entry.payment_id));
+  const resolvedGroupKeys = new Set(
+    (corrections ?? []).map((row) => unresolvedGroupKey(row.payment_id, row.visit_type_id)),
+  );
+  return (data ?? []).filter((entry) => !resolvedGroupKeys.has(unresolvedGroupKey(entry.payment_id, entry.visit_type_id)));
 }
 
 /**

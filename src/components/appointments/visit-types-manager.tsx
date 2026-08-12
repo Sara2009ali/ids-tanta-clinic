@@ -26,8 +26,10 @@ import {
   updateVisitType,
 } from "@/lib/appointments/visit-type-actions";
 import type { VisitTypeForManagement } from "@/lib/appointments/queries";
+import { formatCurrency } from "@/lib/billing/format";
 
 const DEFAULT_COLOR = "#6366f1";
+const CATEGORY_LIST_ID = "visit-type-categories";
 
 function VisitTypeRow({
   visitType,
@@ -40,7 +42,10 @@ function VisitTypeRow({
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(visitType.name);
+  const [category, setCategory] = useState(visitType.category ?? "");
   const [duration, setDuration] = useState(String(visitType.default_duration_minutes));
+  const [price, setPrice] = useState(String(visitType.price));
+  const [billingCode, setBillingCode] = useState(visitType.billing_code ?? "");
   const [color, setColor] = useState(visitType.color);
   const [error, setError] = useState<string | undefined>();
 
@@ -48,11 +53,21 @@ function VisitTypeRow({
     startTransition(async () => {
       const formData = new FormData();
       formData.set("name", name);
+      formData.set("category", category);
       formData.set("default_duration_minutes", duration);
+      formData.set("price", price);
+      formData.set("billing_code", billingCode);
       formData.set("color", color);
       const result = await updateVisitType(visitType.id, formData);
       if (result.error) {
-        setError(result.fieldErrors?.name ?? result.fieldErrors?.default_duration_minutes ?? result.error);
+        setError(
+          result.fieldErrors?.name ??
+            result.fieldErrors?.default_duration_minutes ??
+            result.fieldErrors?.price ??
+            result.fieldErrors?.category ??
+            result.fieldErrors?.billing_code ??
+            result.error,
+        );
         toast.error(result.error);
       } else {
         setEditing(false);
@@ -65,7 +80,10 @@ function VisitTypeRow({
   function handleCancelEdit() {
     setEditing(false);
     setName(visitType.name);
+    setCategory(visitType.category ?? "");
     setDuration(String(visitType.default_duration_minutes));
+    setPrice(String(visitType.price));
+    setBillingCode(visitType.billing_code ?? "");
     setColor(visitType.color);
     setError(undefined);
   }
@@ -123,6 +141,21 @@ function VisitTypeRow({
       <TableCell className="text-muted-foreground">
         {editing ? (
           <Input
+            list={CATEGORY_LIST_ID}
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            disabled={pending}
+            placeholder="e.g. Restorative"
+            aria-label="Category"
+            className="h-8 w-36"
+          />
+        ) : (
+          (visitType.category ?? "—")
+        )}
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {editing ? (
+          <Input
             type="number"
             min={5}
             max={480}
@@ -134,6 +167,36 @@ function VisitTypeRow({
           />
         ) : (
           `${visitType.default_duration_minutes} min`
+        )}
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {editing ? (
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+            disabled={pending}
+            aria-label="Price"
+            className="h-8 w-24"
+          />
+        ) : (
+          formatCurrency(visitType.price)
+        )}
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {editing ? (
+          <Input
+            value={billingCode}
+            onChange={(event) => setBillingCode(event.target.value)}
+            disabled={pending}
+            placeholder="e.g. D2740"
+            aria-label="Billing code"
+            className="h-8 w-28"
+          />
+        ) : (
+          (visitType.billing_code ?? "—")
         )}
       </TableCell>
       <TableCell className="text-muted-foreground">{visitType.clinic_name ?? "—"}</TableCell>
@@ -207,14 +270,19 @@ function VisitTypeRow({
 export function VisitTypesManager({
   visitTypes,
   hasFilters,
+  categories,
 }: {
   visitTypes: VisitTypeForManagement[];
   hasFilters: boolean;
+  categories: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState("");
   const [newDuration, setNewDuration] = useState("30");
+  const [newPrice, setNewPrice] = useState("0");
+  const [newBillingCode, setNewBillingCode] = useState("");
   const [newColor, setNewColor] = useState(DEFAULT_COLOR);
   const [createError, setCreateError] = useState<string | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<VisitTypeForManagement | null>(null);
@@ -223,11 +291,21 @@ export function VisitTypesManager({
     startTransition(async () => {
       const result = await createVisitType(formData);
       if (result.error) {
-        setCreateError(result.fieldErrors?.name ?? result.fieldErrors?.default_duration_minutes ?? result.error);
+        setCreateError(
+          result.fieldErrors?.name ??
+            result.fieldErrors?.default_duration_minutes ??
+            result.fieldErrors?.price ??
+            result.fieldErrors?.category ??
+            result.fieldErrors?.billing_code ??
+            result.error,
+        );
         toast.error(result.error);
       } else {
         setNewName("");
+        setNewCategory("");
         setNewDuration("30");
+        setNewPrice("0");
+        setNewBillingCode("");
         setNewColor(DEFAULT_COLOR);
         setCreateError(undefined);
         toast.success("Procedure added");
@@ -283,6 +361,21 @@ export function VisitTypesManager({
           />
         </div>
         <div className="space-y-1">
+          <Label htmlFor="new_visit_type_category" className="text-xs">
+            Category
+          </Label>
+          <Input
+            id="new_visit_type_category"
+            name="category"
+            list={CATEGORY_LIST_ID}
+            value={newCategory}
+            onChange={(event) => setNewCategory(event.target.value)}
+            placeholder="e.g. Restorative"
+            disabled={pending}
+            className="h-8 w-36"
+          />
+        </div>
+        <div className="space-y-1">
           <Label htmlFor="new_visit_type_duration" className="text-xs">
             Duration (min)
           </Label>
@@ -298,12 +391,48 @@ export function VisitTypesManager({
             className="h-8 w-24"
           />
         </div>
+        <div className="space-y-1">
+          <Label htmlFor="new_visit_type_price" className="text-xs">
+            Price
+          </Label>
+          <Input
+            id="new_visit_type_price"
+            name="price"
+            type="number"
+            min={0}
+            step="0.01"
+            value={newPrice}
+            onChange={(event) => setNewPrice(event.target.value)}
+            disabled={pending}
+            className="h-8 w-24"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="new_visit_type_billing_code" className="text-xs">
+            Billing code
+          </Label>
+          <Input
+            id="new_visit_type_billing_code"
+            name="billing_code"
+            value={newBillingCode}
+            onChange={(event) => setNewBillingCode(event.target.value)}
+            placeholder="e.g. D2740"
+            disabled={pending}
+            className="h-8 w-28"
+          />
+        </div>
         {createError && <p className="text-xs text-destructive">{createError}</p>}
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
           Add procedure
         </Button>
       </form>
+
+      <datalist id={CATEGORY_LIST_ID}>
+        {categories.map((category) => (
+          <option key={category} value={category} />
+        ))}
+      </datalist>
 
       {visitTypes.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -317,7 +446,10 @@ export function VisitTypesManager({
                 <span className="sr-only">Color</span>
               </TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Duration</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Billing code</TableHead>
               <TableHead>Clinic</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -336,9 +468,9 @@ export function VisitTypesManager({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deleteTarget?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the procedure. It can only be deleted if no appointments, compensation
-              rules, or treatment records reference it — otherwise, disable it instead. This can&apos;t be
-              undone from this UI.
+              This permanently removes the procedure. It can only be deleted if no appointments, invoices,
+              compensation rules, or treatment records reference it — otherwise, disable it instead. This
+              can&apos;t be undone from this UI.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

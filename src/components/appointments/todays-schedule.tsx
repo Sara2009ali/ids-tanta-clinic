@@ -34,7 +34,7 @@ export function TodaysSchedule({
 }: {
   rows: ScheduleRow[];
   emptyMessage?: string;
-  /** Optional per-row actions slot (Reception Workspace). Omitted everywhere else — same look as before. Rows only become a link to the patient's profile when this is absent, since a Link can't safely wrap the interactive buttons this slot renders. */
+  /** Optional per-row actions slot (Reception Workspace, Appointments day view). Omitted everywhere else — same look as before. The whole row is a link to the patient's profile when this is absent; when present, only the patient's name links there instead, since a Link can't safely wrap the interactive buttons this slot renders. */
   renderActions?: (row: ScheduleRow) => ReactNode;
 }) {
   if (rows.length === 0) {
@@ -55,7 +55,18 @@ export function TodaysSchedule({
             />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
-                <p className="truncate text-sm font-medium">{row.patient_name}</p>
+                {renderActions ? (
+                  // The outer row is a plain div (not a Link) whenever actions
+                  // are rendered — a Link can't safely wrap the interactive
+                  // buttons that slot contains, so the name itself becomes
+                  // the click-through-to-patient affordance instead, same
+                  // destination as the whole-row Link used everywhere else.
+                  <Link href={`/patients/${row.patient_id}`} className="truncate text-sm font-medium hover:underline">
+                    {row.patient_name}
+                  </Link>
+                ) : (
+                  <p className="truncate text-sm font-medium">{row.patient_name}</p>
+                )}
                 {row.is_emergency && <Badge variant="destructive">Emergency</Badge>}
                 {!row.is_emergency && row.priority === "urgent" && <Badge variant="destructive">Urgent</Badge>}
                 {!row.is_emergency && row.priority === "high" && <Badge variant="outline">High priority</Badge>}

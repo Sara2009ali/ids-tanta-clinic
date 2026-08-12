@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getInvoiceAuditEntries, getInvoiceDetail } from "@/lib/billing/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
+import { listVisitTypes } from "@/lib/appointments/queries";
 import { formatCurrency } from "@/lib/billing/format";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
 import { InvoiceDetailActions } from "@/components/billing/invoice-detail-actions";
@@ -17,10 +18,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   await requirePermission(PERMISSIONS.BILLING_VIEW);
 
   const { id } = await params;
-  const [invoice, auditEntries, permissions] = await Promise.all([
+  const [invoice, auditEntries, permissions, visitTypes] = await Promise.all([
     getInvoiceDetail(id),
     getInvoiceAuditEntries(id),
     getCurrentPermissions(),
+    listVisitTypes(),
   ]);
 
   if (!invoice) {
@@ -56,7 +58,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               : ""}
           </p>
         </div>
-        <InvoiceDetailActions invoice={invoice} permissions={permissions} />
+        <InvoiceDetailActions invoice={invoice} permissions={permissions} visitTypes={visitTypes} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

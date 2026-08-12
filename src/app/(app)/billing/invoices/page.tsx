@@ -8,6 +8,7 @@ import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import type { InvoiceStatus } from "@/types/domain";
 import { typography } from "@/lib/typography";
+import { listVisitTypes } from "@/lib/appointments/queries";
 
 const PAGE_SIZE = 20;
 const STATUS_VALUES = new Set<InvoiceStatus>(["draft", "unpaid", "partially_paid", "paid", "cancelled"]);
@@ -30,9 +31,10 @@ export default async function InvoicesPage({
   const pageRaw = Number(firstParam(sp.page));
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
 
-  const [{ rows, totalCount, pageSize }, permissions] = await Promise.all([
+  const [{ rows, totalCount, pageSize }, permissions, visitTypes] = await Promise.all([
     searchInvoices({ query: query || undefined, status: status || undefined, page, pageSize: PAGE_SIZE }),
     getCurrentPermissions(),
+    listVisitTypes(),
   ]);
 
   const canCreate = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
@@ -56,7 +58,7 @@ export default async function InvoicesPage({
             {totalCount} invoice{totalCount === 1 ? "" : "s"}
           </p>
         </div>
-        {canCreate && <InvoiceFormSheet />}
+        {canCreate && <InvoiceFormSheet visitTypes={visitTypes} />}
       </div>
 
       <InvoicesFilters value={filterValue} />

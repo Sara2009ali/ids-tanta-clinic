@@ -24,13 +24,16 @@ import {
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { RecordPaymentDialog } from "@/components/billing/record-payment-dialog";
 import { RefundPaymentDialog } from "@/components/billing/refund-payment-dialog";
+import type { VisitType } from "@/types/domain";
 
 export function InvoiceDetailActions({
   invoice,
   permissions,
+  visitTypes,
 }: {
   invoice: InvoiceDetail;
   permissions: string[];
+  visitTypes: VisitType[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -133,7 +136,9 @@ export function InvoiceDetailActions({
         </Button>
       )}
 
-      {isDraft && <InvoiceFormSheet invoice={invoice} open={editOpen} onOpenChange={setEditOpen} />}
+      {isDraft && (
+        <InvoiceFormSheet invoice={invoice} visitTypes={visitTypes} open={editOpen} onOpenChange={setEditOpen} />
+      )}
 
       {canRecord && (
         <RecordPaymentDialog

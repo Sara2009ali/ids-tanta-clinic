@@ -57,6 +57,7 @@ function invoiceItemRows(values: InvoiceFormValues, invoiceId: string, clinicId:
     quantity: item.quantity,
     unit_price: item.unit_price,
     discount_amount: item.discount_amount,
+    visit_type_id: item.visit_type_id,
     line_total: computeLineTotal({
       quantity: item.quantity,
       unitPrice: item.unit_price,

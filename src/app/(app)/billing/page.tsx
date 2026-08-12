@@ -14,6 +14,7 @@ import { interactiveRowCard } from "@/lib/interactive-styles";
 import { getBillingDashboardCounts, searchInvoices } from "@/lib/billing/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { listVisitTypes } from "@/lib/appointments/queries";
 
 /**
  * Overview KPIs and Recent Invoices each get their own Suspense boundary so
@@ -104,7 +105,7 @@ export default async function BillingDashboardPage() {
   // "not for you" redirect.
   await requirePermission(PERMISSIONS.BILLING_VIEW);
 
-  const permissions = await getCurrentPermissions();
+  const [permissions, visitTypes] = await Promise.all([getCurrentPermissions(), listVisitTypes()]);
   const canEdit = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
 
   return (
@@ -119,7 +120,7 @@ export default async function BillingDashboardPage() {
             <FileText className="size-4" />
             All Invoices
           </Button>
-          {canEdit && <InvoiceFormSheet />}
+          {canEdit && <InvoiceFormSheet visitTypes={visitTypes} />}
         </div>
       </div>
 

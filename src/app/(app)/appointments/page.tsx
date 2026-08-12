@@ -4,6 +4,7 @@ import { Armchair, CalendarClock, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppointmentFormSheet } from "@/components/appointments/appointment-form-sheet";
+import { AppointmentRowActions } from "@/components/appointments/appointment-row-actions";
 import { CalendarNav } from "@/components/appointments/calendar-nav";
 import { CalendarViewSwitcher } from "@/components/appointments/calendar-view-switcher";
 import { MonthView } from "@/components/appointments/month-view";
@@ -18,8 +19,11 @@ import {
   type CalendarView,
 } from "@/lib/appointments/calendar-dates";
 import { getScheduleForRange, listChairs, listVisitTypes } from "@/lib/appointments/queries";
-import { listDoctors } from "@/lib/patients/queries";
+import { getTreatmentRecordsForAppointments } from "@/lib/treatments/queries";
+import { getInvoiceIdsByAppointmentId } from "@/lib/billing/queries";
+import { listDoctors, type DoctorOption } from "@/lib/patients/queries";
 import { typography } from "@/lib/typography";
+import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
 
 const VIEWS = new Set<CalendarView>(["day", "week", "month"]);
 
@@ -33,25 +37,66 @@ function firstParam(value: string | string[] | undefined) {
  * header, nav, and view switcher — gated only on the small catalog queries
  * (doctors/chairs/visit types/permissions) — can paint first instead of
  * waiting on the heavier calendar query.
+ *
+ * Only the "day" view gets per-row actions (Check in/Complete/Edit/Cancel/
+ * Create-or-View-Invoice, via the same AppointmentRowActions Reception
+ * already uses) — week/month render appointments as small grid chips with
+ * no existing interactivity at all, and wiring a dropdown into those would
+ * be a much bigger UX change than "add the invoice action" calls for, plus
+ * exactly the visual density this feature is meant to avoid. The two extra
+ * lookups below (treatment records, existing-invoice ids) are therefore
+ * also day-view-only, so switching to week/month never pays for them.
  */
 async function CalendarBody({
   view,
   start,
   end,
   anchor,
+  doctors,
+  chairs,
+  visitTypes,
+  permissions,
 }: {
   view: CalendarView;
   start: Date;
   end: Date;
   anchor: Date;
+  doctors: DoctorOption[];
+  chairs: Chair[];
+  visitTypes: VisitType[];
+  permissions: string[];
 }) {
   const rows = await getScheduleForRange(start.toISOString(), end.toISOString());
+
+  if (view === "week") return <WeekView rows={rows} start={start} />;
+  if (view === "month") return <MonthView rows={rows} start={start} anchor={anchor} />;
+
+  const appointmentIds = rows.map((row) => row.id);
+  const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
+  const canEditBilling = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
+  const [treatmentRecordsMap, invoiceIdMap] = await Promise.all([
+    canViewClinical ? getTreatmentRecordsForAppointments(appointmentIds) : Promise.resolve(new Map<string, TreatmentRecord[]>()),
+    canEditBilling ? getInvoiceIdsByAppointmentId(appointmentIds) : Promise.resolve(new Map<string, string>()),
+  ]);
+  const treatmentRecordsByAppointmentId = Object.fromEntries(treatmentRecordsMap);
+  const invoiceIdByAppointmentId = Object.fromEntries(invoiceIdMap);
+
   return (
-    <>
-      {view === "day" && <TodaysSchedule rows={rows} emptyMessage="No appointments scheduled for this day." />}
-      {view === "week" && <WeekView rows={rows} start={start} />}
-      {view === "month" && <MonthView rows={rows} start={start} anchor={anchor} />}
-    </>
+    <TodaysSchedule
+      rows={rows}
+      emptyMessage="No appointments scheduled for this day."
+      renderActions={(row) => (
+        <AppointmentRowActions
+          appointment={row}
+          doctors={doctors}
+          chairs={chairs}
+          visitTypes={visitTypes}
+          treatmentRecords={treatmentRecordsByAppointmentId[row.id] ?? []}
+          invoiceId={invoiceIdByAppointmentId[row.id] ?? null}
+          permissions={permissions}
+        />
+      )}
+    />
   );
 }
 
@@ -126,7 +171,16 @@ export default async function AppointmentsPage({
       </div>
 
       <Suspense fallback={<CalendarBodySkeleton />}>
-        <CalendarBody view={view} start={start} end={end} anchor={anchor} />
+        <CalendarBody
+          view={view}
+          start={start}
+          end={end}
+          anchor={anchor}
+          doctors={doctors}
+          chairs={chairs}
+          visitTypes={visitTypes}
+          permissions={permissions}
+        />
       </Suspense>
     </div>
   );

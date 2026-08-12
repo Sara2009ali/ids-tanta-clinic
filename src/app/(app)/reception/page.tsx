@@ -16,6 +16,7 @@ import {
   listVisitTypes,
 } from "@/lib/appointments/queries";
 import { getTreatmentRecordsForAppointments } from "@/lib/treatments/queries";
+import { getInvoiceIdsByAppointmentId } from "@/lib/billing/queries";
 import { listDoctors, type DoctorOption } from "@/lib/patients/queries";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -41,16 +42,23 @@ async function ReceptionScheduleCard({
   permissions: string[];
 }) {
   const schedule = await getTodaysSchedule();
+  const appointmentIds = schedule.map((row) => row.id);
 
   // Only fetched when the viewer can actually see it — clinical data has no
   // business being queried for a role that will never be shown it, same
   // discipline the Reports hub already applies to its own permission-gated
   // KPIs.
   const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
-  const treatmentRecordsMap = canViewClinical
-    ? await getTreatmentRecordsForAppointments(schedule.map((row) => row.id))
-    : new Map<string, TreatmentRecord[]>();
+  const canEditBilling = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
+  const [treatmentRecordsMap, invoiceIdMap] = await Promise.all([
+    canViewClinical ? getTreatmentRecordsForAppointments(appointmentIds) : Promise.resolve(new Map<string, TreatmentRecord[]>()),
+    // Same reasoning: the Create Invoice / View Invoice action only shows
+    // for billing.edit holders, so there's no point looking this up for
+    // anyone else.
+    canEditBilling ? getInvoiceIdsByAppointmentId(appointmentIds) : Promise.resolve(new Map<string, string>()),
+  ]);
   const treatmentRecordsByAppointmentId = Object.fromEntries(treatmentRecordsMap);
+  const invoiceIdByAppointmentId = Object.fromEntries(invoiceIdMap);
 
   return (
     <Card>
@@ -64,6 +72,7 @@ async function ReceptionScheduleCard({
           chairs={chairs}
           visitTypes={visitTypes}
           treatmentRecordsByAppointmentId={treatmentRecordsByAppointmentId}
+          invoiceIdByAppointmentId={invoiceIdByAppointmentId}
           permissions={permissions}
         />
       </CardContent>

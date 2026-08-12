@@ -53,6 +53,12 @@ export default async function VisitTypesPage({
 
   const visitTypes = await listVisitTypesForManagement();
   const filteredVisitTypes = filterVisitTypes(visitTypes, filterValue);
+  // Suggestions come from the full clinic catalog, not the filtered view —
+  // a category shouldn't disappear from the "add procedure" autocomplete
+  // just because the admin is currently filtered down to "Disabled".
+  const categories = Array.from(
+    new Set(visitTypes.map((visitType) => visitType.category).filter((category): category is string => !!category)),
+  ).sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="space-y-6">
@@ -78,7 +84,7 @@ export default async function VisitTypesPage({
         </CardHeader>
         <CardContent className="space-y-4">
           <VisitTypesFilters value={filterValue} />
-          <VisitTypesManager visitTypes={filteredVisitTypes} hasFilters={hasFilters} />
+          <VisitTypesManager visitTypes={filteredVisitTypes} hasFilters={hasFilters} categories={categories} />
         </CardContent>
       </Card>
     </div>

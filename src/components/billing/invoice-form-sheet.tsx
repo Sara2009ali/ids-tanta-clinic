@@ -10,6 +10,7 @@ import { computeInvoiceTotals } from "@/lib/billing/calculations";
 import { formatCurrency } from "@/lib/billing/format";
 import type { InvoiceItemInputValues } from "@/lib/billing/schema";
 import type { InvoiceDetail } from "@/lib/billing/queries";
+import type { VisitType } from "@/types/domain";
 
 import {
   Sheet,
@@ -25,10 +26,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FieldError, FormField } from "@/components/ui/form-field";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PatientPicker, type SelectedPatient } from "@/components/appointments/patient-picker";
 
 function emptyItem(): InvoiceItemInputValues {
-  return { description: "", quantity: 1, unit_price: 0, discount_amount: 0 };
+  return { description: "", quantity: 1, unit_price: 0, discount_amount: 0, visit_type_id: null };
 }
 
 function itemsFromInvoice(invoice: InvoiceDetail): InvoiceItemInputValues[] {
@@ -38,7 +49,244 @@ function itemsFromInvoice(invoice: InvoiceDetail): InvoiceItemInputValues[] {
     quantity: Number(item.quantity),
     unit_price: Number(item.unit_price),
     discount_amount: Number(item.discount_amount),
+    visit_type_id: item.visit_type_id,
   }));
+}
+
+/** "No procedure — plain custom line" sentinel for the picker below (same pattern as visit-types-filters.tsx's ALL_VALUE). */
+const CUSTOM_ITEM_VALUE = "__custom__";
+
+interface ProcedureOption {
+  id: string;
+  name: string;
+  color: string;
+  category: string | null;
+  price: number;
+  isActive: boolean;
+}
+
+function toProcedureOption(visitType: VisitType): ProcedureOption {
+  return {
+    id: visitType.id,
+    name: visitType.name,
+    color: visitType.color,
+    category: visitType.category,
+    price: Number(visitType.price),
+    isActive: visitType.is_active,
+  };
+}
+
+function ProcedureOptionLabel({ option }: { option: ProcedureOption }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span aria-hidden="true" className="size-2 shrink-0 rounded-full" style={{ backgroundColor: option.color }} />
+      {option.name}
+      {!option.isActive && <span className="text-muted-foreground">(inactive)</span>}
+    </span>
+  );
+}
+
+/**
+ * Picks a catalog procedure to prefill an invoice line, or leaves it as a
+ * plain custom item — the "Add service -> choose procedure -> review
+ * price" flow the Procedures Catalog exists to support. Only active
+ * procedures are offered for a *new* selection (matches the same
+ * `is_active` gate the appointment booking dropdown already enforces via
+ * listVisitTypes()); an item already linked to a since-disabled procedure
+ * keeps showing correctly via `inactiveFallback` below instead of silently
+ * losing its selection, so a draft invoice someone reopens after an admin
+ * disables a procedure doesn't look broken.
+ */
+function ProcedureField({
+  visitTypes,
+  item,
+  onSelect,
+}: {
+  visitTypes: VisitType[];
+  item: InvoiceItemInputValues;
+  onSelect: (option: ProcedureOption | null) => void;
+}) {
+  const activeOptions = visitTypes.map(toProcedureOption);
+  const selected = item.visit_type_id ? activeOptions.find((option) => option.id === item.visit_type_id) : undefined;
+  const inactiveFallback: ProcedureOption | null =
+    item.visit_type_id && !selected
+      ? {
+          id: item.visit_type_id,
+          name: item.description || "Linked procedure",
+          color: "#9ca3af",
+          category: null,
+          price: Number(item.unit_price) || 0,
+          isActive: false,
+        }
+      : null;
+
+  const categories = Array.from(new Set(activeOptions.map((option) => option.category ?? "Other"))).sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const grouped = categories.length > 1;
+
+  function handleValueChange(value: string | null) {
+    if (!value || value === CUSTOM_ITEM_VALUE) {
+      onSelect(null);
+      return;
+    }
+    const option = inactiveFallback?.id === value ? inactiveFallback : activeOptions.find((o) => o.id === value);
+    if (option) onSelect(option);
+  }
+
+  return (
+    <Select
+      items={{
+        [CUSTOM_ITEM_VALUE]: <span className="text-muted-foreground">Custom item</span>,
+        ...(inactiveFallback ? { [inactiveFallback.id]: <ProcedureOptionLabel option={inactiveFallback} /> } : {}),
+        ...Object.fromEntries(activeOptions.map((option) => [option.id, <ProcedureOptionLabel key={option.id} option={option} />])),
+      }}
+      value={item.visit_type_id ?? CUSTOM_ITEM_VALUE}
+      onValueChange={handleValueChange}
+    >
+      <SelectTrigger className="h-8 w-full sm:w-56">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={CUSTOM_ITEM_VALUE}>
+          <span className="text-muted-foreground">Custom item</span>
+        </SelectItem>
+        {inactiveFallback && (
+          <SelectItem value={inactiveFallback.id}>
+            <ProcedureOptionLabel option={inactiveFallback} />
+          </SelectItem>
+        )}
+        {activeOptions.length > 0 && <SelectSeparator />}
+        {grouped
+          ? categories.map((category) => (
+              <SelectGroup key={category}>
+                <SelectLabel>{category}</SelectLabel>
+                {activeOptions
+                  .filter((option) => (option.category ?? "Other") === category)
+                  .map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      <ProcedureOptionLabel option={option} />
+                    </SelectItem>
+                  ))}
+              </SelectGroup>
+            ))
+          : activeOptions.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                <ProcedureOptionLabel option={option} />
+              </SelectItem>
+            ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/**
+ * One invoice line: an optional procedure picker (hidden entirely when the
+ * clinic hasn't set up a catalog yet, so a clinic with zero procedures sees
+ * exactly today's plain custom-item row) plus the description/qty/price/
+ * discount fields, which stay the single source of truth for what this
+ * line actually charges — selecting a procedure only prefills them once,
+ * it never locks them.
+ */
+function InvoiceItemRow({
+  item,
+  visitTypes,
+  onChange,
+  onRemove,
+  canRemove,
+}: {
+  item: InvoiceItemInputValues;
+  visitTypes: VisitType[];
+  onChange: (patch: Partial<InvoiceItemInputValues>) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}) {
+  const catalogPrice = visitTypes.find((v) => v.id === item.visit_type_id)?.price;
+  const priceOverridden =
+    item.visit_type_id != null && catalogPrice != null && Number(item.unit_price) !== Number(catalogPrice);
+
+  function handleProcedureSelect(option: ProcedureOption | null) {
+    if (!option) {
+      onChange({ visit_type_id: null });
+      return;
+    }
+    // Switching procedures always resets description + price to the new
+    // catalog defaults, rather than trying to preserve a manual edit that
+    // applied to a different procedure at a different price — predictable
+    // beats clever here, and there's no hidden "was this edited" flag to
+    // keep in sync as a result.
+    onChange({ visit_type_id: option.id, description: option.name, unit_price: option.price });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border p-2">
+      {visitTypes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <ProcedureField visitTypes={visitTypes} item={item} onSelect={handleProcedureSelect} />
+          {priceOverridden && (
+            <button
+              type="button"
+              onClick={() => onChange({ unit_price: catalogPrice })}
+              className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Catalog price is {formatCurrency(Number(catalogPrice))} — reset
+            </button>
+          )}
+        </div>
+      )}
+      <div className="grid grid-cols-12 gap-2">
+        <div className="col-span-12 sm:col-span-5">
+          <Input
+            placeholder="Description"
+            value={item.description}
+            onChange={(event) => onChange({ description: event.target.value })}
+          />
+        </div>
+        <div className="col-span-4 sm:col-span-2">
+          <Input
+            type="number"
+            min={0.01}
+            step={0.01}
+            placeholder="Qty"
+            value={item.quantity}
+            onChange={(event) => onChange({ quantity: Number(event.target.value) })}
+          />
+        </div>
+        <div className="col-span-4 sm:col-span-2">
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            placeholder="Unit price"
+            value={item.unit_price}
+            onChange={(event) => onChange({ unit_price: Number(event.target.value) })}
+          />
+        </div>
+        <div className="col-span-3 sm:col-span-2">
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            placeholder="Discount"
+            value={item.discount_amount}
+            onChange={(event) => onChange({ discount_amount: Number(event.target.value) })}
+          />
+        </div>
+        <div className="col-span-1 flex items-center justify-end">
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            disabled={!canRemove}
+            onClick={onRemove}
+            aria-label="Remove item"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export interface InvoiceFormSheetProps {
@@ -48,6 +296,16 @@ export interface InvoiceFormSheetProps {
   initialPatient?: SelectedPatient;
   /** Links the new invoice to an appointment. Ignored in edit mode. */
   initialAppointmentId?: string;
+  /**
+   * Seeds the first invoice line (e.g. from an appointment's visit type +
+   * its current catalog price) instead of a blank item. Ignored in edit
+   * mode. Still just a starting point — every field stays exactly as
+   * editable as a manually-added item, same ProcedureField/description/
+   * price/quantity/discount behavior, nothing new introduced here.
+   */
+  initialItem?: InvoiceItemInputValues;
+  /** Active procedures for the item picker. Pass `[]` (never omit) if the caller can't fetch it — the picker just hides itself, same as a clinic with an empty catalog. */
+  visitTypes: VisitType[];
   className?: string;
   /**
    * Uncontrolled by default (renders its own trigger button — the Billing
@@ -63,6 +321,8 @@ export function InvoiceFormSheet({
   invoice,
   initialPatient,
   initialAppointmentId,
+  initialItem,
+  visitTypes,
   className,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
@@ -81,7 +341,7 @@ export function InvoiceFormSheet({
     invoice ? { id: invoice.patient_id, full_name: invoice.patient_name } : (initialPatient ?? null),
   );
   const [items, setItems] = useState<InvoiceItemInputValues[]>(
-    invoice ? itemsFromInvoice(invoice) : [emptyItem()],
+    invoice ? itemsFromInvoice(invoice) : [initialItem ?? emptyItem()],
   );
   const [taxPercent, setTaxPercent] = useState(invoice ? Number(invoice.tax_percent) : 0);
   const lockPatient = isEdit || !!initialPatient;
@@ -103,7 +363,7 @@ export function InvoiceFormSheet({
     setFieldErrors({});
     if (!isEdit) {
       setPatient(initialPatient ?? null);
-      setItems([emptyItem()]);
+      setItems([initialItem ?? emptyItem()]);
       setTaxPercent(0);
     }
   }
@@ -201,57 +461,14 @@ export function InvoiceFormSheet({
             </div>
             <div className="space-y-2">
               {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 rounded-lg border border-border p-2">
-                  <div className="col-span-12 sm:col-span-5">
-                    <Input
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(event) => updateItem(index, { description: event.target.value })}
-                    />
-                  </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <Input
-                      type="number"
-                      min={0.01}
-                      step={0.01}
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })}
-                    />
-                  </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      placeholder="Unit price"
-                      value={item.unit_price}
-                      onChange={(event) => updateItem(index, { unit_price: Number(event.target.value) })}
-                    />
-                  </div>
-                  <div className="col-span-3 sm:col-span-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      placeholder="Discount"
-                      value={item.discount_amount}
-                      onChange={(event) => updateItem(index, { discount_amount: Number(event.target.value) })}
-                    />
-                  </div>
-                  <div className="col-span-1 flex items-center justify-end">
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      disabled={items.length === 1}
-                      onClick={() => removeItem(index)}
-                      aria-label="Remove item"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                <InvoiceItemRow
+                  key={index}
+                  item={item}
+                  visitTypes={visitTypes}
+                  onChange={(patch) => updateItem(index, patch)}
+                  onRemove={() => removeItem(index)}
+                  canRemove={items.length > 1}
+                />
               ))}
             </div>
             <FieldError message={fieldErrors.items} />

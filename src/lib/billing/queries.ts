@@ -214,6 +214,47 @@ export async function getPatientPayments(patientId: string): Promise<PatientPaym
   }));
 }
 
+/**
+ * appointment_id -> most recent non-cancelled invoice id, for the Reception
+ * Workspace's Create Invoice / View Invoice decision (Phase 5). One batched
+ * query for the whole visible schedule rather than one lookup per row —
+ * same "fetch broad" convention as getTreatmentRecordsForAppointments().
+ *
+ * A cancelled invoice doesn't count as "already invoiced": it represents a
+ * billing attempt that didn't go through, so the appointment should still
+ * offer a fresh Create Invoice rather than only ever linking to a dead
+ * record. This is a UX nudge, not a hard block — invoices.appointment_id
+ * has no unique constraint, so an intentional second invoice (e.g. a
+ * same-visit add-on) always remains possible via the general New Invoice
+ * flow regardless of what this map says.
+ */
+export async function getInvoiceIdsByAppointmentId(appointmentIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (appointmentIds.length === 0) return map;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("id, appointment_id")
+    .in("appointment_id", appointmentIds)
+    .neq("status", "cancelled")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("getInvoiceIdsByAppointmentId failed", error);
+    return map;
+  }
+
+  // Ascending order + overwrite-on-set means the map ends up holding each
+  // appointment's most recent invoice, without a DISTINCT ON query.
+  for (const row of data ?? []) {
+    if (row.appointment_id) map.set(row.appointment_id, row.id);
+  }
+
+  return map;
+}
+
 export interface BillingDashboardCounts {
   /** Sum of balance_due across every unpaid/partially_paid invoice. */
   outstandingTotal: number;

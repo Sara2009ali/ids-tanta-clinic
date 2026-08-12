@@ -11,6 +11,14 @@ export const invoiceItemInputSchema = z.object({
   quantity: z.coerce.number().positive("Quantity must be greater than zero"),
   unit_price: z.coerce.number().min(0, "Unit price can't be negative"),
   discount_amount: z.coerce.number().min(0, "Discount can't be negative").default(0),
+  // Which visit_types (Procedures Catalog) row this line came from, if any
+  // — null for a custom (non-catalog) item. See
+  // 0023_invoice_items_visit_type.sql. Purely a provenance link:
+  // description/unit_price above are
+  // always the source of truth for what this line actually charges, both
+  // now and forever (see invoiceItemRows() in actions.ts), so no business
+  // rule here needs to re-validate this id against the live catalog.
+  visit_type_id: z.string().nullable().optional().transform((value) => value || null),
 });
 
 export type InvoiceItemInputValues = z.infer<typeof invoiceItemInputSchema>;

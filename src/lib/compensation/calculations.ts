@@ -60,3 +60,31 @@ export function proratedEarningAmount(
   if (invoiceSubtotal <= 0) return 0;
   return round2(paymentAmount * (fullCompensation / invoiceSubtotal));
 }
+
+export interface InvoiceLineForGrouping {
+  visitTypeId: string | null;
+  lineTotal: number;
+}
+
+export interface CompensationGroup {
+  visitTypeId: string | null;
+  /** Sum of line_total across every item in this group — pre-tax, discount-inclusive, exactly like invoices.subtotal itself. */
+  groupSubtotal: number;
+}
+
+/**
+ * Mirrors sync_doctor_compensation()'s `group by ii.visit_type_id` exactly
+ * (0026_compensation_procedure_grouping.sql): one group per distinct
+ * procedure billed on the invoice, with every custom (non-catalog) item —
+ * visitTypeId null — collapsing into a single combined group, the same
+ * NULL-collation behavior Postgres's GROUP BY already gives the trigger
+ * for free. A JS Map naturally does the same collation, since `null` is a
+ * single distinct key like any other.
+ */
+export function groupInvoiceLinesByVisitType(lines: readonly InvoiceLineForGrouping[]): CompensationGroup[] {
+  const totals = new Map<string | null, number>();
+  for (const line of lines) {
+    totals.set(line.visitTypeId, round2((totals.get(line.visitTypeId) ?? 0) + line.lineTotal));
+  }
+  return Array.from(totals.entries()).map(([visitTypeId, groupSubtotal]) => ({ visitTypeId, groupSubtotal }));
+}
