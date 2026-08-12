@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { rangeToTimestampBounds, type ReportDateRange } from "@/lib/reports/date-range";
+import { aggregateProcedureRevenue, type ProcedureAmount } from "@/lib/reports/calculations";
 
 /**
  * Reports & Analytics data layer. Per the approved architecture: every
@@ -280,6 +281,12 @@ export async function getPatientRetentionSummary(range: ReportDateRange): Promis
 // (0014_doctor_compensation.sql) already established. doctorId null means
 // "invoice with no linked appointment" — the same out-of-scope gap
 // Compensation's own trigger already documents and doesn't treat as an error.
+//
+// Deliberately NOT touched by the procedure-attribution fix below: neither
+// function ever reads visit_type_id from anywhere — doctor is their only
+// attribution axis, and it stays appointment-sourced by design (see the
+// compensation fix's own decision to keep doctor_id on invoices/appointments
+// rather than invoice_items). There is nothing to correct here.
 // ---------------------------------------------------------------------------
 
 export interface DoctorAmount {
@@ -359,44 +366,65 @@ export async function getDoctorCollections(range: ReportDateRange): Promise<Doct
 }
 
 // ---------------------------------------------------------------------------
-// Procedures — the same invoice -> appointment join as Doctors, grouped by
-// visit_type_id instead of doctor_id. invoice_items has no procedure link
-// (it's free-text line descriptions — see the approved architecture
-// review), so appointments.visit_type_id is the only structured attribution
-// available, same limitation Doctor production/collections already accept.
+// Procedures — attributed via invoice_items.visit_type_id
+// (0023_invoice_items_visit_type.sql), the actual billed procedure per
+// line, not appointments.visit_type_id (what was originally booked, which
+// can differ once a procedure is changed on the invoice — Phase 3). Same
+// correction sync_doctor_compensation() already went through: the old
+// invoice -> appointment join misattributed a changed or multi-procedure
+// invoice to a single, possibly-stale procedure.
+//
+// Revenue is invoice_items.line_total (pre-tax), not invoices.total
+// (post-tax) — tax applies once per invoice, not per line, and there is no
+// existing rule anywhere in this codebase for splitting it across
+// procedures. Attributing the post-tax total per procedure would also
+// double-count revenue on any multi-procedure invoice. This is the same
+// non-invented choice the compensation trigger already made for the
+// identical reason (compensation is computed off line_total, tax excluded
+// entirely), not a new tax rule introduced here.
+//
+// Every custom (non-catalog) item — visit_type_id null — collapses into one
+// combined group, the same NULL-collation grouping the compensation
+// trigger uses; multiple items for the same procedure sum together rather
+// than producing duplicate rows.
 // ---------------------------------------------------------------------------
 
-export interface ProcedureAmount {
-  visitTypeId: string | null;
-  revenue: number;
-  appointmentCount: number;
+// ProcedureAmount and the pure aggregateProcedureRevenue() step live in
+// reports/calculations.ts (not here) — this file has `import "server-only"`
+// at the top for its real Supabase calls, which throws if imported into a
+// test file, so the testable pure logic has to live somewhere without that
+// guard. Re-exported here so existing callers importing ProcedureAmount
+// from "@/lib/reports/queries" don't need to change.
+export type { ProcedureAmount } from "@/lib/reports/calculations";
+
+interface InvoiceItemProcedureQueryRow {
+  visit_type_id: string | null;
+  line_total: number;
 }
 
 export async function getProcedureRevenue(range: ReportDateRange): Promise<ProcedureAmount[]> {
   const supabase = await createClient();
 
+  // !inner + dot-notation filters on the joined invoices columns — same
+  // pattern already used by getPatientPayments() (billing/queries.ts) to
+  // filter invoice_items' children by a column that only exists on the
+  // parent invoice.
   const { data, error } = await supabase
-    .from("invoices")
-    .select("total, appointments(visit_type_id)")
-    .is("deleted_at", null)
-    .gte("issued_date", range.start)
-    .lte("issued_date", range.end);
+    .from("invoice_items")
+    .select("visit_type_id, line_total, invoices!inner(issued_date, deleted_at)")
+    .is("invoices.deleted_at", null)
+    .gte("invoices.issued_date", range.start)
+    .lte("invoices.issued_date", range.end);
 
   if (error) {
     console.error("getProcedureRevenue failed", error);
     return [];
   }
 
-  const rows = (data ?? []) as unknown as { total: number; appointments: { visit_type_id: string } | null }[];
-  const totals = new Map<string | null, { revenue: number; appointmentCount: number }>();
-  for (const row of rows) {
-    const visitTypeId = row.appointments?.visit_type_id ?? null;
-    const existing = totals.get(visitTypeId) ?? { revenue: 0, appointmentCount: 0 };
-    existing.revenue += Number(row.total);
-    existing.appointmentCount += 1;
-    totals.set(visitTypeId, existing);
-  }
-  return Array.from(totals.entries()).map(([visitTypeId, v]) => ({ visitTypeId, ...v }));
+  const rows = (data ?? []) as unknown as InvoiceItemProcedureQueryRow[];
+  return aggregateProcedureRevenue(
+    rows.map((row) => ({ visitTypeId: row.visit_type_id, lineTotal: Number(row.line_total) })),
+  );
 }
 
 export interface PaymentMethodAmount {
