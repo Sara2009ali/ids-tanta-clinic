@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Users,
   Stethoscope,
+  Tags,
   CalendarDays,
   ClipboardList,
   RotateCcw,
@@ -43,6 +44,17 @@ export const NAV_ITEMS: NavItem[] = [
     // Same gate /settings/doctors already enforces on itself
     // (requirePermission(SETTINGS_MANAGE)) — the nav entry shouldn't offer
     // a link the page would immediately redirect away from.
+    permission: PERMISSIONS.SETTINGS_MANAGE,
+  },
+  {
+    href: "/procedures",
+    label: "Procedures",
+    icon: Tags,
+    section: "Clinical",
+    // Same gate the page enforces on itself — moved out of Appointments
+    // (Phase: IA cleanup) so the catalog has one canonical, standalone
+    // management home; Appointments/billing/reception remain consumers of
+    // it, not owners.
     permission: PERMISSIONS.SETTINGS_MANAGE,
   },
   {

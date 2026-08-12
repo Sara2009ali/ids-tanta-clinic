@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function VisitTypesError({
+export default function ProceduresError({
   error,
   reset,
 }: {
@@ -13,7 +12,7 @@ export default function VisitTypesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("VisitTypesPage failed to render", error);
+    console.error("ProceduresPage failed to render", error);
   }, [error]);
 
   return (
@@ -21,16 +20,11 @@ export default function VisitTypesError({
       <AlertTriangle className="size-8 text-muted-foreground" />
       <div className="space-y-1">
         <p className="text-sm font-medium">Couldn&apos;t load procedures.</p>
-        <p className="text-sm text-muted-foreground">Something went wrong. You can try again or go back.</p>
+        <p className="text-sm text-muted-foreground">Something went wrong. Please try again.</p>
       </div>
-      <div className="flex items-center gap-2 pt-2">
-        <Button variant="outline" size="sm" render={<Link href="/appointments" />}>
-          Back to Appointments
-        </Button>
-        <Button size="sm" onClick={reset}>
-          Try again
-        </Button>
-      </div>
+      <Button size="sm" onClick={reset} className="mt-2">
+        Try again
+      </Button>
     </div>
   );
 }

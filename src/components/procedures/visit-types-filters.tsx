@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { buildVisitTypesHref, type VisitTypesQueryParams } from "@/components/appointments/visit-types-query-params";
+import { buildVisitTypesHref, type VisitTypesQueryParams } from "@/components/procedures/visit-types-query-params";
 
 const ALL_VALUE = "all";
 const SEARCH_DEBOUNCE_MS = 300;

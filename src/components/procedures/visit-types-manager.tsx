@@ -24,7 +24,7 @@ import {
   deleteVisitType,
   toggleVisitTypeActive,
   updateVisitType,
-} from "@/lib/appointments/visit-type-actions";
+} from "@/lib/procedures/visit-type-actions";
 import type { VisitTypeForManagement } from "@/lib/appointments/queries";
 import { formatCurrency } from "@/lib/billing/format";
 

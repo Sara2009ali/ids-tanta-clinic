@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { visitTypeFormSchema, visitTypeFormValuesFromFormData } from "@/lib/appointments/visit-type-schema";
+import { visitTypeFormSchema, visitTypeFormValuesFromFormData } from "@/lib/procedures/visit-type-schema";
 
 const VALID = {
   name: "Root Canal",

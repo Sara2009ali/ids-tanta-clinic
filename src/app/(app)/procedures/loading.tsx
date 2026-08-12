@@ -3,15 +3,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 const SKELETON_ROWS = 6;
 
-export default function VisitTypesLoading() {
+export default function ProceduresLoading() {
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Skeleton className="size-9 rounded-md" />
-        <div className="space-y-2">
-          <Skeleton className="h-9 w-32" />
-          <Skeleton className="h-4 w-72" />
-        </div>
+      <div className="space-y-2">
+        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-4 w-72" />
       </div>
 
       <div className="space-y-4 rounded-xl border border-border p-6">

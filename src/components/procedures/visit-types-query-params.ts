@@ -12,5 +12,5 @@ export function buildVisitTypesHref(base: VisitTypesQueryParams, updates: VisitT
   if (merged.query) params.set("query", merged.query);
   if (merged.status) params.set("status", merged.status);
   const qs = params.toString();
-  return qs ? `/appointments/visit-types?${qs}` : "/appointments/visit-types";
+  return qs ? `/procedures?${qs}` : "/procedures";
 }

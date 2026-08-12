@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensurePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { writeAuditLog } from "@/lib/audit/log";
-import { visitTypeFormSchema, visitTypeFormValuesFromFormData } from "@/lib/appointments/visit-type-schema";
+import { visitTypeFormSchema, visitTypeFormValuesFromFormData } from "@/lib/procedures/visit-type-schema";
 
 export interface VisitTypeActionState {
   error?: string;
@@ -14,7 +14,7 @@ export interface VisitTypeActionState {
 }
 
 const UNIQUE_VIOLATION = "23505";
-const VISIT_TYPES_PATH = "/appointments/visit-types";
+const VISIT_TYPES_PATH = "/procedures";
 
 function fieldErrorsFromZod(error: import("zod").ZodError): Record<string, string> {
   const fieldErrors: Record<string, string> = {};
