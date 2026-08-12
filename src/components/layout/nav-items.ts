@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  Stethoscope,
   CalendarDays,
   ClipboardList,
   RotateCcw,
@@ -34,6 +35,16 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "Overview" },
   { href: "/patients", label: "Patients", icon: Users, section: "Clinical", permission: PERMISSIONS.PATIENTS_VIEW },
+  {
+    href: "/settings/doctors",
+    label: "Doctors",
+    icon: Stethoscope,
+    section: "Clinical",
+    // Same gate /settings/doctors already enforces on itself
+    // (requirePermission(SETTINGS_MANAGE)) — the nav entry shouldn't offer
+    // a link the page would immediately redirect away from.
+    permission: PERMISSIONS.SETTINGS_MANAGE,
+  },
   {
     href: "/appointments",
     label: "Appointments",
