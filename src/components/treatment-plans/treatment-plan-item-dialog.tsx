@@ -11,6 +11,7 @@ import { FieldError, FormField } from "@/components/ui/form-field";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createTreatmentPlanItem, updateTreatmentPlanItem } from "@/lib/treatment-plans/actions";
+import { ToothSelect } from "@/components/dental-chart/tooth-select";
 import { TREATMENT_PLAN_ITEM_PRIORITY_LABELS, type TreatmentPlanItemPriority, type VisitType } from "@/types/domain";
 import type { TreatmentPlanItemWithContext } from "@/lib/treatment-plans/queries";
 import type { ScheduleRow } from "@/lib/appointments/queries";
@@ -94,6 +95,7 @@ interface FormState {
   estimatedPrice: string;
   quantity: string;
   toothReference: string;
+  toothId: number | null;
   priority: TreatmentPlanItemPriority;
   notes: string;
   visitTypeId: string | null;
@@ -106,6 +108,7 @@ function emptyForm(): FormState {
     estimatedPrice: "",
     quantity: "1",
     toothReference: "",
+    toothId: null,
     priority: "normal",
     notes: "",
     visitTypeId: null,
@@ -119,6 +122,7 @@ function formFromItem(item: TreatmentPlanItemWithContext): FormState {
     estimatedPrice: String(item.estimated_price),
     quantity: String(item.quantity),
     toothReference: item.tooth_reference ?? "",
+    toothId: item.tooth_id ?? null,
     priority: item.priority as TreatmentPlanItemPriority,
     notes: item.notes ?? "",
     visitTypeId: item.visit_type_id,
@@ -166,6 +170,7 @@ export function TreatmentPlanItemDialog({
     formData.set("estimated_price", form.estimatedPrice);
     formData.set("quantity", form.quantity);
     formData.set("tooth_reference", form.toothReference);
+    formData.set("tooth_id", form.toothId != null ? String(form.toothId) : "");
     formData.set("priority", form.priority);
     formData.set("notes", form.notes);
     formData.set("visit_type_id", form.visitTypeId ?? "");
@@ -238,6 +243,13 @@ export function TreatmentPlanItemDialog({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField
+              label="Tooth (structured)"
+              htmlFor="item_tooth_id"
+              description="Optional — powers the Dental Chart. Independent of the free-text field below; picking a tooth here never rewrites it."
+            >
+              <ToothSelect id="item_tooth_id" value={form.toothId} onValueChange={(fdi) => setForm((prev) => ({ ...prev, toothId: fdi }))} />
+            </FormField>
+            <FormField
               label="Tooth / site"
               htmlFor="item_tooth"
               description="Optional — write it the way you'd say it, e.g. “Tooth 36”, “Teeth 11, 21”, “Upper right quadrant”"
@@ -249,27 +261,28 @@ export function TreatmentPlanItemDialog({
                 onChange={(e) => setForm((prev) => ({ ...prev, toothReference: e.target.value }))}
               />
             </FormField>
-            <FormField label="Priority" htmlFor="item_priority">
-              <Select
-                items={TREATMENT_PLAN_ITEM_PRIORITY_LABELS}
-                value={form.priority}
-                onValueChange={(v) => v && setForm((prev) => ({ ...prev, priority: v as TreatmentPlanItemPriority }))}
-              >
-                <SelectTrigger id="item_priority" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.entries(TREATMENT_PLAN_ITEM_PRIORITY_LABELS) as [TreatmentPlanItemPriority, string][]).map(
-                    ([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </FormField>
           </div>
+
+          <FormField label="Priority" htmlFor="item_priority">
+            <Select
+              items={TREATMENT_PLAN_ITEM_PRIORITY_LABELS}
+              value={form.priority}
+              onValueChange={(v) => v && setForm((prev) => ({ ...prev, priority: v as TreatmentPlanItemPriority }))}
+            >
+              <SelectTrigger id="item_priority" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(TREATMENT_PLAN_ITEM_PRIORITY_LABELS) as [TreatmentPlanItemPriority, string][]).map(
+                  ([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </FormField>
 
           {appointments.length > 0 && (
             <FormField

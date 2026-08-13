@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { createTreatmentRecord } from "@/lib/treatments/actions";
 import { changeTreatmentPlanItemStatus } from "@/lib/treatment-plans/actions";
 import { initialRecordTreatmentVisitTypeId } from "@/lib/treatment-plans/calculations";
+import { ToothSelect } from "@/components/dental-chart/tooth-select";
 import type { TreatmentPlanItemWithContext } from "@/lib/treatment-plans/queries";
 import type { VisitType } from "@/types/domain";
 
@@ -42,6 +43,10 @@ export function TreatmentPlanRecordTreatmentDialog({
   const [pending, startTransition] = useTransition();
   const [visitTypeId, setVisitTypeId] = useState(initialRecordTreatmentVisitTypeId(item));
   const [notes, setNotes] = useState("");
+  // Prefilled from the plan item's own structured tooth, same "prefill once,
+  // still freely editable after" convention as visitTypeId above — the
+  // dentist may be recording treatment on a different tooth than planned.
+  const [toothId, setToothId] = useState<number | null>(item.tooth_id ?? null);
   const [markCompleted, setMarkCompleted] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -59,6 +64,7 @@ export function TreatmentPlanRecordTreatmentDialog({
     formData.set("visit_type_id", visitTypeId);
     formData.set("notes", notes);
     formData.set("treatment_plan_item_id", item.id);
+    formData.set("tooth_id", toothId != null ? String(toothId) : "");
 
     startTransition(async () => {
       const result = await createTreatmentRecord(eligibleAppointmentId, formData);
@@ -119,6 +125,11 @@ export function TreatmentPlanRecordTreatmentDialog({
                 {error}
               </p>
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="record_treatment_tooth_id">Tooth</Label>
+            <ToothSelect id="record_treatment_tooth_id" value={toothId} onValueChange={setToothId} />
           </div>
 
           <div className="space-y-1.5">

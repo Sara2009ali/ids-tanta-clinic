@@ -5,6 +5,7 @@ import {
   CalendarDays,
   FileMinus,
   FilePlus,
+  MapPin,
   Pencil,
   PlusCircle,
   Receipt,
@@ -26,12 +27,30 @@ import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
+  TOOTH_CONDITION_LABELS,
+  TOOTH_STATUS_LABELS,
   type AppointmentStatus,
   type AuditLogEntry,
   type PatientMedicalAlert,
+  type PatientToothEvent,
+  type ToothCondition,
+  type ToothStatus,
   type TreatmentRecord,
   type VisitType,
 } from "@/types/domain";
+
+/** Dental Chart's two v1 event types (0029_dental_chart.sql), in plain language for the whole-patient feed — the Tooth Sheet shows the same events scoped to one tooth; this is the cross-tooth view. */
+function dentalChartEventTitle(event: PatientToothEvent): string {
+  if (event.event_type === "observation") {
+    return `Tooth ${event.fdi_number}: ${event.notes ?? "Observation recorded"}`;
+  }
+  if (event.status && event.status !== event.previous_status) {
+    return `Tooth ${event.fdi_number}: marked ${TOOTH_STATUS_LABELS[event.status as ToothStatus]}`;
+  }
+  const from = event.previous_condition ? TOOTH_CONDITION_LABELS[event.previous_condition as ToothCondition] : "Healthy";
+  const to = event.condition ? TOOTH_CONDITION_LABELS[event.condition as ToothCondition] : "Healthy";
+  return `Tooth ${event.fdi_number}: ${from} → ${to}`;
+}
 
 /** Human-readable label for an audit_log `action` string. Falls back to the raw value. */
 export function humanizeAuditAction(action: string): string {
@@ -144,6 +163,7 @@ export function PatientTimeline({
   appointments = [],
   invoices = [],
   payments = [],
+  dentalChartEvents = [],
 }: {
   auditEntries: AuditLogEntry[];
   alerts: PatientMedicalAlert[];
@@ -152,6 +172,7 @@ export function PatientTimeline({
   appointments?: ScheduleRow[];
   invoices?: InvoiceListRow[];
   payments?: PatientPaymentRow[];
+  dentalChartEvents?: PatientToothEvent[];
 }) {
   const entries: TimelineEntry[] = [
     ...auditEntries.map((entry) => ({
@@ -207,6 +228,13 @@ export function PatientTimeline({
       icon: Wallet,
       title: `Payment received: ${formatCurrency(Number(payment.amount))} (${payment.invoice_number})`,
       tone: "default" as const,
+    })),
+    ...dentalChartEvents.map((event) => ({
+      id: `tooth-event-${event.id}`,
+      date: event.created_at,
+      icon: MapPin,
+      title: dentalChartEventTitle(event),
+      tone: event.condition === "caries" ? ("warning" as const) : ("default" as const),
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

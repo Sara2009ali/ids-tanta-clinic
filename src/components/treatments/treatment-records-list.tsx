@@ -3,7 +3,7 @@
 import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Loader2, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, MapPin, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteTreatmentRecord, updateTreatmentRecord } from "@/lib/treatments/actions";
+import { ToothSelect } from "@/components/dental-chart/tooth-select";
 import type { DoctorOption } from "@/lib/patients/queries";
 import type { TreatmentRecord, VisitType } from "@/types/domain";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -54,6 +55,7 @@ export function TreatmentRecordsList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editVisitTypeId, setEditVisitTypeId] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editToothId, setEditToothId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function toggle(id: string) {
@@ -70,6 +72,7 @@ export function TreatmentRecordsList({
     setEditingId(record.id);
     setEditVisitTypeId(record.visit_type_id);
     setEditNotes(record.notes ?? "");
+    setEditToothId(record.tooth_id ?? null);
   }
 
   function handleSave(recordId: string) {
@@ -77,6 +80,7 @@ export function TreatmentRecordsList({
       const formData = new FormData();
       formData.set("visit_type_id", editVisitTypeId);
       formData.set("notes", editNotes);
+      formData.set("tooth_id", editToothId != null ? String(editToothId) : "");
       const result = await updateTreatmentRecord(recordId, formData);
       if (result.error) {
         toast.error(result.error);
@@ -145,7 +149,15 @@ export function TreatmentRecordsList({
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(record.created_at)}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{procedureName}</Badge>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Badge variant="secondary">{procedureName}</Badge>
+                      {record.tooth_id != null && (
+                        <Badge variant="outline">
+                          <MapPin className="size-3" />
+                          Tooth {record.tooth_id}
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>Dr. {doctorName}</TableCell>
                   {canEdit && (
@@ -188,6 +200,7 @@ export function TreatmentRecordsList({
                               ))}
                             </SelectContent>
                           </Select>
+                          <ToothSelect value={editToothId} onValueChange={setEditToothId} />
                           <Textarea
                             value={editNotes}
                             onChange={(event) => setEditNotes(event.target.value)}

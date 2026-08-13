@@ -110,6 +110,7 @@ export async function createTreatmentRecord(
       notes: parsed.data.notes ?? null,
       created_by: staff.id,
       treatment_plan_item_id: parsed.data.treatment_plan_item_id ?? null,
+      tooth_id: parsed.data.tooth_id,
     })
     .select()
     .single();
@@ -178,6 +179,7 @@ export async function updateTreatmentRecord(
       visit_type_id: parsed.data.visit_type_id,
       notes: parsed.data.notes ?? null,
       treatment_plan_item_id: parsed.data.treatment_plan_item_id ?? null,
+      tooth_id: parsed.data.tooth_id,
     })
     .eq("id", recordId)
     .select("id, clinic_id, patient_id")

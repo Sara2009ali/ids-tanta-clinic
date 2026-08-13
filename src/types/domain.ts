@@ -23,6 +23,12 @@ export type PatientClinicalNote = Database["public"]["Tables"]["patient_clinical
 export type TreatmentPlan = Database["public"]["Tables"]["treatment_plans"]["Row"];
 export type TreatmentPlanItem = Database["public"]["Tables"]["treatment_plan_items"]["Row"];
 
+// Dental Chart (0029_dental_chart.sql). teeth is global reference data (no
+// clinic_id), seeded once — see the migration header for the full rationale.
+export type Tooth = Database["public"]["Tables"]["teeth"]["Row"];
+export type PatientToothState = Database["public"]["Tables"]["patient_tooth_state"]["Row"];
+export type PatientToothEvent = Database["public"]["Tables"]["patient_tooth_events"]["Row"];
+
 export type DoctorWeeklyHours = Database["public"]["Tables"]["doctor_weekly_hours"]["Row"];
 export type DoctorVacation = Database["public"]["Tables"]["doctor_vacations"]["Row"];
 export type DoctorScheduleException = Database["public"]["Tables"]["doctor_schedule_exceptions"]["Row"];
@@ -65,6 +71,27 @@ export type PaymentType = "payment" | "refund";
 export type TreatmentPlanStatus = "draft" | "active" | "completed" | "abandoned";
 export type TreatmentPlanItemStatus = "planned" | "accepted" | "postponed" | "rejected" | "in_progress" | "completed";
 export type TreatmentPlanItemPriority = "normal" | "high" | "urgent";
+
+// teeth.dentition / teeth.arch (0029_dental_chart.sql) — generated columns
+// derived from fdi_number, not module-local vocabulary; the value set is
+// fixed by anatomy, not expected to grow.
+export type ToothDentition = "permanent" | "primary";
+export type ToothArch = "upper" | "lower";
+
+// patient_tooth_state.status / .condition (0029_dental_chart.sql) — text +
+// check, same convention as treatment_plan_items above. The six-value
+// condition vocabulary is deliberately the smallest useful set for v1 (not a
+// diagnosis taxonomy); widening it later is a check-constraint change, never
+// a new column. No surfaces column in v1 — whole-tooth granularity only.
+export type ToothStatus = "present" | "missing" | "unerupted";
+export type ToothCondition = "caries" | "filling" | "crown" | "root_canal" | "watch" | "other";
+
+// patient_tooth_events.event_type (0029_dental_chart.sql) — exactly two event
+// types: observation (a note that doesn't itself change stored state) and
+// state_changed (fired whenever a dentist explicitly edits patient_tooth_state
+// through the Tooth Sheet). Every event is staff-initiated — nothing derives
+// or classifies a tooth's condition automatically from a treatment record.
+export type ToothEventType = "observation" | "state_changed";
 
 // compensation_rules.type / doctor_earnings.entry_type (0014_doctor_compensation.sql)
 // — text + check, same convention. A new rule type (e.g. a future
@@ -198,4 +225,24 @@ export const INVENTORY_MOVEMENT_TYPE_LABELS: Record<InventoryMovementType, strin
   consumption: "Consumed",
   adjustment: "Adjustment",
   expiration: "Expired",
+};
+
+export const TOOTH_STATUS_LABELS: Record<ToothStatus, string> = {
+  present: "Present",
+  missing: "Missing",
+  unerupted: "Unerupted",
+};
+
+export const TOOTH_CONDITION_LABELS: Record<ToothCondition, string> = {
+  caries: "Caries",
+  filling: "Filling",
+  crown: "Crown",
+  root_canal: "Root Canal",
+  watch: "Watch",
+  other: "Other",
+};
+
+export const TOOTH_EVENT_TYPE_LABELS: Record<ToothEventType, string> = {
+  observation: "Observation",
+  state_changed: "State Changed",
 };

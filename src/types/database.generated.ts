@@ -1561,6 +1561,158 @@ export type Database = {
           },
         ]
       }
+      patient_tooth_events: {
+        Row: {
+          appointment_id: string | null
+          clinic_id: string
+          condition: string | null
+          created_at: string
+          event_type: string
+          fdi_number: number
+          id: string
+          notes: string | null
+          patient_id: string
+          previous_condition: string | null
+          previous_status: string | null
+          recorded_by: string | null
+          status: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          clinic_id: string
+          condition?: string | null
+          created_at?: string
+          event_type: string
+          fdi_number: number
+          id?: string
+          notes?: string | null
+          patient_id: string
+          previous_condition?: string | null
+          previous_status?: string | null
+          recorded_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          clinic_id?: string
+          condition?: string | null
+          created_at?: string
+          event_type?: string
+          fdi_number?: number
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          previous_condition?: string | null
+          previous_status?: string | null
+          recorded_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_tooth_events_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tooth_events_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tooth_events_fdi_number_fkey"
+            columns: ["fdi_number"]
+            isOneToOne: false
+            referencedRelation: "teeth"
+            referencedColumns: ["fdi_number"]
+          },
+          {
+            foreignKeyName: "patient_tooth_events_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tooth_events_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_tooth_state: {
+        Row: {
+          clinic_id: string
+          condition: string | null
+          created_at: string
+          fdi_number: number
+          id: string
+          notes: string | null
+          patient_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          clinic_id: string
+          condition?: string | null
+          created_at?: string
+          fdi_number: number
+          id?: string
+          notes?: string | null
+          patient_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          condition?: string | null
+          created_at?: string
+          fdi_number?: number
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_tooth_state_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tooth_state_fdi_number_fkey"
+            columns: ["fdi_number"]
+            isOneToOne: false
+            referencedRelation: "teeth"
+            referencedColumns: ["fdi_number"]
+          },
+          {
+            foreignKeyName: "patient_tooth_state_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tooth_state_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
@@ -2013,6 +2165,33 @@ export type Database = {
           },
         ]
       }
+      teeth: {
+        Row: {
+          arch: string | null
+          created_at: string
+          dentition: string | null
+          fdi_number: number
+          quadrant: number | null
+          tooth_position: number | null
+        }
+        Insert: {
+          arch?: string | null
+          created_at?: string
+          dentition?: string | null
+          fdi_number: number
+          quadrant?: number | null
+          tooth_position?: number | null
+        }
+        Update: {
+          arch?: string | null
+          created_at?: string
+          dentition?: string | null
+          fdi_number?: number
+          quadrant?: number | null
+          tooth_position?: number | null
+        }
+        Relationships: []
+      }
       treatment_plan_items: {
         Row: {
           appointment_id: string | null
@@ -2027,6 +2206,7 @@ export type Database = {
           quantity: number
           sequence: number
           status: string
+          tooth_id: number | null
           tooth_reference: string | null
           treatment_plan_id: string
           updated_at: string
@@ -2045,6 +2225,7 @@ export type Database = {
           quantity?: number
           sequence: number
           status?: string
+          tooth_id?: number | null
           tooth_reference?: string | null
           treatment_plan_id: string
           updated_at?: string
@@ -2063,6 +2244,7 @@ export type Database = {
           quantity?: number
           sequence?: number
           status?: string
+          tooth_id?: number | null
           tooth_reference?: string | null
           treatment_plan_id?: string
           updated_at?: string
@@ -2082,6 +2264,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clinics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plan_items_tooth_id_fkey"
+            columns: ["tooth_id"]
+            isOneToOne: false
+            referencedRelation: "teeth"
+            referencedColumns: ["fdi_number"]
           },
           {
             foreignKeyName: "treatment_plan_items_treatment_plan_id_fkey"
@@ -2168,6 +2357,7 @@ export type Database = {
           id: string
           notes: string | null
           patient_id: string
+          tooth_id: number | null
           treatment_plan_item_id: string | null
           updated_at: string
           visit_type_id: string
@@ -2182,6 +2372,7 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id: string
+          tooth_id?: number | null
           treatment_plan_item_id?: string | null
           updated_at?: string
           visit_type_id: string
@@ -2196,6 +2387,7 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id?: string
+          tooth_id?: number | null
           treatment_plan_item_id?: string | null
           updated_at?: string
           visit_type_id?: string
@@ -2235,6 +2427,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "patients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_records_tooth_id_fkey"
+            columns: ["tooth_id"]
+            isOneToOne: false
+            referencedRelation: "teeth"
+            referencedColumns: ["fdi_number"]
           },
           {
             foreignKeyName: "treatment_records_treatment_plan_item_id_fkey"

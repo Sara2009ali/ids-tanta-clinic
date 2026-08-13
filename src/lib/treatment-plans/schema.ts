@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nullableFdiNumberSchema } from "@/lib/dental-chart/schema";
 
 const trimmedOptional = z
   .string()
@@ -36,6 +37,12 @@ export const treatmentPlanItemFormSchema = z.object({
   estimated_price: z.coerce.number().min(0, "Estimated price can't be negative"),
   quantity: z.coerce.number().positive("Quantity must be greater than zero").default(1),
   tooth_reference: trimmedOptional,
+  // Structured, single-tooth companion to tooth_reference (0029_dental_chart.sql)
+  // — additional precise reference, never a replacement. The two fields are
+  // independent: selecting a tooth here never rewrites tooth_reference, and
+  // vice versa, so free text describing multiple teeth/a quadrant/full mouth
+  // is never clobbered by a single structured pick.
+  tooth_id: nullableFdiNumberSchema,
   priority: treatmentPlanItemPrioritySchema.default("normal"),
   notes: trimmedOptional,
   visit_type_id: z.string().nullable().optional().transform((value) => value || null),
@@ -61,6 +68,7 @@ export function treatmentPlanItemFormValuesFromFormData(formData: FormData) {
     estimated_price: str(formData, "estimated_price") ?? "0",
     quantity: str(formData, "quantity") ?? "1",
     tooth_reference: str(formData, "tooth_reference"),
+    tooth_id: str(formData, "tooth_id") ?? "",
     priority: str(formData, "priority") ?? "normal",
     notes: str(formData, "notes"),
     visit_type_id: str(formData, "visit_type_id") || null,

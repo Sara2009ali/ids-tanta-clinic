@@ -12,6 +12,7 @@ describe("treatmentRecordFormSchema", () => {
         visit_type_id: VALID_UUID,
         notes: "Filling placed.",
         treatment_plan_item_id: undefined,
+        tooth_id: null,
       });
     }
   });
@@ -75,19 +76,45 @@ describe("treatmentRecordFormValuesFromFormData", () => {
     formData.set("visit_type_id", VALID_UUID);
     formData.set("notes", "Some notes");
     formData.set("treatment_plan_item_id", VALID_UUID);
+    formData.set("tooth_id", "36");
     expect(treatmentRecordFormValuesFromFormData(formData)).toEqual({
       visit_type_id: VALID_UUID,
       notes: "Some notes",
       treatment_plan_item_id: VALID_UUID,
+      tooth_id: "36",
     });
   });
 
-  it("defaults visit_type_id to an empty string and notes/treatment_plan_item_id to undefined when missing", () => {
+  it("defaults visit_type_id to an empty string and notes/treatment_plan_item_id/tooth_id to undefined/empty when missing", () => {
     const formData = new FormData();
     expect(treatmentRecordFormValuesFromFormData(formData)).toEqual({
       visit_type_id: "",
       notes: undefined,
       treatment_plan_item_id: undefined,
+      tooth_id: "",
     });
+  });
+});
+
+describe("treatmentRecordFormSchema — tooth_id (structured tooth, 0029_dental_chart.sql)", () => {
+  it("accepts a valid FDI tooth number and coerces it to a number", () => {
+    const result = treatmentRecordFormSchema.safeParse({ visit_type_id: VALID_UUID, tooth_id: "36" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_id).toBe(36);
+    }
+  });
+
+  it("defaults tooth_id to null when omitted — walk-in records stay valid with no tooth at all", () => {
+    const result = treatmentRecordFormSchema.safeParse({ visit_type_id: VALID_UUID });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_id).toBeNull();
+    }
+  });
+
+  it("rejects a syntactically plausible but nonexistent FDI code", () => {
+    const result = treatmentRecordFormSchema.safeParse({ visit_type_id: VALID_UUID, tooth_id: "59" });
+    expect(result.success).toBe(false);
   });
 });

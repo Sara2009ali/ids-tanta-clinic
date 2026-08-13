@@ -195,6 +195,7 @@ describe("treatmentPlanItemFormValuesFromFormData", () => {
     formData.set("estimated_price", "1500");
     formData.set("quantity", "2");
     formData.set("tooth_reference", "36");
+    formData.set("tooth_id", "36");
     formData.set("priority", "urgent");
     formData.set("notes", "Deep caries");
     formData.set("visit_type_id", VALID_UUID);
@@ -205,6 +206,7 @@ describe("treatmentPlanItemFormValuesFromFormData", () => {
       estimated_price: "1500",
       quantity: "2",
       tooth_reference: "36",
+      tooth_id: "36",
       priority: "urgent",
       notes: "Deep caries",
       visit_type_id: VALID_UUID,
@@ -219,10 +221,82 @@ describe("treatmentPlanItemFormValuesFromFormData", () => {
       estimated_price: "0",
       quantity: "1",
       tooth_reference: undefined,
+      tooth_id: "",
       priority: "normal",
       notes: undefined,
       visit_type_id: null,
       appointment_id: undefined,
     });
+  });
+});
+
+describe("treatmentPlanItemFormSchema — tooth_id (structured tooth, 0029_dental_chart.sql)", () => {
+  it("accepts a valid FDI tooth number and coerces it to a number", () => {
+    const result = treatmentPlanItemFormSchema.safeParse({
+      procedure_name: "Filling",
+      estimated_price: 200,
+      tooth_id: "36",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_id).toBe(36);
+    }
+  });
+
+  it("treats an empty-string tooth_id the same as omitted (null) — never a replacement for tooth_reference", () => {
+    const result = treatmentPlanItemFormSchema.safeParse({
+      procedure_name: "Full mouth scaling",
+      estimated_price: 500,
+      tooth_reference: "Full mouth",
+      tooth_id: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_id).toBeNull();
+      expect(result.data.tooth_reference).toBe("Full mouth");
+    }
+  });
+
+  it("defaults tooth_id to null when the field is omitted entirely", () => {
+    const result = treatmentPlanItemFormSchema.safeParse({ procedure_name: "Consult", estimated_price: 0 });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_id).toBeNull();
+    }
+  });
+
+  it("rejects a syntactically plausible but nonexistent FDI code", () => {
+    const result = treatmentPlanItemFormSchema.safeParse({
+      procedure_name: "Filling",
+      estimated_price: 200,
+      tooth_id: "19",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid primary-dentition FDI code", () => {
+    const result = treatmentPlanItemFormSchema.safeParse({
+      procedure_name: "Pulpotomy",
+      estimated_price: 300,
+      tooth_id: "54",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_id).toBe(54);
+    }
+  });
+
+  it("keeps tooth_id and tooth_reference fully independent — setting one never touches the other", () => {
+    const result = treatmentPlanItemFormSchema.safeParse({
+      procedure_name: "Filling",
+      estimated_price: 200,
+      tooth_reference: "Teeth 11, 21",
+      tooth_id: "36",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tooth_reference).toBe("Teeth 11, 21");
+      expect(result.data.tooth_id).toBe(36);
+    }
   });
 });

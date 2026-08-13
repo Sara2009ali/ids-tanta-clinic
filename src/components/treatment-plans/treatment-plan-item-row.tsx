@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, CalendarClock, CircleCheck, Loader2, Pencil, Stethoscope, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarClock, CircleCheck, Loader2, MapPin, Pencil, Stethoscope, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -98,6 +98,12 @@ export function TreatmentPlanItemRow({
         {isUrgent && <TreatmentPlanItemPriorityBadge priority="urgent" />}
         {item.priority === "high" && <TreatmentPlanItemPriorityBadge priority="high" />}
         <p className="font-medium">{item.procedure_name}</p>
+        {item.tooth_id != null && (
+          <Badge variant="secondary">
+            <MapPin className="size-3" />
+            Tooth {item.tooth_id}
+          </Badge>
+        )}
       </div>
 
       {caption && <p className="line-clamp-2 text-sm text-muted-foreground">{caption}</p>}

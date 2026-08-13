@@ -20,6 +20,7 @@ import { TreatmentRecordsList } from "@/components/treatments/treatment-records-
 import { ClinicalNotesList } from "@/components/clinical-notes/clinical-notes-list";
 import { TreatmentPlansList } from "@/components/treatment-plans/treatment-plans-list";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
+import { DentalChart } from "@/components/dental-chart/dental-chart";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { getPatientPayments, searchInvoices } from "@/lib/billing/queries";
@@ -29,9 +30,14 @@ import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
 import { getClinicalNotesForPatient, type ClinicalNoteWithContext } from "@/lib/clinical-notes/queries";
 import { getTreatmentPlansForPatient, type TreatmentPlanListRow } from "@/lib/treatment-plans/queries";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
+import {
+  getDentalChartForPatient,
+  getToothEventsForPatient,
+  type DentalChartToothSummary,
+} from "@/lib/dental-chart/queries";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
-import type { PatientFileType, TreatmentRecord } from "@/types/domain";
+import type { PatientFileType, PatientToothEvent, TreatmentRecord } from "@/types/domain";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 
 /** Kept as its own top-level helper (rather than inline in the component body) so the `Date.now()` call reads as an ordinary function call, not an impure read during render. */
@@ -97,8 +103,17 @@ export default async function PatientProfilePage({
   // procedure picker, and billing.edit holders (e.g. accountant) don't
   // necessarily hold clinical.view, so gating it on the wrong permission
   // would silently leave them with an empty picker.
-  const [[invoicesResult, patientPayments], treatmentRecords, clinicalNotes, treatmentPlans, visitTypes, appointments, patientFileUrls] =
-    await Promise.all([
+  const [
+    [invoicesResult, patientPayments],
+    treatmentRecords,
+    clinicalNotes,
+    treatmentPlans,
+    visitTypes,
+    appointments,
+    patientFileUrls,
+    dentalChartTeeth,
+    dentalChartEvents,
+  ] = await Promise.all([
       canViewBilling
         ? Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
         : Promise.resolve<[InvoiceSearchResult | null, PatientPaymentRow[]]>([null, []]),
@@ -108,6 +123,8 @@ export default async function PatientProfilePage({
       listVisitTypes(),
       canViewAppointments ? getAppointmentsForPatient(patient.id) : Promise.resolve<ScheduleRow[]>([]),
       getPatientFileUrls([patient.photo_path, ...files.map((file) => file.storage_path)]),
+      canViewClinical ? getDentalChartForPatient(patient.id) : Promise.resolve<DentalChartToothSummary[]>([]),
+      canViewClinical ? getToothEventsForPatient(patient.id) : Promise.resolve<PatientToothEvent[]>([]),
     ]);
 
   const [photoUrl, ...fileUrls] = patientFileUrls;
@@ -194,6 +211,7 @@ export default async function PatientProfilePage({
       <Tabs defaultValue="overview" className="animate-in fade-in slide-in-from-bottom-1 duration-500">
         <TabsList className="h-auto w-full flex-nowrap justify-start overflow-x-auto [&>[data-slot=tabs-trigger]]:shrink-0 sm:w-fit sm:flex-wrap sm:justify-center">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          {canViewClinical && <TabsTrigger value="dental-chart">Dental Chart</TabsTrigger>}
           <TabsTrigger value="medical">Medical History</TabsTrigger>
           <TabsTrigger value="dental">Dental History</TabsTrigger>
           <TabsTrigger value="timeline">Treatment Timeline</TabsTrigger>
@@ -297,6 +315,7 @@ export default async function PatientProfilePage({
               appointments={appointments}
               invoices={invoicesResult?.rows ?? []}
               payments={patientPayments}
+              dentalChartEvents={dentalChartEvents}
             />
           </TabsContent>
 
@@ -344,6 +363,11 @@ export default async function PatientProfilePage({
             <PatientAuditHistory auditEntries={auditEntries} />
           </TabsContent>
 
+          {canViewClinical && (
+            <TabsContent value="dental-chart" className="pt-6">
+              <DentalChart patientId={patient.id} teeth={dentalChartTeeth} canEdit={canEditClinical} />
+            </TabsContent>
+          )}
           {canViewClinical && (
             <TabsContent value="procedures-performed" className="pt-6">
               <TreatmentRecordsList

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createTreatmentRecord } from "@/lib/treatments/actions";
+import { ToothSelect } from "@/components/dental-chart/tooth-select";
 import type { VisitType } from "@/types/domain";
 
 /** Record-treatment entry point — embedded directly in AppointmentEditSheet's Treatment tab, not a separate Sheet, so there's exactly one place to edit an appointment and one place to record what happened during it. */
@@ -17,11 +18,13 @@ export function TreatmentRecordForm({ appointmentId, visitTypes }: { appointment
   const [pending, startTransition] = useTransition();
   const [visitTypeId, setVisitTypeId] = useState("");
   const [notes, setNotes] = useState("");
+  const [toothId, setToothId] = useState<number | null>(null);
   const [error, setError] = useState<string | undefined>();
 
   function handleSubmit(formData: FormData) {
     formData.set("visit_type_id", visitTypeId);
     formData.set("notes", notes);
+    formData.set("tooth_id", toothId != null ? String(toothId) : "");
 
     startTransition(async () => {
       const result = await createTreatmentRecord(appointmentId, formData);
@@ -31,6 +34,7 @@ export function TreatmentRecordForm({ appointmentId, visitTypes }: { appointment
       } else {
         setVisitTypeId("");
         setNotes("");
+        setToothId(null);
         setError(undefined);
         toast.success("Treatment recorded");
         router.refresh();
@@ -63,6 +67,11 @@ export function TreatmentRecordForm({ appointmentId, visitTypes }: { appointment
             {error}
           </p>
         )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="treatment_tooth_id">Tooth</Label>
+        <ToothSelect id="treatment_tooth_id" value={toothId} onValueChange={setToothId} />
       </div>
 
       <div className="space-y-1.5">
