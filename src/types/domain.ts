@@ -19,6 +19,7 @@ export type AppointmentStatusHistory = Database["public"]["Tables"]["appointment
 export type VisitType = Database["public"]["Tables"]["visit_types"]["Row"];
 export type Chair = Database["public"]["Tables"]["chairs"]["Row"];
 export type TreatmentRecord = Database["public"]["Tables"]["treatment_records"]["Row"];
+export type PatientClinicalNote = Database["public"]["Tables"]["patient_clinical_notes"]["Row"];
 
 export type DoctorWeeklyHours = Database["public"]["Tables"]["doctor_weekly_hours"]["Row"];
 export type DoctorVacation = Database["public"]["Tables"]["doctor_vacations"]["Row"];

@@ -1389,6 +1389,71 @@ export type Database = {
           },
         ]
       }
+      patient_clinical_notes: {
+        Row: {
+          appointment_id: string | null
+          author_id: string | null
+          clinic_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          note: string
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          author_id?: string | null
+          clinic_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note: string
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          author_id?: string | null
+          clinic_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note?: string
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_clinical_notes_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_clinical_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_clinical_notes_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_clinical_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_files: {
         Row: {
           clinic_id: string

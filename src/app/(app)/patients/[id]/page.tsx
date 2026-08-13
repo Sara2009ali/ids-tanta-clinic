@@ -17,6 +17,7 @@ import { InvoicesTable } from "@/components/billing/invoices-table";
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { PatientPaymentsHistory } from "@/components/billing/patient-payments-history";
 import { TreatmentRecordsList } from "@/components/treatments/treatment-records-list";
+import { ClinicalNotesList } from "@/components/clinical-notes/clinical-notes-list";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -24,6 +25,7 @@ import { getPatientPayments, searchInvoices } from "@/lib/billing/queries";
 import type { InvoiceSearchResult, PatientPaymentRow } from "@/lib/billing/queries";
 import { formatCurrency } from "@/lib/billing/format";
 import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
+import { getClinicalNotesForPatient, type ClinicalNoteWithContext } from "@/lib/clinical-notes/queries";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
@@ -93,12 +95,13 @@ export default async function PatientProfilePage({
   // procedure picker, and billing.edit holders (e.g. accountant) don't
   // necessarily hold clinical.view, so gating it on the wrong permission
   // would silently leave them with an empty picker.
-  const [[invoicesResult, patientPayments], treatmentRecords, visitTypes, appointments, patientFileUrls] =
+  const [[invoicesResult, patientPayments], treatmentRecords, clinicalNotes, visitTypes, appointments, patientFileUrls] =
     await Promise.all([
       canViewBilling
         ? Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
         : Promise.resolve<[InvoiceSearchResult | null, PatientPaymentRow[]]>([null, []]),
       canViewClinical ? getTreatmentRecordsForPatient(patient.id) : Promise.resolve<TreatmentRecord[]>([]),
+      canViewClinical ? getClinicalNotesForPatient(patient.id) : Promise.resolve<ClinicalNoteWithContext[]>([]),
       listVisitTypes(),
       canViewAppointments ? getAppointmentsForPatient(patient.id) : Promise.resolve<ScheduleRow[]>([]),
       getPatientFileUrls([patient.photo_path, ...files.map((file) => file.storage_path)]),
@@ -193,6 +196,7 @@ export default async function PatientProfilePage({
           <TabsTrigger value="timeline">Treatment Timeline</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="audit">Audit History</TabsTrigger>
+          {canViewClinical && <TabsTrigger value="procedures-performed">Procedures Performed</TabsTrigger>}
           {canViewClinical && <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>}
           {canViewAppointments && <TabsTrigger value="appointments">Appointments</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="invoices">Invoices</TabsTrigger>}
@@ -337,13 +341,24 @@ export default async function PatientProfilePage({
           </TabsContent>
 
           {canViewClinical && (
-            <TabsContent value="clinical-notes" className="pt-6">
+            <TabsContent value="procedures-performed" className="pt-6">
               <TreatmentRecordsList
                 records={treatmentRecords}
                 visitTypes={visitTypes}
                 doctors={doctors}
                 canEdit={canEditClinical}
                 emptyMessage="No treatment recorded for this patient yet."
+              />
+            </TabsContent>
+          )}
+          {canViewClinical && (
+            <TabsContent value="clinical-notes" className="pt-6">
+              <ClinicalNotesList
+                patientId={patient.id}
+                notes={clinicalNotes}
+                appointments={appointments}
+                canEdit={canEditClinical}
+                emptyMessage="No clinical notes recorded for this patient yet."
               />
             </TabsContent>
           )}
