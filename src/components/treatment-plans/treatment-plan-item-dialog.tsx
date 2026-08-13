@@ -54,7 +54,7 @@ function ProcedurePicker({
   return (
     <Select
       items={{
-        [CUSTOM_ITEM_VALUE]: "Custom item",
+        [CUSTOM_ITEM_VALUE]: "Custom procedure",
         ...Object.fromEntries(visitTypes.map((v) => [v.id, v.name])),
       }}
       value={visitTypeId ?? CUSTOM_ITEM_VALUE}
@@ -64,7 +64,7 @@ function ProcedurePicker({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={CUSTOM_ITEM_VALUE}>Custom item</SelectItem>
+        <SelectItem value={CUSTOM_ITEM_VALUE}>Custom procedure</SelectItem>
         {visitTypes.length > 0 && <SelectSeparator />}
         {grouped
           ? categories.map((category) => (
@@ -180,7 +180,7 @@ export function TreatmentPlanItemDialog({
         toast.error(result.error);
         setFieldErrors(result.fieldErrors ?? {});
       } else {
-        toast.success(isEdit ? "Item updated" : "Item added");
+        toast.success(isEdit ? "Procedure updated" : "Procedure added");
         onOpenChange(false);
         router.refresh();
       }
@@ -191,7 +191,7 @@ export function TreatmentPlanItemDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit item" : "Add item"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit procedure" : "Add procedure"}</DialogTitle>
           <DialogDescription>
             {isEdit ? "Update this proposed procedure." : "Propose a procedure as part of this treatment plan."}
           </DialogDescription>
@@ -211,7 +211,7 @@ export function TreatmentPlanItemDialog({
             />
           </FormField>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Estimated price" htmlFor="item_price" required error={fieldErrors.estimated_price}>
               <Input
                 id="item_price"
@@ -236,10 +236,15 @@ export function TreatmentPlanItemDialog({
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Tooth / site" htmlFor="item_tooth" description="Optional — e.g. “36” or “upper left quadrant”">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField
+              label="Tooth / site"
+              htmlFor="item_tooth"
+              description="Optional — write it the way you'd say it, e.g. “Tooth 36”, “Teeth 11, 21”, “Upper right quadrant”"
+            >
               <Input
                 id="item_tooth"
+                placeholder="Tooth 36"
                 value={form.toothReference}
                 onChange={(e) => setForm((prev) => ({ ...prev, toothReference: e.target.value }))}
               />
@@ -267,7 +272,11 @@ export function TreatmentPlanItemDialog({
           </div>
 
           {appointments.length > 0 && (
-            <FormField label="Linked appointment" htmlFor="item_appointment" description="Optional">
+            <FormField
+              label="Linked appointment"
+              htmlFor="item_appointment"
+              description="Optional — marks this procedure as scheduled for a specific visit"
+            >
               <Select
                 items={{
                   [NO_APPOINTMENT]: "No linked appointment",
@@ -308,7 +317,7 @@ export function TreatmentPlanItemDialog({
           </Button>
           <Button type="button" disabled={pending || !form.procedureName.trim()} onClick={handleSubmit}>
             {pending && <Loader2 className="size-4 animate-spin" />}
-            {isEdit ? "Save changes" : "Add item"}
+            {isEdit ? "Save changes" : "Add procedure"}
           </Button>
         </DialogFooter>
       </DialogContent>

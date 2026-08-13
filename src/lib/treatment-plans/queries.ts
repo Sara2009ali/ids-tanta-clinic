@@ -2,17 +2,21 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  computeEstimatedTotal,
   computeItemProgress,
   groupPerformedTreatmentRecordsByItem,
   orderItemsBySequence,
   type PerformedTreatmentInfo,
 } from "@/lib/treatment-plans/calculations";
-import type { TreatmentPlan, TreatmentPlanItem } from "@/types/domain";
+import type { AppointmentStatus, TreatmentPlan, TreatmentPlanItem } from "@/types/domain";
 
 export interface TreatmentPlanListRow extends TreatmentPlan {
   itemCount: number;
+  acceptedCount: number;
+  completedCount: number;
   acceptedPercent: number;
   completedPercent: number;
+  estimatedTotal: number;
 }
 
 /** A patient's treatment plans, most recent first, with per-plan item-progress indicators — for Patient Profile's Treatment Plans tab. */
@@ -34,7 +38,7 @@ export async function getTreatmentPlansForPatient(patientId: string): Promise<Tr
 
   const { data: items, error: itemsError } = await supabase
     .from("treatment_plan_items")
-    .select("treatment_plan_id, status")
+    .select("treatment_plan_id, status, estimated_price, quantity")
     .in(
       "treatment_plan_id",
       plans.map((plan) => plan.id),
@@ -44,26 +48,32 @@ export async function getTreatmentPlansForPatient(patientId: string): Promise<Tr
     console.error("getTreatmentPlansForPatient: item lookup failed", itemsError);
   }
 
-  const itemsByPlan = new Map<string, { status: string }[]>();
+  const itemsByPlan = new Map<string, { status: string; estimated_price: number; quantity: number }[]>();
   for (const item of items ?? []) {
     const existing = itemsByPlan.get(item.treatment_plan_id) ?? [];
-    existing.push({ status: item.status });
+    existing.push({ status: item.status, estimated_price: item.estimated_price, quantity: item.quantity });
     itemsByPlan.set(item.treatment_plan_id, existing);
   }
 
   return plans.map((plan) => {
-    const progress = computeItemProgress(itemsByPlan.get(plan.id) ?? []);
+    const planItems = itemsByPlan.get(plan.id) ?? [];
+    const progress = computeItemProgress(planItems);
     return {
       ...plan,
       itemCount: progress.totalCount,
+      acceptedCount: progress.acceptedCount,
+      completedCount: progress.completedCount,
       acceptedPercent: progress.acceptedPercent,
       completedPercent: progress.completedPercent,
+      estimatedTotal: computeEstimatedTotal(planItems),
     };
   });
 }
 
 export interface TreatmentPlanItemWithContext extends TreatmentPlanItem {
   appointmentScheduledStart: string | null;
+  /** The linked appointment's current status, if any — powers the Record Treatment action's eligibility gate (isAppointmentTreatmentEligible). Null when the item has no appointment_id. */
+  appointmentStatus: AppointmentStatus | null;
   /** Every active (non-soft-deleted) treatment_records row that fulfills this item — see groupPerformedTreatmentRecordsByItem. Empty when nothing has been performed yet. */
   performed: PerformedTreatmentInfo[];
 }
@@ -79,7 +89,7 @@ interface TreatmentPlanDetailQueryRow extends TreatmentPlan {
 }
 
 interface TreatmentPlanItemQueryRow extends TreatmentPlanItem {
-  appointments: { scheduled_start: string } | null;
+  appointments: { scheduled_start: string; status: AppointmentStatus } | null;
 }
 
 /** Full plan detail — the plan row, its patient display info, and every item in sequence order with linked-appointment/performed-treatment context resolved — for the dedicated Treatment Plan detail page. */
@@ -95,7 +105,7 @@ export async function getTreatmentPlanDetail(planId: string): Promise<TreatmentP
       .maybeSingle(),
     supabase
       .from("treatment_plan_items")
-      .select("*, appointments ( scheduled_start )")
+      .select("*, appointments ( scheduled_start, status )")
       .eq("treatment_plan_id", planId)
       .order("sequence", { ascending: true }),
   ]);
@@ -133,6 +143,7 @@ export async function getTreatmentPlanDetail(planId: string): Promise<TreatmentP
     return {
       ...item,
       appointmentScheduledStart: appointments?.scheduled_start ?? null,
+      appointmentStatus: appointments?.status ?? null,
       performed: performedByItem.get(row.id) ?? [],
     };
   });

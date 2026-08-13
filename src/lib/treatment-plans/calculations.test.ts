@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   canTransitionPlanStatus,
+  computeEstimatedTotal,
   computeItemProgress,
   excludeSoftDeleted,
   groupPerformedTreatmentRecordsByItem,
+  initialRecordTreatmentVisitTypeId,
   isAppointmentForPatient,
+  isAppointmentTreatmentEligible,
   orderItemsBySequence,
 } from "@/lib/treatment-plans/calculations";
 
@@ -47,11 +50,17 @@ describe("canTransitionPlanStatus — plan status validation", () => {
 });
 
 describe("computeItemProgress — multiple items in one plan", () => {
-  it("reports 0/0 for a plan with zero items", () => {
-    expect(computeItemProgress([])).toEqual({ totalCount: 0, acceptedPercent: 0, completedPercent: 0 });
+  it("reports all-zero for a plan with zero items", () => {
+    expect(computeItemProgress([])).toEqual({
+      totalCount: 0,
+      acceptedCount: 0,
+      completedCount: 0,
+      acceptedPercent: 0,
+      completedPercent: 0,
+    });
   });
 
-  it("computes accepted/completed percentages across a mixed set of items", () => {
+  it("computes accepted/completed counts and percentages across a mixed set of items", () => {
     const items = [
       { status: "planned" },
       { status: "accepted" },
@@ -61,17 +70,58 @@ describe("computeItemProgress — multiple items in one plan", () => {
     ];
     // accepted-or-further: accepted, in_progress, completed = 3/5 = 60%
     // completed: 1/5 = 20%
-    expect(computeItemProgress(items)).toEqual({ totalCount: 5, acceptedPercent: 60, completedPercent: 20 });
+    expect(computeItemProgress(items)).toEqual({
+      totalCount: 5,
+      acceptedCount: 3,
+      completedCount: 1,
+      acceptedPercent: 60,
+      completedPercent: 20,
+    });
   });
 
   it("treats postponed and rejected as not accepted", () => {
     const items = [{ status: "postponed" }, { status: "rejected" }];
-    expect(computeItemProgress(items)).toEqual({ totalCount: 2, acceptedPercent: 0, completedPercent: 0 });
+    expect(computeItemProgress(items)).toEqual({
+      totalCount: 2,
+      acceptedCount: 0,
+      completedCount: 0,
+      acceptedPercent: 0,
+      completedPercent: 0,
+    });
   });
 
   it("reports 100/100 when every item is completed", () => {
     const items = [{ status: "completed" }, { status: "completed" }];
-    expect(computeItemProgress(items)).toEqual({ totalCount: 2, acceptedPercent: 100, completedPercent: 100 });
+    expect(computeItemProgress(items)).toEqual({
+      totalCount: 2,
+      acceptedCount: 2,
+      completedCount: 2,
+      acceptedPercent: 100,
+      completedPercent: 100,
+    });
+  });
+});
+
+describe("computeEstimatedTotal — plan estimated value", () => {
+  it("sums price × quantity across items", () => {
+    const items = [
+      { estimated_price: 500, quantity: 1 },
+      { estimated_price: 300, quantity: 2 },
+    ];
+    expect(computeEstimatedTotal(items)).toBe(1100);
+  });
+
+  it("returns 0 for an empty plan", () => {
+    expect(computeEstimatedTotal([])).toBe(0);
+  });
+
+  it("coerces string numeric values, matching how Postgres numeric columns arrive over the wire", () => {
+    const items = [{ estimated_price: "1500.00", quantity: "1" }];
+    expect(computeEstimatedTotal(items)).toBe(1500);
+  });
+
+  it("accounts for quantity greater than one", () => {
+    expect(computeEstimatedTotal([{ estimated_price: 100, quantity: 3 }])).toBe(300);
   });
 });
 
@@ -159,5 +209,35 @@ describe("isAppointmentForPatient — appointment belongs to patient validation"
 
   it("returns false when the appointment doesn't exist", () => {
     expect(isAppointmentForPatient(null, "patient-1")).toBe(false);
+  });
+});
+
+describe("isAppointmentTreatmentEligible — Record Treatment appointment gate", () => {
+  it("allows a treatment-eligible appointment status to record treatment", () => {
+    expect(isAppointmentTreatmentEligible("checked_in")).toBe(true);
+    expect(isAppointmentTreatmentEligible("waiting")).toBe(true);
+    expect(isAppointmentTreatmentEligible("in_treatment")).toBe(true);
+    expect(isAppointmentTreatmentEligible("completed")).toBe(true);
+  });
+
+  it("refuses a non-eligible appointment status", () => {
+    expect(isAppointmentTreatmentEligible("scheduled")).toBe(false);
+    expect(isAppointmentTreatmentEligible("confirmed")).toBe(false);
+    expect(isAppointmentTreatmentEligible("cancelled")).toBe(false);
+    expect(isAppointmentTreatmentEligible("no_show")).toBe(false);
+  });
+
+  it("refuses when there is no appointment at all — a plan item with no appointment_id can never record treatment", () => {
+    expect(isAppointmentTreatmentEligible(null)).toBe(false);
+  });
+});
+
+describe("initialRecordTreatmentVisitTypeId — Record Treatment dialog prefill", () => {
+  it("prefills from a catalog-linked item's visit_type_id", () => {
+    expect(initialRecordTreatmentVisitTypeId({ visit_type_id: "visit-type-1" })).toBe("visit-type-1");
+  });
+
+  it("leaves a custom item's selection blank, forcing the dentist to pick a catalog procedure", () => {
+    expect(initialRecordTreatmentVisitTypeId({ visit_type_id: null })).toBe("");
   });
 });

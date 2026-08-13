@@ -94,21 +94,21 @@ export function TreatmentPlanActions({
       {status === "draft" && (
         <Button disabled={pending} onClick={handleActivate}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-          Propose to patient
+          Activate Plan
         </Button>
       )}
 
       {status === "active" && (
         <Button disabled={pending} onClick={handleComplete}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <CircleCheck className="size-4" />}
-          Mark complete
+          Complete Plan
         </Button>
       )}
 
       {status === "active" && (
         <Button variant="outline" disabled={pending} onClick={() => setAbandonOpen(true)}>
           <Ban className="size-4" />
-          Abandon
+          Abandon Plan
         </Button>
       )}
 

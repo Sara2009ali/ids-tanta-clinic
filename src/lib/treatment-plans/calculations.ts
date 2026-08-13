@@ -40,15 +40,17 @@ export interface ItemProgressInput {
 export interface ItemProgress {
   totalCount: number;
   /** Items the patient has said yes to, at any stage — accepted, in_progress, or completed. */
+  acceptedCount: number;
+  completedCount: number;
   acceptedPercent: number;
   completedPercent: number;
 }
 
-/** Powers the Patient Profile Treatment Plans tab's compact "accepted % / completed %" indicators — a plan with zero items reports 0/0 rather than NaN. */
+/** Powers both the Patient Profile Treatment Plans tab's compact summary ("3 procedures · 2 accepted · 1 completed") and the plan detail header's progress bar — a plan with zero items reports all-zero rather than NaN. */
 export function computeItemProgress(items: readonly ItemProgressInput[]): ItemProgress {
   const totalCount = items.length;
   if (totalCount === 0) {
-    return { totalCount: 0, acceptedPercent: 0, completedPercent: 0 };
+    return { totalCount: 0, acceptedCount: 0, completedCount: 0, acceptedPercent: 0, completedPercent: 0 };
   }
 
   const acceptedCount = items.filter((item) =>
@@ -58,9 +60,21 @@ export function computeItemProgress(items: readonly ItemProgressInput[]): ItemPr
 
   return {
     totalCount,
+    acceptedCount,
+    completedCount,
     acceptedPercent: Math.round((acceptedCount / totalCount) * 100),
     completedPercent: Math.round((completedCount / totalCount) * 100),
   };
+}
+
+export interface EstimatedTotalInput {
+  estimated_price: number | string;
+  quantity: number | string;
+}
+
+/** Sum of estimated_price × quantity across a plan's items — "what is the estimated value of the plan," derived from existing item fields, never a stored column. Postgres numeric columns arrive as strings over the wire, so both inputs are coerced with Number(). */
+export function computeEstimatedTotal(items: readonly EstimatedTotalInput[]): number {
+  return items.reduce((sum, item) => sum + Number(item.estimated_price) * Number(item.quantity), 0);
 }
 
 export interface SequencedItem {
@@ -130,4 +144,36 @@ export interface AppointmentPatientRow {
  */
 export function isAppointmentForPatient(appointment: AppointmentPatientRow | null, patientId: string): boolean {
   return appointment?.patient_id === patientId;
+}
+
+/**
+ * Same appointment statuses AppointmentEditSheet's TREATMENT_ELIGIBLE set
+ * already uses to gate TreatmentRecordForm ("recording treatment only makes
+ * sense once the patient has actually been seen") — duplicated here as a
+ * pure function rather than imported, since appointment-edit-sheet.tsx
+ * doesn't export its local constant and this module can't depend on a
+ * client component file. This is the same rule, not a second one: the exact
+ * same four statuses, gating the exact same real-world action, just reached
+ * from a second entry point (a Treatment Plan item instead of the
+ * appointment Sheet).
+ */
+export function isAppointmentTreatmentEligible(status: string | null): boolean {
+  return status === "checked_in" || status === "waiting" || status === "in_treatment" || status === "completed";
+}
+
+export interface RecordTreatmentSourceItem {
+  visit_type_id: string | null;
+}
+
+/**
+ * The Record Treatment dialog's starting procedure selection — prefilled
+ * from the plan item's own catalog link when it has one (still freely
+ * editable after, same "prefill once, never lock" convention as
+ * ProcedurePicker/TreatmentRecordForm), or left blank for a custom plan
+ * item, which has no catalog value to offer and forces the dentist to pick
+ * one — a treatment_records row can never be "custom" (visit_type_id is a
+ * required, on-delete-restrict column).
+ */
+export function initialRecordTreatmentVisitTypeId(item: RecordTreatmentSourceItem): string {
+  return item.visit_type_id ?? "";
 }

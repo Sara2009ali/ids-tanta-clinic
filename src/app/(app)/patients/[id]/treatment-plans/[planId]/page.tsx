@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTreatmentPlanDetail } from "@/lib/treatment-plans/queries";
+import { computeEstimatedTotal } from "@/lib/treatment-plans/calculations";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -8,7 +9,8 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { TreatmentPlanStatusBadge } from "@/components/treatment-plans/treatment-plan-status-badge";
 import { TreatmentPlanActions } from "@/components/treatment-plans/treatment-plan-actions";
 import { TreatmentPlanItemsList } from "@/components/treatment-plans/treatment-plan-items-list";
-import { typography } from "@/lib/typography";
+import { TreatmentPlanTitle } from "@/components/treatment-plans/treatment-plan-title";
+import { TreatmentPlanProgressSummary } from "@/components/treatment-plans/treatment-plan-progress-summary";
 import type { TreatmentPlanStatus } from "@/types/domain";
 
 function formatDate(iso: string): string {
@@ -36,7 +38,9 @@ export default async function TreatmentPlanDetailPage({
   }
 
   const canEdit = hasPermission(permissions, PERMISSIONS.CLINICAL_EDIT);
-  const title = plan.title || `Treatment Plan — ${formatDate(plan.created_at)}`;
+  const planStatus = plan.status as TreatmentPlanStatus;
+  const title = plan.title || `Treatment Plan · ${formatDate(plan.created_at)}`;
+  const estimatedTotal = computeEstimatedTotal(plan.items);
 
   return (
     <div className="space-y-6">
@@ -49,23 +53,25 @@ export default async function TreatmentPlanDetailPage({
       />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className={typography.pageTitle}>{title}</h1>
-            <TreatmentPlanStatusBadge status={plan.status as TreatmentPlanStatus} />
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <TreatmentPlanTitle planId={plan.id} title={plan.title} createdAt={plan.created_at} canEdit={canEdit} />
+              <TreatmentPlanStatusBadge status={planStatus} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              <Link href={`/patients/${patientId}`} className="hover:underline">
+                {plan.patientName}
+              </Link>
+              {plan.patientNumber ? ` · #${plan.patientNumber}` : ""} · Created {formatDate(plan.created_at)}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            <Link href={`/patients/${patientId}`} className="hover:underline">
-              {plan.patientName}
-            </Link>
-            {plan.patientNumber ? ` · #${plan.patientNumber}` : ""}
-          </p>
-          <p className="text-sm text-muted-foreground">Created {formatDate(plan.created_at)}</p>
+          <TreatmentPlanProgressSummary items={plan.items} estimatedTotal={estimatedTotal} />
         </div>
         <TreatmentPlanActions
           planId={plan.id}
           patientId={patientId}
-          status={plan.status as TreatmentPlanStatus}
+          status={planStatus}
           canEdit={canEdit}
         />
       </div>
