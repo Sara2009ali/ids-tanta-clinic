@@ -8,7 +8,30 @@ describe("treatmentRecordFormSchema", () => {
     const result = treatmentRecordFormSchema.safeParse({ visit_type_id: VALID_UUID, notes: "Filling placed." });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual({ visit_type_id: VALID_UUID, notes: "Filling placed." });
+      expect(result.data).toEqual({
+        visit_type_id: VALID_UUID,
+        notes: "Filling placed.",
+        treatment_plan_item_id: undefined,
+      });
+    }
+  });
+
+  it("allows an optional treatment_plan_item_id", () => {
+    const result = treatmentRecordFormSchema.safeParse({
+      visit_type_id: VALID_UUID,
+      treatment_plan_item_id: VALID_UUID,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.treatment_plan_item_id).toBe(VALID_UUID);
+    }
+  });
+
+  it("stays valid with no treatment_plan_item_id at all — a treatment record with no plan item remains valid", () => {
+    const result = treatmentRecordFormSchema.safeParse({ visit_type_id: VALID_UUID });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.treatment_plan_item_id).toBeUndefined();
     }
   });
 
@@ -47,18 +70,24 @@ describe("treatmentRecordFormSchema", () => {
 });
 
 describe("treatmentRecordFormValuesFromFormData", () => {
-  it("extracts both fields from a populated form", () => {
+  it("extracts every field from a populated form", () => {
     const formData = new FormData();
     formData.set("visit_type_id", VALID_UUID);
     formData.set("notes", "Some notes");
+    formData.set("treatment_plan_item_id", VALID_UUID);
     expect(treatmentRecordFormValuesFromFormData(formData)).toEqual({
       visit_type_id: VALID_UUID,
       notes: "Some notes",
+      treatment_plan_item_id: VALID_UUID,
     });
   });
 
-  it("defaults visit_type_id to an empty string and notes to undefined when missing", () => {
+  it("defaults visit_type_id to an empty string and notes/treatment_plan_item_id to undefined when missing", () => {
     const formData = new FormData();
-    expect(treatmentRecordFormValuesFromFormData(formData)).toEqual({ visit_type_id: "", notes: undefined });
+    expect(treatmentRecordFormValuesFromFormData(formData)).toEqual({
+      visit_type_id: "",
+      notes: undefined,
+      treatment_plan_item_id: undefined,
+    });
   });
 });

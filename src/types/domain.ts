@@ -20,6 +20,8 @@ export type VisitType = Database["public"]["Tables"]["visit_types"]["Row"];
 export type Chair = Database["public"]["Tables"]["chairs"]["Row"];
 export type TreatmentRecord = Database["public"]["Tables"]["treatment_records"]["Row"];
 export type PatientClinicalNote = Database["public"]["Tables"]["patient_clinical_notes"]["Row"];
+export type TreatmentPlan = Database["public"]["Tables"]["treatment_plans"]["Row"];
+export type TreatmentPlanItem = Database["public"]["Tables"]["treatment_plan_items"]["Row"];
 
 export type DoctorWeeklyHours = Database["public"]["Tables"]["doctor_weekly_hours"]["Row"];
 export type DoctorVacation = Database["public"]["Tables"]["doctor_vacations"]["Row"];
@@ -55,6 +57,14 @@ export type PaymentMethod = "cash" | "visa" | "bank_transfer" | "wallet" | "othe
 // classification, not a refund-specific flag. Widening this to future
 // categories (e.g. 'adjustment') is a check-constraint change only.
 export type PaymentType = "payment" | "refund";
+
+// treatment_plans.status / treatment_plan_items.status / .priority
+// (0028_treatment_plans.sql) — same text + check convention as everywhere
+// else in this schema. A new status/priority value is a check-constraint
+// widening, never a new column.
+export type TreatmentPlanStatus = "draft" | "active" | "completed" | "abandoned";
+export type TreatmentPlanItemStatus = "planned" | "accepted" | "postponed" | "rejected" | "in_progress" | "completed";
+export type TreatmentPlanItemPriority = "normal" | "high" | "urgent";
 
 // compensation_rules.type / doctor_earnings.entry_type (0014_doctor_compensation.sql)
 // — text + check, same convention. A new rule type (e.g. a future
@@ -128,6 +138,28 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
   payment: "Payment",
   refund: "Refund",
+};
+
+export const TREATMENT_PLAN_STATUS_LABELS: Record<TreatmentPlanStatus, string> = {
+  draft: "Draft",
+  active: "Active",
+  completed: "Completed",
+  abandoned: "Abandoned",
+};
+
+export const TREATMENT_PLAN_ITEM_STATUS_LABELS: Record<TreatmentPlanItemStatus, string> = {
+  planned: "Planned",
+  accepted: "Accepted",
+  postponed: "Postponed",
+  rejected: "Rejected",
+  in_progress: "In Progress",
+  completed: "Completed",
+};
+
+export const TREATMENT_PLAN_ITEM_PRIORITY_LABELS: Record<TreatmentPlanItemPriority, string> = {
+  normal: "Normal",
+  high: "High",
+  urgent: "Urgent",
 };
 
 export const COMPENSATION_RULE_TYPE_LABELS: Record<CompensationRuleType, string> = {

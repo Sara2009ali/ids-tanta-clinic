@@ -18,6 +18,7 @@ import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { PatientPaymentsHistory } from "@/components/billing/patient-payments-history";
 import { TreatmentRecordsList } from "@/components/treatments/treatment-records-list";
 import { ClinicalNotesList } from "@/components/clinical-notes/clinical-notes-list";
+import { TreatmentPlansList } from "@/components/treatment-plans/treatment-plans-list";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
@@ -26,6 +27,7 @@ import type { InvoiceSearchResult, PatientPaymentRow } from "@/lib/billing/queri
 import { formatCurrency } from "@/lib/billing/format";
 import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
 import { getClinicalNotesForPatient, type ClinicalNoteWithContext } from "@/lib/clinical-notes/queries";
+import { getTreatmentPlansForPatient, type TreatmentPlanListRow } from "@/lib/treatment-plans/queries";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
@@ -95,13 +97,14 @@ export default async function PatientProfilePage({
   // procedure picker, and billing.edit holders (e.g. accountant) don't
   // necessarily hold clinical.view, so gating it on the wrong permission
   // would silently leave them with an empty picker.
-  const [[invoicesResult, patientPayments], treatmentRecords, clinicalNotes, visitTypes, appointments, patientFileUrls] =
+  const [[invoicesResult, patientPayments], treatmentRecords, clinicalNotes, treatmentPlans, visitTypes, appointments, patientFileUrls] =
     await Promise.all([
       canViewBilling
         ? Promise.all([searchInvoices({ patientId: patient.id, pageSize: 10 }), getPatientPayments(patient.id)])
         : Promise.resolve<[InvoiceSearchResult | null, PatientPaymentRow[]]>([null, []]),
       canViewClinical ? getTreatmentRecordsForPatient(patient.id) : Promise.resolve<TreatmentRecord[]>([]),
       canViewClinical ? getClinicalNotesForPatient(patient.id) : Promise.resolve<ClinicalNoteWithContext[]>([]),
+      canViewClinical ? getTreatmentPlansForPatient(patient.id) : Promise.resolve<TreatmentPlanListRow[]>([]),
       listVisitTypes(),
       canViewAppointments ? getAppointmentsForPatient(patient.id) : Promise.resolve<ScheduleRow[]>([]),
       getPatientFileUrls([patient.photo_path, ...files.map((file) => file.storage_path)]),
@@ -198,6 +201,7 @@ export default async function PatientProfilePage({
           <TabsTrigger value="audit">Audit History</TabsTrigger>
           {canViewClinical && <TabsTrigger value="procedures-performed">Procedures Performed</TabsTrigger>}
           {canViewClinical && <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>}
+          {canViewClinical && <TabsTrigger value="treatment-plans">Treatment Plans</TabsTrigger>}
           {canViewAppointments && <TabsTrigger value="appointments">Appointments</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="invoices">Invoices</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="payments">Payments</TabsTrigger>}
@@ -360,6 +364,11 @@ export default async function PatientProfilePage({
                 canEdit={canEditClinical}
                 emptyMessage="No clinical notes recorded for this patient yet."
               />
+            </TabsContent>
+          )}
+          {canViewClinical && (
+            <TabsContent value="treatment-plans" className="pt-6">
+              <TreatmentPlansList patientId={patient.id} plans={treatmentPlans} canEdit={canEditClinical} />
             </TabsContent>
           )}
           {canViewAppointments && (

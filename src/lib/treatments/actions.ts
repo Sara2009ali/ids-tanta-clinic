@@ -30,6 +30,27 @@ function revalidateTreatmentPaths(patientId: string) {
   revalidatePath(`/patients/${patientId}`);
 }
 
+/** Defense-in-depth, same shape as appointmentBelongsToPatient() in treatment-plans/actions.ts: a treatment_plan_item_id the client sends must actually belong to a plan for this same patient. */
+async function treatmentPlanItemBelongsToPatient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  treatmentPlanItemId: string,
+  patientId: string,
+): Promise<boolean> {
+  const { data: item } = await supabase
+    .from("treatment_plan_items")
+    .select("treatment_plan_id")
+    .eq("id", treatmentPlanItemId)
+    .maybeSingle();
+  if (!item) return false;
+
+  const { data: plan } = await supabase
+    .from("treatment_plans")
+    .select("patient_id")
+    .eq("id", item.treatment_plan_id)
+    .maybeSingle();
+  return plan?.patient_id === patientId;
+}
+
 /**
  * patient_id/doctor_id/clinic_id are derived here from the appointment row
  * itself, server-side — never trusted from the client — even though the
@@ -64,6 +85,20 @@ export async function createTreatmentRecord(
     return { error: "Couldn't find this appointment." };
   }
 
+  if (parsed.data.treatment_plan_item_id) {
+    const belongs = await treatmentPlanItemBelongsToPatient(
+      supabase,
+      parsed.data.treatment_plan_item_id,
+      appointment.patient_id,
+    );
+    if (!belongs) {
+      return {
+        error: "That treatment plan item doesn't belong to this patient.",
+        fieldErrors: { treatment_plan_item_id: "Invalid treatment plan item" },
+      };
+    }
+  }
+
   const { data, error } = await supabase
     .from("treatment_records")
     .insert({
@@ -74,6 +109,7 @@ export async function createTreatmentRecord(
       visit_type_id: parsed.data.visit_type_id,
       notes: parsed.data.notes ?? null,
       created_by: staff.id,
+      treatment_plan_item_id: parsed.data.treatment_plan_item_id ?? null,
     })
     .select()
     .single();
@@ -110,9 +146,39 @@ export async function updateTreatmentRecord(
   }
 
   const supabase = await createClient();
+
+  const { data: existing, error: existingError } = await supabase
+    .from("treatment_records")
+    .select("id, patient_id")
+    .eq("id", recordId)
+    .maybeSingle();
+
+  if (existingError || !existing) {
+    console.error("updateTreatmentRecord: record lookup failed", existingError);
+    return { error: "Couldn't find this treatment record." };
+  }
+
+  if (parsed.data.treatment_plan_item_id) {
+    const belongs = await treatmentPlanItemBelongsToPatient(
+      supabase,
+      parsed.data.treatment_plan_item_id,
+      existing.patient_id,
+    );
+    if (!belongs) {
+      return {
+        error: "That treatment plan item doesn't belong to this patient.",
+        fieldErrors: { treatment_plan_item_id: "Invalid treatment plan item" },
+      };
+    }
+  }
+
   const { data, error } = await supabase
     .from("treatment_records")
-    .update({ visit_type_id: parsed.data.visit_type_id, notes: parsed.data.notes ?? null })
+    .update({
+      visit_type_id: parsed.data.visit_type_id,
+      notes: parsed.data.notes ?? null,
+      treatment_plan_item_id: parsed.data.treatment_plan_item_id ?? null,
+    })
     .eq("id", recordId)
     .select("id, clinic_id, patient_id")
     .maybeSingle();
