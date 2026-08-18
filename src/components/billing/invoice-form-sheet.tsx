@@ -53,6 +53,12 @@ function itemsFromInvoice(invoice: InvoiceDetail): InvoiceItemInputValues[] {
   }));
 }
 
+/** `initialItems` (a batch seed) wins over `initialItem` (a single seed) when both are passed; either falls back to one blank item so create-mode never renders with zero rows. */
+function initialItemsFor(initialItem?: InvoiceItemInputValues, initialItems?: InvoiceItemInputValues[]): InvoiceItemInputValues[] {
+  if (initialItems && initialItems.length > 0) return initialItems;
+  return [initialItem ?? emptyItem()];
+}
+
 /** "No procedure — plain custom line" sentinel for the picker below (same pattern as visit-types-filters.tsx's ALL_VALUE). */
 const CUSTOM_ITEM_VALUE = "__custom__";
 
@@ -304,6 +310,17 @@ export interface InvoiceFormSheetProps {
    * price/quantity/discount behavior, nothing new introduced here.
    */
   initialItem?: InvoiceItemInputValues;
+  /**
+   * Seeds multiple invoice lines at once (e.g. from a batch of accepted/
+   * completed Treatment Plan items) instead of a single line. Ignored in
+   * edit mode. Takes precedence over `initialItem` when both are passed —
+   * callers are expected to use one or the other, never both — and falls
+   * back to `initialItem`/a blank item when omitted or empty, so the
+   * existing single-item appointment -> invoice flow is unaffected. Same
+   * "still just a starting point, everything stays editable" contract as
+   * `initialItem`.
+   */
+  initialItems?: InvoiceItemInputValues[];
   /** Active procedures for the item picker. Pass `[]` (never omit) if the caller can't fetch it — the picker just hides itself, same as a clinic with an empty catalog. */
   visitTypes: VisitType[];
   className?: string;
@@ -322,6 +339,7 @@ export function InvoiceFormSheet({
   initialPatient,
   initialAppointmentId,
   initialItem,
+  initialItems,
   visitTypes,
   className,
   open: controlledOpen,
@@ -341,7 +359,7 @@ export function InvoiceFormSheet({
     invoice ? { id: invoice.patient_id, full_name: invoice.patient_name } : (initialPatient ?? null),
   );
   const [items, setItems] = useState<InvoiceItemInputValues[]>(
-    invoice ? itemsFromInvoice(invoice) : [initialItem ?? emptyItem()],
+    invoice ? itemsFromInvoice(invoice) : initialItemsFor(initialItem, initialItems),
   );
   const [taxPercent, setTaxPercent] = useState(invoice ? Number(invoice.tax_percent) : 0);
   const lockPatient = isEdit || !!initialPatient;
@@ -363,7 +381,7 @@ export function InvoiceFormSheet({
     setFieldErrors({});
     if (!isEdit) {
       setPatient(initialPatient ?? null);
-      setItems([initialItem ?? emptyItem()]);
+      setItems(initialItemsFor(initialItem, initialItems));
       setTaxPercent(0);
     }
   }

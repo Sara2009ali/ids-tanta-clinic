@@ -7,7 +7,16 @@
  * this codebase, for the same reason: the decision logic is testable
  * against hand-built fixtures even though this repo has no local Postgres
  * test harness to exercise the real queries/RLS against.
+ *
+ * `InvoiceItemInputValues` below is the one type-only import from
+ * lib/billing — it's erased at compile time, so it doesn't pull any billing
+ * I/O into this module or make Treatment Plans depend on Billing at
+ * runtime. It exists purely so the Treatment-Plan-to-invoice-line mapping
+ * this file produces is guaranteed to match what InvoiceFormSheet actually
+ * accepts, instead of a hand-duplicated shape that could silently drift.
  */
+
+import type { InvoiceItemInputValues } from "@/lib/billing/schema";
 
 export type TreatmentPlanStatus = "draft" | "active" | "completed" | "abandoned";
 
@@ -191,4 +200,95 @@ export function initialRecordTreatmentVisitTypeId(item: RecordTreatmentSourceIte
  */
 export function isCustomPlanItem(item: RecordTreatmentSourceItem): boolean {
   return item.visit_type_id === null;
+}
+
+/**
+ * v1 billable statuses for the Treatment Plan -> Billing prefill workflow —
+ * `accepted` and `completed` only. Deliberately excludes `planned`
+ * (patient hasn't agreed to it yet), `postponed`/`rejected` (not happening,
+ * at least not now), and `in_progress` (not yet a finished, chargeable
+ * fact). `completed` stays eligible on purpose: clinical completion and
+ * billing are two separate facts, and an already-billed `completed` item
+ * has no flag anywhere to say so (see the duplicate-billing note on
+ * treatmentPlanItemsToInvoiceItems below) — that's a known v1 limitation,
+ * not something this function tries to guess around.
+ */
+export function isBillableTreatmentPlanItemStatus(status: string): boolean {
+  return status === "accepted" || status === "completed";
+}
+
+export interface CatalogPriceLookup {
+  id: string;
+  price: number | string;
+}
+
+/**
+ * The unit price an invoice line seeded from a plan item should start at.
+ * Mirrors the same rule the existing appointment -> invoice flow already
+ * applies (the appointment's *current* visit-type catalog price, not a
+ * stored estimate) — kept consistent on purpose rather than introducing a
+ * second pricing rule, per the approved design. `estimated_price` on the
+ * plan item can go stale (the catalog price may have changed since the
+ * item was proposed), so a catalog-linked item always prefers the live
+ * catalog price when it can find one. A custom item (`visit_type_id`
+ * null) has no catalog price to consult, so its own `estimated_price` is
+ * the only available source — exactly as it already is for a manually
+ * added custom invoice line in InvoiceFormSheet today.
+ */
+export function resolveTreatmentPlanItemUnitPrice(
+  item: Pick<RecordTreatmentSourceItem, "visit_type_id"> & { estimated_price: number | string },
+  catalog: readonly CatalogPriceLookup[],
+): number {
+  if (item.visit_type_id) {
+    const match = catalog.find((entry) => entry.id === item.visit_type_id);
+    if (match) return Number(match.price);
+  }
+  return Number(item.estimated_price);
+}
+
+export interface BillableTreatmentPlanItem {
+  procedure_name: string;
+  estimated_price: number | string;
+  quantity: number | string;
+  visit_type_id: string | null;
+}
+
+/**
+ * One invoice line per selected plan item, in the exact shape
+ * InvoiceFormSheet's `initialItems` expects. `discount_amount` always
+ * starts at 0 — a plan item carries no discount concept of its own, and
+ * the line stays fully editable in the sheet either way. This is a
+ * one-time prefill: nothing here persists a link back to the plan item, by
+ * design (see the Treatment Plan -> Billing boundary notes).
+ */
+export function treatmentPlanItemsToInvoiceItems(
+  items: readonly BillableTreatmentPlanItem[],
+  catalog: readonly CatalogPriceLookup[],
+): InvoiceItemInputValues[] {
+  return items.map((item) => ({
+    description: item.procedure_name,
+    quantity: Number(item.quantity),
+    unit_price: resolveTreatmentPlanItemUnitPrice(item, catalog),
+    discount_amount: 0,
+    visit_type_id: item.visit_type_id,
+  }));
+}
+
+export interface AppointmentLinkedItem {
+  appointment_id: string | null;
+}
+
+/**
+ * The invoice-level appointment_id to seed when creating an invoice from
+ * multiple plan items at once — a Treatment Plan isn't necessarily tied to
+ * one appointment, so this only narrows down an *existing* shared value,
+ * it never invents one. Same appointment_id on every selected item -> that
+ * id. Different appointment_ids, or no appointment on any of them -> null.
+ * A single-item selection is just the size-1 case of the same rule.
+ */
+export function resolveInvoiceAppointmentId(items: readonly AppointmentLinkedItem[]): string | null {
+  const distinctIds = new Set(items.map((item) => item.appointment_id));
+  if (distinctIds.size !== 1) return null;
+  const [only] = distinctIds;
+  return only ?? null;
 }

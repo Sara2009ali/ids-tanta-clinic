@@ -8,8 +8,12 @@ import {
   initialRecordTreatmentVisitTypeId,
   isAppointmentForPatient,
   isAppointmentTreatmentEligible,
+  isBillableTreatmentPlanItemStatus,
   isCustomPlanItem,
   orderItemsBySequence,
+  resolveInvoiceAppointmentId,
+  resolveTreatmentPlanItemUnitPrice,
+  treatmentPlanItemsToInvoiceItems,
 } from "@/lib/treatment-plans/calculations";
 
 describe("canTransitionPlanStatus — plan status validation", () => {
@@ -250,5 +254,131 @@ describe("isCustomPlanItem — Record Treatment custom-procedure detection", () 
 
   it("treats a catalog-linked plan item as not custom", () => {
     expect(isCustomPlanItem({ visit_type_id: "visit-type-1" })).toBe(false);
+  });
+});
+
+describe("isBillableTreatmentPlanItemStatus — Create Invoice eligibility", () => {
+  it("accepts an 'accepted' item", () => {
+    expect(isBillableTreatmentPlanItemStatus("accepted")).toBe(true);
+  });
+
+  it("accepts a 'completed' item", () => {
+    expect(isBillableTreatmentPlanItemStatus("completed")).toBe(true);
+  });
+
+  it("excludes a 'planned' item", () => {
+    expect(isBillableTreatmentPlanItemStatus("planned")).toBe(false);
+  });
+
+  it("excludes a 'postponed' item", () => {
+    expect(isBillableTreatmentPlanItemStatus("postponed")).toBe(false);
+  });
+
+  it("excludes a 'rejected' item", () => {
+    expect(isBillableTreatmentPlanItemStatus("rejected")).toBe(false);
+  });
+
+  it("excludes an 'in_progress' item", () => {
+    expect(isBillableTreatmentPlanItemStatus("in_progress")).toBe(false);
+  });
+});
+
+describe("resolveTreatmentPlanItemUnitPrice — invoice line price rule", () => {
+  it("prefers the current catalog price for a catalog-linked item", () => {
+    const price = resolveTreatmentPlanItemUnitPrice(
+      { visit_type_id: "visit-type-1", estimated_price: 100 },
+      [{ id: "visit-type-1", price: 150 }],
+    );
+    expect(price).toBe(150);
+  });
+
+  it("falls back to estimated_price when the catalog entry can't be found (e.g. deleted procedure)", () => {
+    const price = resolveTreatmentPlanItemUnitPrice(
+      { visit_type_id: "visit-type-missing", estimated_price: 100 },
+      [{ id: "visit-type-1", price: 150 }],
+    );
+    expect(price).toBe(100);
+  });
+
+  it("uses estimated_price directly for a custom item — there is no catalog price to consult", () => {
+    const price = resolveTreatmentPlanItemUnitPrice({ visit_type_id: null, estimated_price: 75 }, [
+      { id: "visit-type-1", price: 150 },
+    ]);
+    expect(price).toBe(75);
+  });
+});
+
+describe("treatmentPlanItemsToInvoiceItems — plan item -> invoice line mapping", () => {
+  it("seeds a single invoice line from a single selected item", () => {
+    const lines = treatmentPlanItemsToInvoiceItems(
+      [{ procedure_name: "Root Canal", estimated_price: 100, quantity: 1, visit_type_id: "visit-type-1" }],
+      [{ id: "visit-type-1", price: 120 }],
+    );
+    expect(lines).toEqual([
+      { description: "Root Canal", quantity: 1, unit_price: 120, discount_amount: 0, visit_type_id: "visit-type-1" },
+    ]);
+  });
+
+  it("seeds one invoice line per selected item for a multi-item selection", () => {
+    const lines = treatmentPlanItemsToInvoiceItems(
+      [
+        { procedure_name: "Root Canal", estimated_price: 100, quantity: 1, visit_type_id: "visit-type-1" },
+        { procedure_name: "Filling", estimated_price: 50, quantity: 2, visit_type_id: "visit-type-2" },
+      ],
+      [
+        { id: "visit-type-1", price: 100 },
+        { id: "visit-type-2", price: 50 },
+      ],
+    );
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({ description: "Root Canal", quantity: 1, unit_price: 100 });
+    expect(lines[1]).toMatchObject({ description: "Filling", quantity: 2, unit_price: 50 });
+  });
+
+  it("keeps a custom plan item custom — no catalog procedure is invented for it", () => {
+    const lines = treatmentPlanItemsToInvoiceItems(
+      [{ procedure_name: "Freehand custom procedure", estimated_price: 200, quantity: 1, visit_type_id: null }],
+      [{ id: "visit-type-1", price: 999 }],
+    );
+    expect(lines).toEqual([
+      {
+        description: "Freehand custom procedure",
+        quantity: 1,
+        unit_price: 200,
+        discount_amount: 0,
+        visit_type_id: null,
+      },
+    ]);
+  });
+});
+
+describe("resolveInvoiceAppointmentId — invoice-level appointment_id when seeding from multiple items", () => {
+  it("preserves the appointment_id when every selected item shares it", () => {
+    expect(
+      resolveInvoiceAppointmentId([{ appointment_id: "appt-1" }, { appointment_id: "appt-1" }]),
+    ).toBe("appt-1");
+  });
+
+  it("returns null when selected items have different appointment_ids", () => {
+    expect(
+      resolveInvoiceAppointmentId([{ appointment_id: "appt-1" }, { appointment_id: "appt-2" }]),
+    ).toBeNull();
+  });
+
+  it("returns null when no selected item has an appointment", () => {
+    expect(
+      resolveInvoiceAppointmentId([{ appointment_id: null }, { appointment_id: null }]),
+    ).toBeNull();
+  });
+
+  it("returns null when selected items mix an appointment and no appointment — never invents one", () => {
+    expect(
+      resolveInvoiceAppointmentId([{ appointment_id: "appt-1" }, { appointment_id: null }]),
+    ).toBeNull();
+  });
+
+  it("handles a single-item selection as the size-1 case of the same rule", () => {
+    expect(resolveInvoiceAppointmentId([{ appointment_id: "appt-1" }])).toBe("appt-1");
+    expect(resolveInvoiceAppointmentId([{ appointment_id: null }])).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { TreatmentPlanStatusBadge } from "@/components/treatment-plans/treatment-plan-status-badge";
 import { TreatmentPlanActions } from "@/components/treatment-plans/treatment-plan-actions";
+import { TreatmentPlanCreateInvoiceButton } from "@/components/treatment-plans/treatment-plan-create-invoice-button";
 import { TreatmentPlanItemsList } from "@/components/treatment-plans/treatment-plan-items-list";
 import { TreatmentPlanTitle } from "@/components/treatment-plans/treatment-plan-title";
 import { TreatmentPlanProgressSummary } from "@/components/treatment-plans/treatment-plan-progress-summary";
@@ -38,6 +39,13 @@ export default async function TreatmentPlanDetailPage({
   }
 
   const canEdit = hasPermission(permissions, PERMISSIONS.CLINICAL_EDIT);
+  // Existing billing.edit permission, unchanged — Create Invoice is only
+  // offered to staff who could already create an invoice from Billing
+  // directly. Today that's admin/super_admin (dentists have clinical.edit
+  // but not billing.edit); see the discovery report's permission note for
+  // the tradeoffs of widening this, which is a product decision, not made
+  // here.
+  const canBill = hasPermission(permissions, PERMISSIONS.BILLING_EDIT);
   const planStatus = plan.status as TreatmentPlanStatus;
   const title = plan.title || `Treatment Plan · ${formatDate(plan.created_at)}`;
   const estimatedTotal = computeEstimatedTotal(plan.items);
@@ -68,12 +76,22 @@ export default async function TreatmentPlanDetailPage({
           </div>
           <TreatmentPlanProgressSummary items={plan.items} estimatedTotal={estimatedTotal} />
         </div>
-        <TreatmentPlanActions
-          planId={plan.id}
-          patientId={patientId}
-          status={planStatus}
-          canEdit={canEdit}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {canBill && (
+            <TreatmentPlanCreateInvoiceButton
+              patientId={patientId}
+              patientName={plan.patientName}
+              items={plan.items}
+              visitTypes={visitTypes}
+            />
+          )}
+          <TreatmentPlanActions
+            planId={plan.id}
+            patientId={patientId}
+            status={planStatus}
+            canEdit={canEdit}
+          />
+        </div>
       </div>
 
       <TreatmentPlanItemsList
