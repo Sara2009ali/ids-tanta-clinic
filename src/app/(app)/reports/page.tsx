@@ -1,5 +1,19 @@
 import Link from "next/link";
-import { BarChart3, Boxes, CalendarDays, HandCoins, Receipt, Stethoscope, UserPlus, Users, Wallet, XCircle } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  Boxes,
+  CalendarDays,
+  ClipboardList,
+  HandCoins,
+  Receipt,
+  RotateCcw,
+  Stethoscope,
+  UserPlus,
+  Users,
+  Wallet,
+  XCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -26,6 +40,27 @@ const CATEGORIES = [
   { href: "/reports/compensation", label: "Compensation", description: "Clinic-wide compensation summary.", icon: HandCoins, permission: PERMISSIONS.COMPENSATION_VIEW },
   { href: "/reports/procedures", label: "Procedures", description: "Top procedures, payment methods.", icon: Receipt, permission: PERMISSIONS.BILLING_VIEW },
   { href: "/reports/inventory", label: "Inventory", description: "Stock value, low stock, expiring soon.", icon: Boxes, permission: PERMISSIONS.INVENTORY_VIEW },
+  {
+    href: "/reports/treatment-plans",
+    label: "Treatment Plans",
+    description: "Plan conversion, planned vs. performed treatment.",
+    icon: ClipboardList,
+    permission: PERMISSIONS.CLINICAL_VIEW,
+  },
+  {
+    href: "/reports/clinical-activity",
+    label: "Clinical Activity",
+    description: "Procedure activity and doctor workload, by count.",
+    icon: Activity,
+    permission: PERMISSIONS.CLINICAL_VIEW,
+  },
+  {
+    href: "/reports/recalls",
+    label: "Recalls",
+    description: "Due, overdue, scheduled, and completed recalls.",
+    icon: RotateCcw,
+    permission: PERMISSIONS.CLINICAL_VIEW,
+  },
 ] as const;
 
 /**
