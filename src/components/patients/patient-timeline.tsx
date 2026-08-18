@@ -9,6 +9,7 @@ import {
   Pencil,
   PlusCircle,
   Receipt,
+  RotateCcw,
   Stethoscope,
   Trash2,
   TriangleAlert,
@@ -18,9 +19,11 @@ import {
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { InvoiceStatusBadge } from "@/components/billing/invoice-status-badge";
+import { RecallStatusBadge } from "@/components/recalls/recall-status-badge";
 import { STATUS_BADGE_VARIANT } from "@/components/appointments/todays-schedule";
 import { formatCurrency } from "@/lib/billing/format";
 import type { InvoiceListRow, PatientPaymentRow } from "@/lib/billing/queries";
+import type { RecallListRow } from "@/lib/recalls/queries";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 import { EmptyState } from "@/components/ui/empty-state";
 import { typography } from "@/lib/typography";
@@ -50,6 +53,20 @@ function dentalChartEventTitle(event: PatientToothEvent): string {
   const from = event.previous_condition ? TOOTH_CONDITION_LABELS[event.previous_condition as ToothCondition] : "Healthy";
   const to = event.condition ? TOOTH_CONDITION_LABELS[event.condition as ToothCondition] : "Healthy";
   return `Tooth ${event.fdi_number}: ${from} → ${to}`;
+}
+
+/** Recall entries read directly from the recalls rows (created_at/decided_at), not from audit_log — same "the timeline reads the entity's own timestamps" convention treatment records/appointments/invoices already use here. */
+function recallStatusEventTitle(recall: RecallListRow): string {
+  switch (recall.status) {
+    case "scheduled":
+      return `Recall scheduled: ${recall.reason}`;
+    case "completed":
+      return `Recall completed: ${recall.reason}`;
+    case "dismissed":
+      return `Recall dismissed: ${recall.reason}`;
+    default:
+      return `Recall updated: ${recall.reason}`;
+  }
 }
 
 /** Human-readable label for an audit_log `action` string. Falls back to the raw value. */
@@ -164,6 +181,7 @@ export function PatientTimeline({
   invoices = [],
   payments = [],
   dentalChartEvents = [],
+  recalls = [],
 }: {
   auditEntries: AuditLogEntry[];
   alerts: PatientMedicalAlert[];
@@ -173,6 +191,7 @@ export function PatientTimeline({
   invoices?: InvoiceListRow[];
   payments?: PatientPaymentRow[];
   dentalChartEvents?: PatientToothEvent[];
+  recalls?: RecallListRow[];
 }) {
   const entries: TimelineEntry[] = [
     ...auditEntries.map((entry) => ({
@@ -243,6 +262,27 @@ export function PatientTimeline({
           ? ("warning" as const)
           : ("default" as const),
     })),
+    ...recalls.map((recall) => ({
+      id: `recall-created-${recall.id}`,
+      date: recall.created_at,
+      icon: RotateCcw,
+      title: `Recall created: ${recall.reason}`,
+      tone: "default" as const,
+      badge: <RecallStatusBadge status={recall.status} dueDate={recall.due_date} />,
+    })),
+    // Status-change entries use decided_at (set once, the first time status
+    // leaves 'due' — see changeRecallStatus()), so a still-`due` recall
+    // contributes only its creation entry above, never a duplicate.
+    ...recalls
+      .filter((recall) => recall.decided_at)
+      .map((recall) => ({
+        id: `recall-status-${recall.id}`,
+        date: recall.decided_at as string,
+        icon: RotateCcw,
+        title: recallStatusEventTitle(recall),
+        tone: "default" as const,
+        badge: <RecallStatusBadge status={recall.status} dueDate={recall.due_date} />,
+      })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   if (entries.length === 0) {

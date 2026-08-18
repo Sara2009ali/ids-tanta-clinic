@@ -23,6 +23,8 @@ export type PatientClinicalNote = Database["public"]["Tables"]["patient_clinical
 export type TreatmentPlan = Database["public"]["Tables"]["treatment_plans"]["Row"];
 export type TreatmentPlanItem = Database["public"]["Tables"]["treatment_plan_items"]["Row"];
 
+export type Recall = Database["public"]["Tables"]["recalls"]["Row"];
+
 // Dental Chart (0029_dental_chart.sql). teeth is global reference data (no
 // clinic_id), seeded once — see the migration header for the full rationale.
 export type Tooth = Database["public"]["Tables"]["teeth"]["Row"];
@@ -71,6 +73,11 @@ export type PaymentType = "payment" | "refund";
 export type TreatmentPlanStatus = "draft" | "active" | "completed" | "abandoned";
 export type TreatmentPlanItemStatus = "planned" | "accepted" | "postponed" | "rejected" | "in_progress" | "completed";
 export type TreatmentPlanItemPriority = "normal" | "high" | "urgent";
+
+// recalls.status (0030_recalls.sql) — same text + check convention. "Overdue"
+// is deliberately not a member of this type: it's derived (see
+// isRecallOverdue() in lib/recalls/calculations.ts), never stored.
+export type RecallStatus = "due" | "scheduled" | "completed" | "dismissed";
 
 // teeth.dentition / teeth.arch (0029_dental_chart.sql) — generated columns
 // derived from fdi_number, not module-local vocabulary; the value set is
@@ -181,6 +188,13 @@ export const TREATMENT_PLAN_ITEM_STATUS_LABELS: Record<TreatmentPlanItemStatus, 
   rejected: "Rejected",
   in_progress: "In Progress",
   completed: "Completed",
+};
+
+export const RECALL_STATUS_LABELS: Record<RecallStatus, string> = {
+  due: "Due",
+  scheduled: "Scheduled",
+  completed: "Completed",
+  dismissed: "Dismissed",
 };
 
 export const TREATMENT_PLAN_ITEM_PRIORITY_LABELS: Record<TreatmentPlanItemPriority, string> = {

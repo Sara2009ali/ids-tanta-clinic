@@ -19,6 +19,7 @@ import { PatientPaymentsHistory } from "@/components/billing/patient-payments-hi
 import { TreatmentRecordsList } from "@/components/treatments/treatment-records-list";
 import { ClinicalNotesList } from "@/components/clinical-notes/clinical-notes-list";
 import { TreatmentPlansList } from "@/components/treatment-plans/treatment-plans-list";
+import { PatientRecallsList } from "@/components/recalls/patient-recalls-list";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { DentalChart } from "@/components/dental-chart/dental-chart";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
@@ -29,6 +30,8 @@ import { formatCurrency } from "@/lib/billing/format";
 import { getTreatmentRecordsForPatient } from "@/lib/treatments/queries";
 import { getClinicalNotesForPatient, type ClinicalNoteWithContext } from "@/lib/clinical-notes/queries";
 import { getTreatmentPlansForPatient, type TreatmentPlanListRow } from "@/lib/treatment-plans/queries";
+import { getRecallsForPatient, type RecallListRow } from "@/lib/recalls/queries";
+import { isRecallOverdue } from "@/lib/recalls/calculations";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
 import {
   getDentalChartForPatient,
@@ -46,6 +49,11 @@ function selectNextAppointment(appointments: ScheduleRow[]): ScheduleRow | undef
   return appointments
     .filter((row) => new Date(row.scheduled_start).getTime() >= now && row.status !== "cancelled" && row.status !== "no_show")
     .sort((a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())[0];
+}
+
+/** The soonest-due 'due' recall — recalls are already sorted due_date-ascending by getRecallsForPatient(), so this is just the first one that hasn't already been scheduled/completed/dismissed. */
+function selectNextRecall(recalls: RecallListRow[]): RecallListRow | undefined {
+  return recalls.find((recall) => recall.status === "due");
 }
 
 function formatDateLabel(iso: string): string {
@@ -72,6 +80,7 @@ const PATIENT_PROFILE_TABS = new Set([
   "procedures-performed",
   "clinical-notes",
   "treatment-plans",
+  "recalls",
   "appointments",
   "invoices",
   "payments",
@@ -133,6 +142,7 @@ export default async function PatientProfilePage({
     treatmentRecords,
     clinicalNotes,
     treatmentPlans,
+    recalls,
     visitTypes,
     appointments,
     patientFileUrls,
@@ -145,6 +155,7 @@ export default async function PatientProfilePage({
       canViewClinical ? getTreatmentRecordsForPatient(patient.id) : Promise.resolve<TreatmentRecord[]>([]),
       canViewClinical ? getClinicalNotesForPatient(patient.id) : Promise.resolve<ClinicalNoteWithContext[]>([]),
       canViewClinical ? getTreatmentPlansForPatient(patient.id) : Promise.resolve<TreatmentPlanListRow[]>([]),
+      canViewClinical ? getRecallsForPatient(patient.id) : Promise.resolve<RecallListRow[]>([]),
       listVisitTypes(),
       canViewAppointments ? getAppointmentsForPatient(patient.id) : Promise.resolve<ScheduleRow[]>([]),
       getPatientFileUrls([patient.photo_path, ...files.map((file) => file.storage_path)]),
@@ -177,6 +188,7 @@ export default async function PatientProfilePage({
   // number the brief explicitly asks to be "immediately obvious and trustworthy" —
   // better to omit it than show a wrong total.
   const nextAppointment = selectNextAppointment(appointments);
+  const nextRecall = selectNextRecall(recalls);
 
   const invoiceRows = invoicesResult?.rows ?? [];
   const hasEveryInvoice = invoicesResult ? invoicesResult.totalCount <= invoiceRows.length : false;
@@ -194,6 +206,17 @@ export default async function PatientProfilePage({
           {
             label: "Next Appointment",
             value: nextAppointment ? formatDateTimeLabel(nextAppointment.scheduled_start) : "None scheduled",
+          } satisfies SummaryRailItem,
+        ]
+      : []),
+    ...(canViewClinical
+      ? [
+          {
+            label: "Next Recall",
+            value: nextRecall
+              ? `${formatDateLabel(nextRecall.due_date)}${isRecallOverdue(nextRecall) ? " (overdue)" : ""}`
+              : "None due",
+            tone: nextRecall && isRecallOverdue(nextRecall) ? ("warning" as const) : undefined,
           } satisfies SummaryRailItem,
         ]
       : []),
@@ -245,6 +268,7 @@ export default async function PatientProfilePage({
           {canViewClinical && <TabsTrigger value="procedures-performed">Procedures Performed</TabsTrigger>}
           {canViewClinical && <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>}
           {canViewClinical && <TabsTrigger value="treatment-plans">Treatment Plans</TabsTrigger>}
+          {canViewClinical && <TabsTrigger value="recalls">Recalls</TabsTrigger>}
           {canViewAppointments && <TabsTrigger value="appointments">Appointments</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="invoices">Invoices</TabsTrigger>}
           {canViewBilling && <TabsTrigger value="payments">Payments</TabsTrigger>}
@@ -341,6 +365,7 @@ export default async function PatientProfilePage({
               invoices={invoicesResult?.rows ?? []}
               payments={patientPayments}
               dentalChartEvents={dentalChartEvents}
+              recalls={recalls}
             />
           </TabsContent>
 
@@ -418,6 +443,18 @@ export default async function PatientProfilePage({
           {canViewClinical && (
             <TabsContent value="treatment-plans" className="pt-6">
               <TreatmentPlansList patientId={patient.id} plans={treatmentPlans} canEdit={canEditClinical} />
+            </TabsContent>
+          )}
+          {canViewClinical && (
+            <TabsContent value="recalls" className="pt-6">
+              <PatientRecallsList
+                patientId={patient.id}
+                patientName={patient.full_name ?? ""}
+                recalls={recalls}
+                doctors={doctors}
+                visitTypes={visitTypes}
+                canEdit={canEditClinical}
+              />
             </TabsContent>
           )}
           {canViewAppointments && (

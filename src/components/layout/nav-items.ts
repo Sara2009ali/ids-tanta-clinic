@@ -71,7 +71,17 @@ export const NAV_ITEMS: NavItem[] = [
     section: "Clinical",
     permission: PERMISSIONS.APPOINTMENTS_VIEW,
   },
-  { href: "/recalls", label: "Recalls", icon: RotateCcw, section: "Clinical" },
+  {
+    href: "/recalls",
+    label: "Recalls",
+    icon: RotateCcw,
+    section: "Clinical",
+    // Matches the page's own requirePermission(CLINICAL_VIEW) gate — the nav
+    // entry shouldn't offer a link the page would immediately redirect away
+    // from. Previously ungated (visible to every role) from when this route
+    // was still a ComingSoon placeholder with no real access boundary.
+    permission: PERMISSIONS.CLINICAL_VIEW,
+  },
   { href: "/billing", label: "Billing", icon: Receipt, section: "Business", permission: PERMISSIONS.BILLING_VIEW },
   {
     href: "/compensation",

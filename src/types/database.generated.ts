@@ -2051,6 +2051,103 @@ export type Database = {
           },
         ]
       }
+      recalls: {
+        Row: {
+          appointment_id: string | null
+          clinic_id: string
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          dismissed_reason: string | null
+          doctor_id: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          patient_id: string
+          reason: string
+          status: string
+          updated_at: string
+          visit_type_id: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          clinic_id: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          dismissed_reason?: string | null
+          doctor_id?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          reason: string
+          status?: string
+          updated_at?: string
+          visit_type_id?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          clinic_id?: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          dismissed_reason?: string | null
+          doctor_id?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          visit_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recalls_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recalls_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recalls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recalls_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recalls_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recalls_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           permission_id: string
