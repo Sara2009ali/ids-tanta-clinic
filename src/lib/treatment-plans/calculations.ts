@@ -177,3 +177,18 @@ export interface RecordTreatmentSourceItem {
 export function initialRecordTreatmentVisitTypeId(item: RecordTreatmentSourceItem): string {
   return item.visit_type_id ?? "";
 }
+
+/**
+ * A plan item is "custom" when the dentist typed the procedure name
+ * freehand instead of picking a catalog entry (ProcedurePicker's "Custom
+ * procedure" option — see treatment-plan-item-dialog.tsx). The Record
+ * Treatment dialog must never let the catalog procedure the dentist
+ * eventually selects silently stand in for this free-typed name — the two
+ * remain distinct facts (what was planned vs. what was actually performed),
+ * exactly as they already are in the data model (procedure_name lives on
+ * treatment_plan_items, visit_type_id lives on treatment_records, and
+ * neither is required to match the other).
+ */
+export function isCustomPlanItem(item: RecordTreatmentSourceItem): boolean {
+  return item.visit_type_id === null;
+}

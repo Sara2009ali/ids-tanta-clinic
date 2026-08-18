@@ -61,14 +61,39 @@ function formatDateTimeLabel(iso: string): string {
   });
 }
 
+const PATIENT_PROFILE_TABS = new Set([
+  "overview",
+  "dental-chart",
+  "medical",
+  "dental",
+  "timeline",
+  "files",
+  "audit",
+  "procedures-performed",
+  "clinical-notes",
+  "treatment-plans",
+  "appointments",
+  "invoices",
+  "payments",
+]);
+
 export default async function PatientProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   await requirePermission(PERMISSIONS.PATIENTS_VIEW);
 
   const { id } = await params;
+  const { tab } = await searchParams;
+  // Deep-link target for entry points elsewhere on the page (e.g. the
+  // Tooth Sheet's performed-treatment entries, which link here with
+  // ?tab=procedures-performed) — reuses this existing route/Tabs instance
+  // rather than a new treatment-record detail page. Falls back to the
+  // default tab for anything unrecognized, same as an absent param.
+  const initialTab = tab && PATIENT_PROFILE_TABS.has(tab) ? tab : "overview";
 
   // patient/doctors/permissions have no interdependency — fetching them as
   // one Promise.all (instead of getPatientById() then a separate
@@ -208,7 +233,7 @@ export default async function PatientProfilePage({
         rail={<WorkspaceSummaryRail items={summaryItems} />}
       />
 
-      <Tabs defaultValue="overview" className="animate-in fade-in slide-in-from-bottom-1 duration-500">
+      <Tabs defaultValue={initialTab} className="animate-in fade-in slide-in-from-bottom-1 duration-500">
         <TabsList className="h-auto w-full flex-nowrap justify-start overflow-x-auto [&>[data-slot=tabs-trigger]]:shrink-0 sm:w-fit sm:flex-wrap sm:justify-center">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           {canViewClinical && <TabsTrigger value="dental-chart">Dental Chart</TabsTrigger>}

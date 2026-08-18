@@ -234,7 +234,14 @@ export function PatientTimeline({
       date: event.created_at,
       icon: MapPin,
       title: dentalChartEventTitle(event),
-      tone: event.condition === "caries" ? ("warning" as const) : ("default" as const),
+      // caries and a newly-missing tooth are both clinically notable facts
+      // worth standing out from routine entries; filling/crown/etc. and
+      // observations stay neutral, same distinction toothNeedsAttention()
+      // already draws in the Dental Chart tab itself.
+      tone:
+        event.condition === "caries" || (event.event_type === "state_changed" && event.status === "missing")
+          ? ("warning" as const)
+          : ("default" as const),
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -257,7 +264,7 @@ export function PatientTimeline({
               const content = (
                 <div className="flex flex-col gap-0.5 pt-0.5">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="text-sm font-medium">{entry.title}</p>
+                    <p className="line-clamp-2 text-sm font-medium">{entry.title}</p>
                     {entry.badge}
                   </div>
                   <p className="text-xs text-muted-foreground" title={formatTimestamp(entry.date)}>

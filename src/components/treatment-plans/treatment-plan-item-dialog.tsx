@@ -243,14 +243,14 @@ export function TreatmentPlanItemDialog({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField
-              label="Tooth (structured)"
+              label="Tooth"
               htmlFor="item_tooth_id"
-              description="Optional — powers the Dental Chart. Independent of the free-text field below; picking a tooth here never rewrites it."
+              description="Optional — powers the Dental Chart. Independent of the note below; picking a tooth here never rewrites it."
             >
               <ToothSelect id="item_tooth_id" value={form.toothId} onValueChange={(fdi) => setForm((prev) => ({ ...prev, toothId: fdi }))} />
             </FormField>
             <FormField
-              label="Tooth / site"
+              label="Tooth / site notes"
               htmlFor="item_tooth"
               description="Optional — write it the way you'd say it, e.g. “Tooth 36”, “Teeth 11, 21”, “Upper right quadrant”"
             >

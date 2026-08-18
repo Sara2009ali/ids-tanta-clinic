@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { createTreatmentRecord } from "@/lib/treatments/actions";
 import { changeTreatmentPlanItemStatus } from "@/lib/treatment-plans/actions";
-import { initialRecordTreatmentVisitTypeId } from "@/lib/treatment-plans/calculations";
+import { initialRecordTreatmentVisitTypeId, isCustomPlanItem } from "@/lib/treatment-plans/calculations";
 import { ToothSelect } from "@/components/dental-chart/tooth-select";
 import type { TreatmentPlanItemWithContext } from "@/lib/treatment-plans/queries";
 import type { VisitType } from "@/types/domain";
@@ -41,6 +41,7 @@ export function TreatmentPlanRecordTreatmentDialog({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const isCustom = isCustomPlanItem(item);
   const [visitTypeId, setVisitTypeId] = useState(initialRecordTreatmentVisitTypeId(item));
   const [notes, setNotes] = useState("");
   // Prefilled from the plan item's own structured tooth, same "prefill once,
@@ -98,12 +99,30 @@ export function TreatmentPlanRecordTreatmentDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record treatment</DialogTitle>
-          <DialogDescription>Log what was actually performed for {item.procedure_name}.</DialogDescription>
+          <DialogDescription>
+            {isCustom
+              ? "This item was planned outside the procedure catalog. Log the catalog procedure that was actually performed."
+              : `Log what was actually performed for ${item.procedure_name}.`}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
+          {isCustom && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+              <Stethoscope className="mt-0.5 size-4 shrink-0 text-warning-text" />
+              <div className="space-y-1">
+                <p className="font-medium text-warning-text">Custom planned procedure</p>
+                <p className="text-muted-foreground">
+                  Planned as &ldquo;{item.procedure_name}&rdquo; — there&apos;s no catalog match for this wording.
+                  Choose the catalog procedure actually performed below; it becomes the treatment record and doesn&apos;t
+                  rename what was planned.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <Label htmlFor="record_treatment_visit_type_id">Procedure performed *</Label>
+            <Label htmlFor="record_treatment_visit_type_id">{isCustom ? "Catalog procedure performed *" : "Procedure performed *"}</Label>
             <Select
               items={Object.fromEntries(visitTypes.map((vt) => [vt.id, vt.name]))}
               value={visitTypeId}

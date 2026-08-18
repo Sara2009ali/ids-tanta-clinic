@@ -6,12 +6,18 @@ import {
   type TreatmentPlanItemStatus,
 } from "@/types/domain";
 
-const STATUS_BADGE_VARIANT: Record<TreatmentPlanItemStatus, "default" | "secondary" | "outline" | "destructive" | "success" | "warning"> = {
+/**
+ * in_progress uses the "gold" token (already defined in badge.tsx/
+ * globals.css, previously only used by dashboard StatCard highlights) so it
+ * reads distinctly from postponed's "warning" — an active, moving-forward
+ * state and a stalled one shouldn't share one color when scanning a plan.
+ */
+const STATUS_BADGE_VARIANT: Record<TreatmentPlanItemStatus, "default" | "secondary" | "outline" | "destructive" | "success" | "warning" | "gold"> = {
   planned: "outline",
   accepted: "default",
   postponed: "warning",
   rejected: "destructive",
-  in_progress: "warning",
+  in_progress: "gold",
   completed: "success",
 };
 

@@ -42,7 +42,12 @@ export function DentalChart({
         )}
       </div>
 
-      <Odontogram teeth={teeth} selectedFdiNumber={selectedFdiNumber} onSelectTooth={setSelectedFdiNumber} />
+      <Odontogram
+        patientId={patientId}
+        teeth={teeth}
+        selectedFdiNumber={selectedFdiNumber}
+        onSelectTooth={setSelectedFdiNumber}
+      />
 
       <ToothDetailSheet
         patientId={patientId}

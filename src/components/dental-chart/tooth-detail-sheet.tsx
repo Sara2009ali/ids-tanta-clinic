@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import Link from "next/link";
+import { toast } from "sonner";
 import { CalendarDays, CircleCheck, Loader2, Pencil, Stethoscope } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -280,18 +280,20 @@ export function ToothDetailSheet({
                     {detail && detail.performedRecords.length > 0 ? (
                       <ul className="space-y-1.5">
                         {detail.performedRecords.map((record) => (
-                          <li
-                            key={record.id}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <CircleCheck className="size-3.5 text-success-text" />
-                              {record.procedureName}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(record.performedAt)}
-                              {record.doctorName && ` · Dr. ${record.doctorName}`}
-                            </span>
+                          <li key={record.id}>
+                            <Link
+                              href={`/patients/${patientId}?tab=procedures-performed`}
+                              className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5 text-sm hover:bg-muted/40"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <CircleCheck className="size-3.5 text-success-text" />
+                                {record.procedureName}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(record.performedAt)}
+                                {record.doctorName && ` · Dr. ${record.doctorName}`}
+                              </span>
+                            </Link>
                           </li>
                         ))}
                       </ul>

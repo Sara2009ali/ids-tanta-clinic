@@ -46,6 +46,14 @@ const DEFAULT_SUMMARY = (fdiNumber: number): DentalChartToothSummary => ({
   hasPlanned: false,
 });
 
+const DENTITION_STORAGE_KEY_PREFIX = "dentra:dental-chart:dentition:";
+
+/** Base UI's Tabs unmounts inactive panels, so this component remounts every time the Dental Chart tab is left and reopened — sessionStorage (scoped per patient, per browser tab) is what keeps "which dentition was I looking at" from silently resetting to Permanent on every remount. */
+function readStoredDentition(patientId: string): ToothDentition {
+  if (typeof window === "undefined") return "permanent";
+  return window.sessionStorage.getItem(DENTITION_STORAGE_KEY_PREFIX + patientId) === "primary" ? "primary" : "permanent";
+}
+
 /**
  * The chairside odontogram — two arches, quadrant-ordered, scannable at a
  * glance. Every tooth is a real <button> (keyboard-reachable, labeled), not
@@ -54,15 +62,25 @@ const DEFAULT_SUMMARY = (fdiNumber: number): DentalChartToothSummary => ({
  * a comfortable tap size.
  */
 export function Odontogram({
+  patientId,
   teeth,
   selectedFdiNumber,
   onSelectTooth,
 }: {
+  patientId: string;
   teeth: DentalChartToothSummary[];
   selectedFdiNumber: number | null;
   onSelectTooth: (fdiNumber: number) => void;
 }) {
-  const [dentition, setDentition] = useState<ToothDentition>("permanent");
+  const [dentition, setDentitionState] = useState<ToothDentition>(() => readStoredDentition(patientId));
+
+  function setDentition(value: ToothDentition) {
+    setDentitionState(value);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(DENTITION_STORAGE_KEY_PREFIX + patientId, value);
+    }
+  }
+
   const byFdi = new Map(teeth.map((tooth) => [tooth.fdiNumber, tooth]));
   const upper = dentition === "permanent" ? PERMANENT_UPPER : PRIMARY_UPPER;
   const lower = dentition === "permanent" ? PERMANENT_LOWER : PRIMARY_LOWER;

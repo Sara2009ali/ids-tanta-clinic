@@ -8,6 +8,7 @@ import {
   initialRecordTreatmentVisitTypeId,
   isAppointmentForPatient,
   isAppointmentTreatmentEligible,
+  isCustomPlanItem,
   orderItemsBySequence,
 } from "@/lib/treatment-plans/calculations";
 
@@ -239,5 +240,15 @@ describe("initialRecordTreatmentVisitTypeId — Record Treatment dialog prefill"
 
   it("leaves a custom item's selection blank, forcing the dentist to pick a catalog procedure", () => {
     expect(initialRecordTreatmentVisitTypeId({ visit_type_id: null })).toBe("");
+  });
+});
+
+describe("isCustomPlanItem — Record Treatment custom-procedure detection", () => {
+  it("treats a plan item with no catalog link as custom", () => {
+    expect(isCustomPlanItem({ visit_type_id: null })).toBe(true);
+  });
+
+  it("treats a catalog-linked plan item as not custom", () => {
+    expect(isCustomPlanItem({ visit_type_id: "visit-type-1" })).toBe(false);
   });
 });

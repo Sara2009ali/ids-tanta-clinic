@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/billing/format";
 import { changeTreatmentPlanItemStatus } from "@/lib/treatment-plans/actions";
 import { isAppointmentTreatmentEligible } from "@/lib/treatment-plans/calculations";
 import { TreatmentPlanItemPriorityBadge, TreatmentPlanItemStatusBadge } from "@/components/treatment-plans/treatment-plan-item-badges";
-import { TREATMENT_PLAN_ITEM_STATUS_LABELS, type TreatmentPlanItemStatus } from "@/types/domain";
+import { APPOINTMENT_STATUS_LABELS, TREATMENT_PLAN_ITEM_STATUS_LABELS, type TreatmentPlanItemStatus } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import type { TreatmentPlanItemWithContext } from "@/lib/treatment-plans/queries";
 
@@ -71,7 +71,8 @@ export function TreatmentPlanItemRow({
   // Same rule TreatmentRecordForm/AppointmentEditSheet already gate on
   // ("only makes sense once the patient has actually been seen"), reused
   // from this second entry point rather than invented fresh.
-  const canRecordTreatment = canEdit && !!item.appointment_id && isAppointmentTreatmentEligible(item.appointmentStatus);
+  const isAppointmentEligible = isAppointmentTreatmentEligible(item.appointmentStatus);
+  const canRecordTreatment = canEdit && !!item.appointment_id && isAppointmentEligible;
 
   const caption = [item.tooth_reference, item.notes].filter(Boolean).join(" · ");
 
@@ -146,6 +147,13 @@ export function TreatmentPlanItemRow({
 
       {canEdit && !item.appointment_id && (
         <p className="text-xs text-muted-foreground">Link an appointment to this procedure to record treatment.</p>
+      )}
+
+      {canEdit && item.appointment_id && !isAppointmentEligible && (
+        <p className="text-xs text-muted-foreground">
+          Record Treatment unlocks once the linked appointment is checked in
+          {item.appointmentStatus && ` — it's currently ${APPOINTMENT_STATUS_LABELS[item.appointmentStatus].toLowerCase()}`}.
+        </p>
       )}
 
       <p className="text-xs text-muted-foreground">
