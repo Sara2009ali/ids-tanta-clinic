@@ -20,15 +20,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { PatientStatus } from "@/types/domain";
+import type { Dictionary } from "@/lib/i18n/types";
 
 export function PatientHeaderActions({
   patientId,
   status,
   permissions,
+  dict,
 }: {
   patientId: string;
   status: PatientStatus;
   permissions: string[];
+  dict: Dictionary["patientProfile"]["actions"];
 }) {
   const router = useRouter();
   const [archivePending, startArchiveTransition] = useTransition();
@@ -44,7 +47,7 @@ export function PatientHeaderActions({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(isArchived ? "Patient restored" : "Patient archived");
+        toast.success(isArchived ? dict.restore : dict.archive);
         router.refresh();
       }
     });
@@ -67,7 +70,7 @@ export function PatientHeaderActions({
       {canEdit && (
         <Button variant="outline" render={<Link href={`/patients/${patientId}/edit`} />}>
           <Pencil className="size-4" />
-          Edit
+          {dict.edit}
         </Button>
       )}
 
@@ -80,7 +83,7 @@ export function PatientHeaderActions({
           ) : (
             <Archive className="size-4" />
           )}
-          {isArchived ? "Restore" : "Archive"}
+          {isArchived ? dict.restore : dict.archive}
         </Button>
       )}
 
@@ -88,25 +91,22 @@ export function PatientHeaderActions({
         <AlertDialog>
           <AlertDialogTrigger render={<Button variant="destructive" />}>
             <Trash2 className="size-4" />
-            Delete
+            {dict.delete}
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete this patient?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This removes the patient from all lists and reports. There&apos;s no
-                restore-from-trash option in this phase, so only continue if you&apos;re sure.
-              </AlertDialogDescription>
+              <AlertDialogTitle>{dict.deletePatientTitle}</AlertDialogTitle>
+              <AlertDialogDescription>{dict.deletePatientDescription}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{dict.cancel}</AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
                 disabled={deletePending}
                 onClick={handleDelete}
               >
                 {deletePending && <Loader2 className="size-4 animate-spin" />}
-                Delete patient
+                {dict.deletePatientConfirm}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

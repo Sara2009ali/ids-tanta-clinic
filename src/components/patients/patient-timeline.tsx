@@ -298,7 +298,7 @@ export function PatientTimeline({
       {groups.map((group) => (
         <div key={group.label}>
           <p className={cn(typography.eyebrow, "mb-3")}>{group.label}</p>
-          <ol className="relative space-y-0 border-l border-border pl-6">
+          <ol className="relative space-y-0 border-s border-border ps-6">
             {group.entries.map((entry) => {
               const Icon = entry.icon;
               const content = (
@@ -316,7 +316,7 @@ export function PatientTimeline({
               return (
                 <li key={entry.id} className="relative pb-5 last:pb-0">
                   <span
-                    className={`absolute -left-[calc(1.5rem+5px)] flex size-6 items-center justify-center rounded-full ring-4 ring-background ${
+                    className={`absolute -start-[calc(1.5rem+5px)] flex size-6 items-center justify-center rounded-full ring-4 ring-background ${
                       entry.tone === "destructive"
                         ? "bg-destructive/10 text-destructive"
                         : entry.tone === "warning"

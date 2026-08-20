@@ -7,6 +7,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "@/components/locale-provider";
 
 /**
  * Small client island inside UserMenu (a Server Component) — next-themes'
@@ -20,19 +21,20 @@ import {
  */
 export function ThemeMenuItems() {
   const { theme, setTheme } = useTheme();
+  const { theme: dict } = useTranslation();
 
   return (
     <>
-      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Theme</DropdownMenuLabel>
+      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{dict.label}</DropdownMenuLabel>
       <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={setTheme}>
         <DropdownMenuRadioItem value="light">
-          <Sun /> Light
+          <Sun /> {dict.light}
         </DropdownMenuRadioItem>
         <DropdownMenuRadioItem value="dark">
-          <Moon /> Dark
+          <Moon /> {dict.dark}
         </DropdownMenuRadioItem>
         <DropdownMenuRadioItem value="system">
-          <Monitor /> System
+          <Monitor /> {dict.system}
         </DropdownMenuRadioItem>
       </DropdownMenuRadioGroup>
     </>

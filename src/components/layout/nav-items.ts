@@ -14,12 +14,16 @@ import {
 } from "lucide-react";
 import { hasPermission, PERMISSIONS, type Permission } from "@/lib/authz/permissions";
 import type { StaffRole } from "@/types/domain";
+import type { Dictionary } from "@/lib/i18n/types";
 
 export type NavSection = "Overview" | "Clinical" | "Business" | "Insights" | "System";
 
+/** Keys into `Dictionary["nav"]` — labels/sections are resolved at render time via `dict.nav[labelKey]` so Sidebar/MobileNav/PageTitle stay in sync with the active locale from one source of truth. */
+type NavLabelKey = Exclude<keyof Dictionary["nav"], "notifications" | `section${string}` | "collapse" | "expandSidebar" | "collapseSidebar" | "openNav">;
+
 export interface NavItem {
   href: string;
-  label: string;
+  labelKey: NavLabelKey;
   icon: typeof LayoutDashboard;
   section: NavSection;
   permission?: Permission;
@@ -34,11 +38,11 @@ export interface NavItem {
  * permissions, or the underlying visibility logic below.
  */
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "Overview" },
-  { href: "/patients", label: "Patients", icon: Users, section: "Clinical", permission: PERMISSIONS.PATIENTS_VIEW },
+  { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard, section: "Overview" },
+  { href: "/patients", labelKey: "patients", icon: Users, section: "Clinical", permission: PERMISSIONS.PATIENTS_VIEW },
   {
     href: "/settings/doctors",
-    label: "Doctors",
+    labelKey: "doctors",
     icon: Stethoscope,
     section: "Clinical",
     // Same gate /settings/doctors already enforces on itself
@@ -48,7 +52,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/procedures",
-    label: "Procedures",
+    labelKey: "procedures",
     icon: Tags,
     section: "Clinical",
     // Same gate the page enforces on itself — moved out of Appointments
@@ -59,21 +63,21 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/appointments",
-    label: "Appointments",
+    labelKey: "appointments",
     icon: CalendarDays,
     section: "Clinical",
     permission: PERMISSIONS.APPOINTMENTS_VIEW,
   },
   {
     href: "/reception",
-    label: "Reception",
+    labelKey: "reception",
     icon: ClipboardList,
     section: "Clinical",
     permission: PERMISSIONS.APPOINTMENTS_VIEW,
   },
   {
     href: "/recalls",
-    label: "Recalls",
+    labelKey: "recalls",
     icon: RotateCcw,
     section: "Clinical",
     // Matches the page's own requirePermission(CLINICAL_VIEW) gate — the nav
@@ -82,10 +86,10 @@ export const NAV_ITEMS: NavItem[] = [
     // was still a ComingSoon placeholder with no real access boundary.
     permission: PERMISSIONS.CLINICAL_VIEW,
   },
-  { href: "/billing", label: "Billing", icon: Receipt, section: "Business", permission: PERMISSIONS.BILLING_VIEW },
+  { href: "/billing", labelKey: "billing", icon: Receipt, section: "Business", permission: PERMISSIONS.BILLING_VIEW },
   {
     href: "/compensation",
-    label: "Compensation",
+    labelKey: "compensation",
     icon: HandCoins,
     section: "Business",
     permission: PERMISSIONS.COMPENSATION_VIEW,
@@ -93,16 +97,24 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/inventory",
-    label: "Inventory",
+    labelKey: "inventory",
     icon: Boxes,
     section: "Business",
     permission: PERMISSIONS.INVENTORY_VIEW,
   },
-  { href: "/reports", label: "Reports", icon: BarChart3, section: "Insights", permission: PERMISSIONS.REPORTS_VIEW },
-  { href: "/settings", label: "Settings", icon: Settings, section: "System", permission: PERMISSIONS.SETTINGS_MANAGE },
+  { href: "/reports", labelKey: "reports", icon: BarChart3, section: "Insights", permission: PERMISSIONS.REPORTS_VIEW },
+  { href: "/settings", labelKey: "settings", icon: Settings, section: "System", permission: PERMISSIONS.SETTINGS_MANAGE },
 ];
 
 export const NAV_SECTION_ORDER: NavSection[] = ["Overview", "Clinical", "Business", "Insights", "System"];
+
+export const NAV_SECTION_LABEL_KEYS: Record<NavSection, keyof Dictionary["nav"]> = {
+  Overview: "sectionOverview",
+  Clinical: "sectionClinical",
+  Business: "sectionBusiness",
+  Insights: "sectionInsights",
+  System: "sectionSystem",
+};
 
 export function visibleNavItems(items: NavItem[], permissions: string[], role: StaffRole): NavItem[] {
   return items.filter(

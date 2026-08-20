@@ -36,7 +36,7 @@ export function PatientPaymentsHistory({ payments }: { payments: PatientPaymentR
             <TableHead>Invoice</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Method</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="text-end">Amount</TableHead>
             <TableHead>Date</TableHead>
           </TableRow>
         </TableHeader>
@@ -54,7 +54,7 @@ export function PatientPaymentsHistory({ payments }: { payments: PatientPaymentR
                 </Badge>
               </TableCell>
               <TableCell>{PAYMENT_METHOD_LABELS[payment.method as PaymentMethod]}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatCurrency(Number(payment.amount))}</TableCell>
+              <TableCell className="text-end tabular-nums">{formatCurrency(Number(payment.amount))}</TableCell>
               <TableCell className="text-muted-foreground">{formatTimestamp(payment.paid_at)}</TableCell>
             </TableRow>
           ))}

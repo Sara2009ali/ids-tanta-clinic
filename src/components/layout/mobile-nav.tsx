@@ -10,10 +10,12 @@ import { cn } from "@/lib/utils";
 import { typography } from "@/lib/typography";
 import {
   NAV_ITEMS,
+  NAV_SECTION_LABEL_KEYS,
   groupNavItemsBySection,
   isNavItemActive,
   visibleNavItems,
 } from "@/components/layout/nav-items";
+import { useTranslation } from "@/components/locale-provider";
 import type { StaffRole } from "@/types/domain";
 
 /**
@@ -26,12 +28,13 @@ import type { StaffRole } from "@/types/domain";
 export function MobileNav({ permissions, role }: { permissions: string[]; role: StaffRole }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { nav: dict } = useTranslation();
   const items = visibleNavItems(NAV_ITEMS, permissions, role);
   const groups = groupNavItemsBySection(items);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation menu" />}>
+      <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" aria-label={dict.openNav} />}>
         <Menu className="size-4" />
       </SheetTrigger>
       <SheetContent side="left" className="w-3/4 max-w-xs p-0">
@@ -46,8 +49,10 @@ export function MobileNav({ permissions, role }: { permissions: string[]; role: 
         <nav className="flex-1 space-y-5 overflow-y-auto p-3">
           {groups.map(({ section, items: sectionItems }) => (
             <div key={section} className="space-y-1">
-              <h2 className={cn(typography.eyebrow, "px-3 text-muted-foreground/70")}>{section}</h2>
-              {sectionItems.map(({ href, label, icon: Icon }) => {
+              <h2 className={cn(typography.eyebrow, "px-3 text-muted-foreground/70")}>
+                {dict[NAV_SECTION_LABEL_KEYS[section]]}
+              </h2>
+              {sectionItems.map(({ href, labelKey, icon: Icon }) => {
                 const active = isNavItemActive(pathname, href);
                 return (
                   <Link
@@ -65,12 +70,12 @@ export function MobileNav({ permissions, role }: { permissions: string[]; role: 
                     <span
                       aria-hidden="true"
                       className={cn(
-                        "absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary transition-opacity duration-150",
+                        "absolute inset-y-1.5 start-0 w-0.5 rounded-full bg-primary transition-opacity duration-150",
                         active ? "opacity-100" : "opacity-0",
                       )}
                     />
                     <Icon className="size-4 shrink-0" />
-                    {label}
+                    {dict[labelKey]}
                   </Link>
                 );
               })}

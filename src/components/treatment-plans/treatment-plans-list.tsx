@@ -78,7 +78,7 @@ export function TreatmentPlansList({
               href={`/patients/${patientId}/treatment-plans/${plan.id}`}
               className={cn(
                 "flex items-center justify-between gap-4 rounded-xl border border-border p-4 transition-colors hover:bg-muted/40",
-                status === "active" && "border-l-2 border-l-primary",
+                status === "active" && "border-s-2 border-s-primary",
               )}
             >
               <div className="min-w-0 space-y-1">
@@ -89,13 +89,13 @@ export function TreatmentPlansList({
                 <p className={typography.caption}>{summaryLine(plan)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                <div className="text-right">
+                <div className="text-end">
                   {plan.estimatedTotal > 0 && (
                     <p className="text-sm font-medium tabular-nums">{formatCurrency(plan.estimatedTotal)}</p>
                   )}
                   <p className={typography.caption}>{formatDate(plan.created_at)}</p>
                 </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />
               </div>
             </Link>
           );

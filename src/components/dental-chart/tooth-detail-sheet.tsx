@@ -335,11 +335,11 @@ export function ToothDetailSheet({
                     )}
 
                     {detail && detail.events.length > 0 ? (
-                      <ol className="space-y-2 border-l border-border pl-4">
+                      <ol className="space-y-2 border-s border-border ps-4">
                         {detail.events.map((event) => (
                           <li key={event.id} className="relative">
                             <span
-                              className="absolute -left-[calc(1rem+3.5px)] top-1 size-1.5 rounded-full bg-border"
+                              className="absolute -start-[calc(1rem+3.5px)] top-1 size-1.5 rounded-full bg-border"
                               aria-hidden="true"
                             />
                             <p className="text-sm">{eventSummary(event)}</p>

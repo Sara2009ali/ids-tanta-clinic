@@ -10,13 +10,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeMenuItems } from "@/components/layout/theme-menu-items";
+import { LocaleMenuItems } from "@/components/layout/locale-menu-items";
 import { STAFF_ROLE_LABELS, type StaffRole } from "@/types/domain";
 import { initials } from "@/lib/utils";
 
 export function UserMenu({ fullName, role }: { fullName: string; role: StaffRole }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="group/profile flex items-center gap-2 rounded-full py-1 pr-1 pl-1 outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring sm:rounded-lg sm:pr-2.5">
+      <DropdownMenuTrigger className="group/profile flex items-center gap-2 rounded-full py-1 ps-1 pe-1 outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring sm:rounded-lg sm:pe-2.5">
         <Avatar className="size-8">
           <AvatarFallback className="bg-primary text-xs text-primary-foreground">{initials(fullName)}</AvatarFallback>
         </Avatar>
@@ -35,6 +36,8 @@ export function UserMenu({ fullName, role }: { fullName: string; role: StaffRole
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="sm:hidden" />
         <ThemeMenuItems />
+        <DropdownMenuSeparator />
+        <LocaleMenuItems />
         <DropdownMenuSeparator />
         <form action={logout}>
           <DropdownMenuItem render={<button type="submit" className="w-full cursor-pointer" />}>

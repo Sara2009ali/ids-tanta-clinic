@@ -61,6 +61,13 @@
 }
 
 :root {
+  /* Active font stacks the @theme inline block above exposes as font-sans /
+     font-heading utilities. Kept as their own variables (rather than having
+     next/font's Inter/Newsreader classes set --font-sans/--font-serif
+     directly) so the [dir="rtl"] block near the end of this file can swap
+     them to lead with the Arabic face without touching every consumer. */
+  --font-sans: var(--font-sans-latin);
+  --font-serif: var(--font-serif-latin);
   --background: oklch(0.985 0.004 75);
   --foreground: oklch(0.22 0.015 60);
   --card: oklch(0.995 0.003 75);
@@ -172,6 +179,17 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Neither Inter (--font-sans-latin) nor Newsreader (--font-serif-latin) has
+   Arabic glyphs — in RTL, both the body-text and heading font stacks lead
+   with the Arabic face (--font-sans-arabic, see layout.tsx) and fall back to
+   the Latin faces for any Latin/numeral runs within Arabic text. Headings
+   deliberately fall back to the Arabic sans rather than a serif, since no
+   Arabic-covering serif is loaded. */
+[dir="rtl"] {
+  --font-sans: var(--font-sans-arabic), var(--font-sans-latin);
+  --font-serif: var(--font-sans-arabic), var(--font-sans-latin);
 }
 
 /* Skeleton shimmer sweep — see ui/skeleton.tsx. A moving highlight band reads

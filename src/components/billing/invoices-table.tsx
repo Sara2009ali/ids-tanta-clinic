@@ -34,7 +34,7 @@ function SortableHead({
 }) {
   const isActive = sort.column === column;
   return (
-    <TableHead className={align === "right" ? "text-right" : undefined}>
+    <TableHead className={align === "right" ? "text-end" : undefined}>
       <button
         type="button"
         onClick={() => onSort(column)}
@@ -122,8 +122,8 @@ export function InvoicesTable({ rows, hasFilters }: { rows: InvoiceListRow[]; ha
               <TableCell>
                 <InvoiceStatusBadge status={row.status} />
               </TableCell>
-              <TableCell className="text-right tabular-nums">{formatCurrency(row.total)}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatCurrency(row.balance_due)}</TableCell>
+              <TableCell className="text-end tabular-nums">{formatCurrency(row.total)}</TableCell>
+              <TableCell className="text-end tabular-nums">{formatCurrency(row.balance_due)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

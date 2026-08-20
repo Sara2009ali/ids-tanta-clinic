@@ -22,7 +22,9 @@ export function Breadcrumb({ items, className }: { items: BreadcrumbItem[]; clas
           const isLast = index === items.length - 1;
           return (
             <li key={index} className="flex items-center gap-1.5">
-              {index > 0 && <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground/50" />}
+              {index > 0 && (
+                <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground/50 rtl:rotate-180" />
+              )}
               {item.href && !isLast ? (
                 <Link href={item.href} className="rounded-sm transition-colors hover:text-foreground">
                   {item.label}

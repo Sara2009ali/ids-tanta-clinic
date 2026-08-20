@@ -18,7 +18,7 @@ import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { PatientPaymentsHistory } from "@/components/billing/patient-payments-history";
 import { TreatmentRecordsList } from "@/components/treatments/treatment-records-list";
 import { ClinicalNotesList } from "@/components/clinical-notes/clinical-notes-list";
-import { TreatmentPlansList } from "@/components/treatment-plans/treatment-plans-list";
+import { TreatmentPlansList, planTitle } from "@/components/treatment-plans/treatment-plans-list";
 import { PatientRecallsList } from "@/components/recalls/patient-recalls-list";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { DentalChart } from "@/components/dental-chart/dental-chart";
@@ -38,6 +38,7 @@ import {
   getToothEventsForPatient,
   type DentalChartToothSummary,
 } from "@/lib/dental-chart/queries";
+import { getLocale, getDictionary } from "@/lib/i18n/server";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import type { PatientFileType, PatientToothEvent, TreatmentRecord } from "@/types/domain";
@@ -56,6 +57,11 @@ function selectNextRecall(recalls: RecallListRow[]): RecallListRow | undefined {
   return recalls.find((recall) => recall.status === "due");
 }
 
+/** First 'active' plan, in the query's own most-recent-first order — same "active surfaces first" precedent TreatmentPlansList's STATUS_SORT_PRIORITY establishes, just narrowed to a single glanceable rail item rather than a full sort. */
+function selectActiveTreatmentPlan(plans: TreatmentPlanListRow[]): TreatmentPlanListRow | undefined {
+  return plans.find((plan) => plan.status === "active");
+}
+
 function formatDateLabel(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
@@ -69,21 +75,25 @@ function formatDateTimeLabel(iso: string): string {
   });
 }
 
+// Two visually-grouped clusters in one TabsList: core clinical workflow
+// tabs first, then a divider, then the supporting/administrative tabs
+// (appointments/billing/files) — still a single consistent Tabs control
+// (no second navigation pattern), just with clearer hierarchy than treating
+// all ten as one undifferentiated row. "medical"/"dental"/"audit" were their
+// own tabs before this batch; medical + dental history are now part of
+// Overview and audit entries live inside Timeline (see below), so those
+// three keys are gone. "invoices"/"payments" merged into one "billing" tab.
 const PATIENT_PROFILE_TABS = new Set([
   "overview",
   "dental-chart",
-  "medical",
-  "dental",
-  "timeline",
-  "files",
-  "audit",
+  "treatment-plans",
   "procedures-performed",
   "clinical-notes",
-  "treatment-plans",
   "recalls",
+  "timeline",
   "appointments",
-  "invoices",
-  "payments",
+  "billing",
+  "files",
 ]);
 
 export default async function PatientProfilePage({
@@ -97,6 +107,9 @@ export default async function PatientProfilePage({
 
   const { id } = await params;
   const { tab } = await searchParams;
+  const locale = await getLocale();
+  const t = getDictionary(locale).patientProfile;
+
   // Deep-link target for entry points elsewhere on the page (e.g. the
   // Tooth Sheet's performed-treatment entries, which link here with
   // ?tab=procedures-performed) — reuses this existing route/Tabs instance
@@ -189,6 +202,7 @@ export default async function PatientProfilePage({
   // better to omit it than show a wrong total.
   const nextAppointment = selectNextAppointment(appointments);
   const nextRecall = selectNextRecall(recalls);
+  const activeTreatmentPlan = selectActiveTreatmentPlan(treatmentPlans);
 
   const invoiceRows = invoicesResult?.rows ?? [];
   const hasEveryInvoice = invoicesResult ? invoicesResult.totalCount <= invoiceRows.length : false;
@@ -198,24 +212,30 @@ export default async function PatientProfilePage({
 
   const summaryItems: SummaryRailItem[] = [
     {
-      label: "Last Visit",
-      value: patient.last_visit_at ? formatDateLabel(patient.last_visit_at) : "No visits yet",
+      label: t.summaryRail.lastVisit,
+      value: patient.last_visit_at ? formatDateLabel(patient.last_visit_at) : t.summaryRail.noVisitsYet,
     },
     ...(canViewAppointments
       ? [
           {
-            label: "Next Appointment",
-            value: nextAppointment ? formatDateTimeLabel(nextAppointment.scheduled_start) : "None scheduled",
+            label: t.summaryRail.nextAppointment,
+            value: nextAppointment ? formatDateTimeLabel(nextAppointment.scheduled_start) : t.summaryRail.noneScheduled,
           } satisfies SummaryRailItem,
         ]
       : []),
     ...(canViewClinical
       ? [
           {
-            label: "Next Recall",
+            label: t.summaryRail.activeTreatment,
+            value: activeTreatmentPlan
+              ? `${planTitle(activeTreatmentPlan)} · ${activeTreatmentPlan.completedPercent}%`
+              : t.summaryRail.noActiveTreatment,
+          } satisfies SummaryRailItem,
+          {
+            label: t.summaryRail.nextRecall,
             value: nextRecall
-              ? `${formatDateLabel(nextRecall.due_date)}${isRecallOverdue(nextRecall) ? " (overdue)" : ""}`
-              : "None due",
+              ? `${formatDateLabel(nextRecall.due_date)}${isRecallOverdue(nextRecall) ? t.summaryRail.overdueSuffix : ""}`
+              : t.summaryRail.noneDue,
             tone: nextRecall && isRecallOverdue(nextRecall) ? ("warning" as const) : undefined,
           } satisfies SummaryRailItem,
         ]
@@ -223,15 +243,15 @@ export default async function PatientProfilePage({
     ...(canViewBilling && outstandingBalance !== null
       ? [
           {
-            label: "Outstanding Balance",
+            label: t.summaryRail.outstandingBalance,
             value: formatCurrency(outstandingBalance),
             tone: outstandingBalance > 0 ? ("warning" as const) : ("success" as const),
           } satisfies SummaryRailItem,
         ]
       : []),
     {
-      label: "Medical Alerts",
-      value: alerts.length > 0 ? `${alerts.length} active` : "None",
+      label: t.summaryRail.medicalAlerts,
+      value: alerts.length > 0 ? `${alerts.length} ${t.summaryRail.activeSuffix}` : t.summaryRail.none,
       tone: alerts.length > 0 ? ("warning" as const) : undefined,
     },
   ];
@@ -239,7 +259,7 @@ export default async function PatientProfilePage({
   return (
     <div className="space-y-6">
       <Breadcrumb
-        items={[{ label: "Patients", href: "/patients" }, { label: patient.full_name ?? "Patient" }]}
+        items={[{ label: t.breadcrumbPatients, href: "/patients" }, { label: patient.full_name ?? "Patient" }]}
       />
 
       <PatientWorkspaceHero
@@ -252,38 +272,44 @@ export default async function PatientProfilePage({
         phone={patient.phone}
         email={patient.email}
         alerts={alerts}
-        actions={<PatientHeaderActions patientId={patient.id} status={patient.status} permissions={permissions} />}
+        actions={
+          <PatientHeaderActions
+            patientId={patient.id}
+            status={patient.status}
+            permissions={permissions}
+            dict={t.actions}
+          />
+        }
         rail={<WorkspaceSummaryRail items={summaryItems} />}
       />
 
       <Tabs defaultValue={initialTab} className="animate-in fade-in slide-in-from-bottom-1 duration-500">
         <TabsList className="h-auto w-full flex-nowrap justify-start overflow-x-auto [&>[data-slot=tabs-trigger]]:shrink-0 sm:w-fit sm:flex-wrap sm:justify-center">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {canViewClinical && <TabsTrigger value="dental-chart">Dental Chart</TabsTrigger>}
-          <TabsTrigger value="medical">Medical History</TabsTrigger>
-          <TabsTrigger value="dental">Dental History</TabsTrigger>
-          <TabsTrigger value="timeline">Treatment Timeline</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
-          <TabsTrigger value="audit">Audit History</TabsTrigger>
-          {canViewClinical && <TabsTrigger value="procedures-performed">Procedures Performed</TabsTrigger>}
-          {canViewClinical && <TabsTrigger value="clinical-notes">Clinical Notes</TabsTrigger>}
-          {canViewClinical && <TabsTrigger value="treatment-plans">Treatment Plans</TabsTrigger>}
-          {canViewClinical && <TabsTrigger value="recalls">Recalls</TabsTrigger>}
-          {canViewAppointments && <TabsTrigger value="appointments">Appointments</TabsTrigger>}
-          {canViewBilling && <TabsTrigger value="invoices">Invoices</TabsTrigger>}
-          {canViewBilling && <TabsTrigger value="payments">Payments</TabsTrigger>}
+          <TabsTrigger value="overview">{t.tabs.overview}</TabsTrigger>
+          {canViewClinical && <TabsTrigger value="dental-chart">{t.tabs.dentalChart}</TabsTrigger>}
+          {canViewClinical && <TabsTrigger value="treatment-plans">{t.tabs.treatmentPlans}</TabsTrigger>}
+          {canViewClinical && <TabsTrigger value="procedures-performed">{t.tabs.proceduresPerformed}</TabsTrigger>}
+          {canViewClinical && <TabsTrigger value="clinical-notes">{t.tabs.clinicalNotes}</TabsTrigger>}
+          {canViewClinical && <TabsTrigger value="recalls">{t.tabs.recalls}</TabsTrigger>}
+          <TabsTrigger value="timeline">{t.tabs.timeline}</TabsTrigger>
+          {(canViewAppointments || canViewBilling) && (
+            <div aria-hidden="true" className="mx-1 h-4 w-px shrink-0 self-center bg-border" />
+          )}
+          {canViewAppointments && <TabsTrigger value="appointments">{t.tabs.appointments}</TabsTrigger>}
+          {canViewBilling && <TabsTrigger value="billing">{t.tabs.billing}</TabsTrigger>}
+          <TabsTrigger value="files">{t.tabs.files}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-5 pt-6">
           <div>
-            <p className={cn(typography.eyebrow, "mb-3")}>Personal</p>
+            <p className={cn(typography.eyebrow, "mb-3")}>{t.overview.personal}</p>
             <dl className="grid gap-x-6 gap-y-5 rounded-xl border border-border p-5 sm:grid-cols-2 lg:grid-cols-3">
-              <InfoField label="Date of birth" value={patient.date_of_birth} />
-              <InfoField label="Address" value={patient.address} />
-              <InfoField label="National ID" value={patient.national_id} />
-              <InfoField label="Occupation" value={patient.occupation} />
+              <InfoField label={t.overview.dateOfBirth} value={patient.date_of_birth} />
+              <InfoField label={t.overview.address} value={patient.address} />
+              <InfoField label={t.overview.nationalId} value={patient.national_id} />
+              <InfoField label={t.overview.occupation} value={patient.occupation} />
               <InfoField
-                label="Emergency contact"
+                label={t.overview.emergencyContact}
                 value={
                   patient.emergency_contact_name
                     ? `${patient.emergency_contact_name}${
@@ -296,175 +322,197 @@ export default async function PatientProfilePage({
           </div>
 
           <div>
-            <p className={cn(typography.eyebrow, "mb-3")}>Insurance &amp; Referral</p>
+            <p className={cn(typography.eyebrow, "mb-3")}>{t.overview.insuranceReferral}</p>
             <dl className="grid gap-x-6 gap-y-5 rounded-xl border border-border p-5 sm:grid-cols-2 lg:grid-cols-3">
-              <InfoField label="Referral source" value={patient.referral_source} />
-              <InfoField label="Insurance provider" value={patient.insurance_provider} />
-              <InfoField label="Insurance policy number" value={patient.insurance_policy_number} />
+              <InfoField label={t.overview.referralSource} value={patient.referral_source} />
+              <InfoField label={t.overview.insuranceProvider} value={patient.insurance_provider} />
+              <InfoField label={t.overview.insurancePolicyNumber} value={patient.insurance_policy_number} />
             </dl>
+          </div>
+
+          {/* Medical/dental background, gated on canViewClinical — this was
+              previously ungated (visible to any PATIENTS_VIEW holder, e.g.
+              reception, with no clinical.view check at all), which doesn't
+              match how every other clinical section on this page already
+              behaves. Folding it into Overview surfaced the gap; fixed here
+              rather than carried forward. */}
+          {canViewClinical && (
+            <>
+              <div>
+                <p className={cn(typography.eyebrow, "mb-3")}>{t.overview.medicalHistory}</p>
+                {clinicalInfo ? (
+                  <div className="space-y-4 rounded-xl border border-border p-5">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <ListField label={t.overview.allergies} items={clinicalInfo.allergies} noneLabel={t.overview.noneRecorded} />
+                      <ListField
+                        label={t.overview.currentMedications}
+                        items={clinicalInfo.current_medications}
+                        noneLabel={t.overview.noneRecorded}
+                      />
+                      <ListField
+                        label={t.overview.medicalConditions}
+                        items={clinicalInfo.medical_conditions}
+                        noneLabel={t.overview.noneRecorded}
+                      />
+                    </div>
+
+                    <div>
+                      <p className={cn(typography.caption, "mb-2")}>{t.overview.medicalFlags}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {MEDICAL_FLAG_KEYS.map((key) => {
+                          const isSet = clinicalInfo[key];
+                          return (
+                            <Badge
+                              key={key}
+                              variant="outline"
+                              className={isSet ? "border-warning/30 bg-warning/15 text-warning-text" : "text-muted-foreground"}
+                            >
+                              {medicalFlagLabel(key)}: {isSet ? t.overview.flagYes : t.overview.flagNo}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className={cn(typography.caption, "mb-1")}>{t.overview.notes}</p>
+                      <p className="text-sm whitespace-pre-wrap">{clinicalInfo.notes || t.overview.noAdditionalNotes}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyTab text={t.overview.noMedicalHistory} />
+                )}
+              </div>
+
+              <div>
+                <p className={cn(typography.eyebrow, "mb-3")}>{t.overview.dentalHistory}</p>
+                <dl className="grid gap-x-6 gap-y-5 rounded-xl border border-border p-5 sm:grid-cols-2">
+                  <InfoField label={t.overview.chiefComplaint} value={clinicalInfo?.chief_complaint} />
+                  <InfoField label={t.overview.preferredDentist} value={preferredDentist?.full_name} />
+                  <InfoField label={t.overview.dentalHistoryNotes} value={clinicalInfo?.dental_history} />
+                </dl>
+              </div>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="timeline" className="space-y-8 pt-6">
+          <PatientTimeline
+            auditEntries={auditEntries}
+            alerts={alerts}
+            treatmentRecords={treatmentRecords}
+            visitTypes={visitTypes}
+            appointments={appointments}
+            invoices={invoicesResult?.rows ?? []}
+            payments={patientPayments}
+            dentalChartEvents={dentalChartEvents}
+            recalls={recalls}
+          />
+
+          {/* Same events as above, at compliance-table fidelity (raw
+              action/details/timestamp) rather than the narrative feed —
+              folded in here instead of a dedicated "Audit History" tab so
+              the chronological layer stays one tab, not two. */}
+          <div>
+            <p className={cn(typography.eyebrow, "mb-3")}>{t.auditTrailHeading}</p>
+            <PatientAuditHistory auditEntries={auditEntries} />
           </div>
         </TabsContent>
 
-          <TabsContent value="medical" className="pt-6">
-            {clinicalInfo ? (
-              <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <ListField label="Allergies" items={clinicalInfo.allergies} />
-                  <ListField label="Current medications" items={clinicalInfo.current_medications} />
-                  <ListField label="Medical conditions" items={clinicalInfo.medical_conditions} />
-                </div>
+        <TabsContent value="files" className="space-y-8 pt-6">
+          <FileUploadZone
+            clinicId={patient.clinic_id}
+            patientId={patient.id}
+            fileType="photo"
+            label="Profile Photo"
+            accept="image/*"
+            multiple={false}
+            setAsProfilePhoto
+            existingFiles={existingFilesFor("photo")}
+          />
+          <Separator />
+          <FileUploadZone
+            clinicId={patient.clinic_id}
+            patientId={patient.id}
+            fileType="other"
+            label="Documents"
+            accept="application/pdf,image/*,.doc,.docx"
+            existingFiles={existingFilesFor("other")}
+          />
+          <Separator />
+          <FileUploadZone
+            clinicId={patient.clinic_id}
+            patientId={patient.id}
+            fileType="radiograph"
+            label="X-Rays"
+            accept="image/*"
+            existingFiles={existingFilesFor("radiograph")}
+          />
+          <Separator />
+          <FileUploadZone
+            clinicId={patient.clinic_id}
+            patientId={patient.id}
+            fileType="consent_form"
+            label="Consent Forms"
+            accept="application/pdf,image/*"
+            existingFiles={existingFilesFor("consent_form")}
+          />
+        </TabsContent>
 
-                <div>
-                  <p className={cn(typography.caption, "mb-2")}>Medical flags</p>
-                  <div className="flex flex-wrap gap-2">
-                    {MEDICAL_FLAG_KEYS.map((key) => {
-                      const isSet = clinicalInfo[key];
-                      return (
-                        <Badge
-                          key={key}
-                          variant="outline"
-                          className={isSet ? "border-warning/30 bg-warning/15 text-warning-text" : "text-muted-foreground"}
-                        >
-                          {medicalFlagLabel(key)}: {isSet ? "Yes" : "No"}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <p className={cn(typography.caption, "mb-1")}>Notes</p>
-                  <p className="rounded-xl border border-border p-4 text-sm whitespace-pre-wrap">
-                    {clinicalInfo.notes || "No additional notes."}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <EmptyTab text="No medical history has been recorded for this patient yet." />
-            )}
+        {canViewClinical && (
+          <TabsContent value="dental-chart" className="pt-6">
+            <DentalChart patientId={patient.id} teeth={dentalChartTeeth} canEdit={canEditClinical} />
           </TabsContent>
-
-          <TabsContent value="dental" className="pt-6">
-            <dl className="grid gap-x-6 gap-y-5 rounded-xl border border-border p-5 sm:grid-cols-2">
-              <InfoField label="Chief complaint" value={clinicalInfo?.chief_complaint} />
-              <InfoField label="Preferred dentist" value={preferredDentist?.full_name} />
-              <InfoField label="Referral source" value={patient.referral_source} />
-              <InfoField label="Insurance provider" value={patient.insurance_provider} />
-              <InfoField label="Insurance policy number" value={patient.insurance_policy_number} />
-              <InfoField label="Dental history notes" value={clinicalInfo?.dental_history} />
-            </dl>
-          </TabsContent>
-
-          <TabsContent value="timeline" className="pt-6">
-            <PatientTimeline
-              auditEntries={auditEntries}
-              alerts={alerts}
-              treatmentRecords={treatmentRecords}
+        )}
+        {canViewClinical && (
+          <TabsContent value="procedures-performed" className="pt-6">
+            <TreatmentRecordsList
+              records={treatmentRecords}
               visitTypes={visitTypes}
+              doctors={doctors}
+              canEdit={canEditClinical}
+              emptyMessage="No treatment recorded for this patient yet."
+            />
+          </TabsContent>
+        )}
+        {canViewClinical && (
+          <TabsContent value="clinical-notes" className="pt-6">
+            <ClinicalNotesList
+              patientId={patient.id}
+              notes={clinicalNotes}
               appointments={appointments}
-              invoices={invoicesResult?.rows ?? []}
-              payments={patientPayments}
-              dentalChartEvents={dentalChartEvents}
+              canEdit={canEditClinical}
+              emptyMessage="No clinical notes recorded for this patient yet."
+            />
+          </TabsContent>
+        )}
+        {canViewClinical && (
+          <TabsContent value="treatment-plans" className="pt-6">
+            <TreatmentPlansList patientId={patient.id} plans={treatmentPlans} canEdit={canEditClinical} />
+          </TabsContent>
+        )}
+        {canViewClinical && (
+          <TabsContent value="recalls" className="pt-6">
+            <PatientRecallsList
+              patientId={patient.id}
+              patientName={patient.full_name ?? ""}
               recalls={recalls}
+              doctors={doctors}
+              visitTypes={visitTypes}
+              canEdit={canEditClinical}
             />
           </TabsContent>
-
-          <TabsContent value="files" className="space-y-8 pt-6">
-            <FileUploadZone
-              clinicId={patient.clinic_id}
-              patientId={patient.id}
-              fileType="photo"
-              label="Profile Photo"
-              accept="image/*"
-              multiple={false}
-              setAsProfilePhoto
-              existingFiles={existingFilesFor("photo")}
-            />
-            <Separator />
-            <FileUploadZone
-              clinicId={patient.clinic_id}
-              patientId={patient.id}
-              fileType="other"
-              label="Documents"
-              accept="application/pdf,image/*,.doc,.docx"
-              existingFiles={existingFilesFor("other")}
-            />
-            <Separator />
-            <FileUploadZone
-              clinicId={patient.clinic_id}
-              patientId={patient.id}
-              fileType="radiograph"
-              label="X-Rays"
-              accept="image/*"
-              existingFiles={existingFilesFor("radiograph")}
-            />
-            <Separator />
-            <FileUploadZone
-              clinicId={patient.clinic_id}
-              patientId={patient.id}
-              fileType="consent_form"
-              label="Consent Forms"
-              accept="application/pdf,image/*"
-              existingFiles={existingFilesFor("consent_form")}
-            />
+        )}
+        {canViewAppointments && (
+          <TabsContent value="appointments" className="pt-6">
+            <TodaysSchedule rows={appointments} emptyMessage={t.appointmentsEmpty} />
           </TabsContent>
-
-          <TabsContent value="audit" className="pt-6">
-            <PatientAuditHistory auditEntries={auditEntries} />
-          </TabsContent>
-
-          {canViewClinical && (
-            <TabsContent value="dental-chart" className="pt-6">
-              <DentalChart patientId={patient.id} teeth={dentalChartTeeth} canEdit={canEditClinical} />
-            </TabsContent>
-          )}
-          {canViewClinical && (
-            <TabsContent value="procedures-performed" className="pt-6">
-              <TreatmentRecordsList
-                records={treatmentRecords}
-                visitTypes={visitTypes}
-                doctors={doctors}
-                canEdit={canEditClinical}
-                emptyMessage="No treatment recorded for this patient yet."
-              />
-            </TabsContent>
-          )}
-          {canViewClinical && (
-            <TabsContent value="clinical-notes" className="pt-6">
-              <ClinicalNotesList
-                patientId={patient.id}
-                notes={clinicalNotes}
-                appointments={appointments}
-                canEdit={canEditClinical}
-                emptyMessage="No clinical notes recorded for this patient yet."
-              />
-            </TabsContent>
-          )}
-          {canViewClinical && (
-            <TabsContent value="treatment-plans" className="pt-6">
-              <TreatmentPlansList patientId={patient.id} plans={treatmentPlans} canEdit={canEditClinical} />
-            </TabsContent>
-          )}
-          {canViewClinical && (
-            <TabsContent value="recalls" className="pt-6">
-              <PatientRecallsList
-                patientId={patient.id}
-                patientName={patient.full_name ?? ""}
-                recalls={recalls}
-                doctors={doctors}
-                visitTypes={visitTypes}
-                canEdit={canEditClinical}
-              />
-            </TabsContent>
-          )}
-          {canViewAppointments && (
-            <TabsContent value="appointments" className="pt-6">
-              <TodaysSchedule rows={appointments} emptyMessage="No appointments recorded for this patient yet." />
-            </TabsContent>
-          )}
-          {canViewBilling && invoicesResult && (
-            <TabsContent value="invoices" className="space-y-4 pt-6">
-              <div className="flex justify-end">
+        )}
+        {canViewBilling && (
+          <TabsContent value="billing" className="space-y-8 pt-6">
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <p className={typography.eyebrow}>{t.billingSection.invoices}</p>
                 {canEditBilling && (
                   <InvoiceFormSheet
                     initialPatient={{ id: patient.id, full_name: patient.full_name ?? "" }}
@@ -472,18 +520,19 @@ export default async function PatientProfilePage({
                   />
                 )}
               </div>
-              {invoicesResult.rows.length > 0 ? (
+              {invoicesResult && invoicesResult.rows.length > 0 ? (
                 <InvoicesTable rows={invoicesResult.rows} hasFilters={false} />
               ) : (
-                <EmptyTab text="No invoices yet for this patient." />
+                <EmptyTab text={t.billingSection.noInvoicesYet} />
               )}
-            </TabsContent>
-          )}
-          {canViewBilling && (
-            <TabsContent value="payments" className="pt-6">
+            </div>
+
+            <div>
+              <p className={cn(typography.eyebrow, "mb-3")}>{t.billingSection.payments}</p>
               <PatientPaymentsHistory payments={patientPayments} />
-            </TabsContent>
-          )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
@@ -498,7 +547,7 @@ function InfoField({ label, value }: { label: string; value: string | null | und
   );
 }
 
-function ListField({ label, items }: { label: string; items: string[] }) {
+function ListField({ label, items, noneLabel }: { label: string; items: string[]; noneLabel: string }) {
   return (
     <div>
       <p className="mb-2 text-xs text-muted-foreground">{label}</p>
@@ -511,7 +560,7 @@ function ListField({ label, items }: { label: string; items: string[] }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">None recorded</p>
+        <p className="text-sm text-muted-foreground">{noneLabel}</p>
       )}
     </div>
   );

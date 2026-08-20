@@ -20,7 +20,7 @@ export function Topbar({
     <header className="relative z-10 flex h-16 shrink-0 items-center gap-3 border-b border-border/70 bg-background px-4 shadow-elevation-low sm:gap-4 sm:px-6">
       <MobileNav permissions={permissions} role={role} />
       <PageTitle />
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
+      <div className="ms-auto flex items-center gap-2 sm:gap-3">
         <div className="hidden lg:block">
           <QuickPatientSearch />
         </div>

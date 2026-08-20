@@ -9,10 +9,12 @@ import { typography } from "@/lib/typography";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   NAV_ITEMS,
+  NAV_SECTION_LABEL_KEYS,
   groupNavItemsBySection,
   isNavItemActive,
   visibleNavItems,
 } from "@/components/layout/nav-items";
+import { useTranslation } from "@/components/locale-provider";
 import type { StaffRole } from "@/types/domain";
 
 const COLLAPSE_STORAGE_KEY = "dentra:sidebar-collapsed";
@@ -37,6 +39,7 @@ function getCollapsePrefServerSnapshot() {
 
 export function Sidebar({ permissions, role }: { permissions: string[]; role: StaffRole }) {
   const pathname = usePathname();
+  const { nav: dict } = useTranslation();
   const items = visibleNavItems(NAV_ITEMS, permissions, role);
   const groups = groupNavItemsBySection(items);
 
@@ -61,7 +64,7 @@ export function Sidebar({ permissions, role }: { permissions: string[]; role: St
   return (
     <aside
       className={cn(
-        "hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:flex",
+        "hidden shrink-0 flex-col border-e border-sidebar-border bg-sidebar transition-[width] duration-200 md:flex",
         collapsed ? "w-[68px]" : "w-64",
       )}
     >
@@ -78,10 +81,13 @@ export function Sidebar({ permissions, role }: { permissions: string[]; role: St
         {groups.map(({ section, items: sectionItems }) => (
           <div key={section} className="space-y-1">
             {!collapsed && (
-              <h2 className={cn(typography.eyebrow, "px-3 text-sidebar-foreground/50")}>{section}</h2>
+              <h2 className={cn(typography.eyebrow, "px-3 text-sidebar-foreground/50")}>
+                {dict[NAV_SECTION_LABEL_KEYS[section]]}
+              </h2>
             )}
-            {sectionItems.map(({ href, label, icon: Icon }) => {
+            {sectionItems.map(({ href, labelKey, icon: Icon }) => {
               const active = isNavItemActive(pathname, href);
+              const label = dict[labelKey];
               const link = (
                 <Link
                   key={href}
@@ -92,13 +98,13 @@ export function Sidebar({ permissions, role }: { permissions: string[]; role: St
                     collapsed ? "justify-center px-0" : "px-3",
                     active
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:pl-3.5",
+                      : "text-sidebar-foreground/65 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:ps-3.5",
                   )}
                 >
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-sidebar-primary transition-opacity duration-150",
+                      "absolute inset-y-1.5 start-0 w-0.5 rounded-full bg-sidebar-primary transition-opacity duration-150",
                       active ? "opacity-100" : "opacity-0",
                     )}
                   />
@@ -112,7 +118,7 @@ export function Sidebar({ permissions, role }: { permissions: string[]; role: St
               return (
                 <Tooltip key={href}>
                   <TooltipTrigger render={link} />
-                  <TooltipContent side="right">{label}</TooltipContent>
+                  <TooltipContent side="inline-end">{label}</TooltipContent>
                 </Tooltip>
               );
             })}
@@ -124,14 +130,18 @@ export function Sidebar({ permissions, role }: { permissions: string[]; role: St
         <button
           type="button"
           onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? dict.expandSidebar : dict.collapseSidebar}
           className={cn(
             "flex w-full items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
             collapsed ? "justify-center px-0" : "px-3",
           )}
         >
-          {collapsed ? <PanelLeftOpen className="size-4 shrink-0" /> : <PanelLeftClose className="size-4 shrink-0" />}
-          {!collapsed && "Collapse"}
+          {collapsed ? (
+            <PanelLeftOpen className="size-4 shrink-0 rtl:-scale-x-100" />
+          ) : (
+            <PanelLeftClose className="size-4 shrink-0 rtl:-scale-x-100" />
+          )}
+          {!collapsed && dict.collapse}
         </button>
       </div>
     </aside>
