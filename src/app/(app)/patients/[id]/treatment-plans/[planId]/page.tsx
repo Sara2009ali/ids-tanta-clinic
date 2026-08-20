@@ -76,21 +76,35 @@ export default async function TreatmentPlanDetailPage({
           </div>
           <TreatmentPlanProgressSummary items={plan.items} estimatedTotal={estimatedTotal} />
         </div>
+        {/* Clinical plan actions lead; the financial action (Create Invoice)
+            is visually separated after a divider rather than sitting
+            undifferentiated among them — billing is a related but distinct
+            responsibility from the plan's own clinical lifecycle, and
+            shouldn't read as just one more plan-status button. Same
+            separation pattern as PatientHeaderActions' destructive action. */}
         <div className="flex flex-wrap items-center gap-2">
-          {canBill && (
-            <TreatmentPlanCreateInvoiceButton
-              patientId={patientId}
-              patientName={plan.patientName}
-              items={plan.items}
-              visitTypes={visitTypes}
-            />
-          )}
           <TreatmentPlanActions
             planId={plan.id}
             patientId={patientId}
             status={planStatus}
             canEdit={canEdit}
           />
+          {canBill && (
+            // The divider only makes sense when a clinical action actually
+            // rendered before it (canEdit — TreatmentPlanActions renders
+            // nothing otherwise, e.g. an accountant with billing.edit but
+            // not clinical.edit) — otherwise Create Invoice is the only
+            // action here and shouldn't carry a leading rule with nothing
+            // before it.
+            <div className={canEdit ? "ms-1 border-s border-border ps-2" : undefined}>
+              <TreatmentPlanCreateInvoiceButton
+                patientId={patientId}
+                patientName={plan.patientName}
+                items={plan.items}
+                visitTypes={visitTypes}
+              />
+            </div>
+          )}
         </div>
       </div>
 
