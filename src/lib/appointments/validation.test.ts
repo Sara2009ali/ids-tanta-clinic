@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   calculateEndTime,
   computeAvailabilityWindows,
+  DEFAULT_CLINIC_HOURS,
+  describeDoctorAvailability,
   isInPast,
   isWithinAvailability,
   isWithinWorkingHours,
@@ -374,5 +376,42 @@ describe("computeAvailabilityWindows", () => {
       { startMinutes: 9 * 60, endMinutes: 13 * 60 },
       { startMinutes: 14 * 60, endMinutes: 18 * 60 },
     ]);
+  });
+});
+
+describe("describeDoctorAvailability", () => {
+  const weeklyHours: WeeklyHoursBlock[] = [
+    { dayOfWeek: 1, startMinutes: 9 * 60, endMinutes: 13 * 60 }, // Monday
+  ];
+
+  it("returns 'unconfigured' with the default clinic hours when the doctor has never set up a schedule", () => {
+    const schedule: DoctorScheduleInput = { weeklyHours: [], vacations: [], exceptions: [] };
+    expect(describeDoctorAvailability("2026-07-06", schedule)).toEqual({
+      kind: "unconfigured",
+      windows: [DEFAULT_CLINIC_HOURS],
+    });
+  });
+
+  it("returns 'vacation' (not 'off') when the date falls inside a vacation range, even with a matching weekly block", () => {
+    const schedule: DoctorScheduleInput = {
+      weeklyHours,
+      vacations: [{ startDate: "2026-07-06", endDate: "2026-07-06" }],
+      exceptions: [],
+    };
+    expect(describeDoctorAvailability("2026-07-06", schedule)).toEqual({ kind: "vacation", windows: [] });
+  });
+
+  it("returns 'off' (not 'unconfigured') when the doctor has a schedule but no block on this weekday", () => {
+    // 2026-07-07 is a Tuesday; only Monday is configured.
+    const schedule: DoctorScheduleInput = { weeklyHours, vacations: [], exceptions: [] };
+    expect(describeDoctorAvailability("2026-07-07", schedule)).toEqual({ kind: "off", windows: [] });
+  });
+
+  it("returns 'available' with the resolved windows for a normal working day", () => {
+    const schedule: DoctorScheduleInput = { weeklyHours, vacations: [], exceptions: [] };
+    expect(describeDoctorAvailability("2026-07-06", schedule)).toEqual({
+      kind: "available",
+      windows: [{ startMinutes: 9 * 60, endMinutes: 13 * 60 }],
+    });
   });
 });

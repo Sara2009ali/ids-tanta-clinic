@@ -18,6 +18,7 @@ export interface Dictionary {
     appointments: string;
     reception: string;
     recalls: string;
+    doctorSchedule: string;
     billing: string;
     compensation: string;
     inventory: string;
@@ -197,5 +198,44 @@ export interface Dictionary {
       permanentGroup: string;
       primaryGroup: string;
     };
+  };
+  settings: {
+    title: string;
+    subtitle: string;
+    doctorsCardTitle: string;
+    doctorsCardDescription: string;
+    manageDoctors: string;
+    preferencesCardTitle: string;
+    preferencesCardDescription: string;
+    managePreferences: string;
+    preferencesMenuItem: string;
+    preferences: {
+      pageTitle: string;
+      pageDescription: string;
+      themeSectionTitle: string;
+      languageSectionTitle: string;
+      languageSectionDescription: string;
+    };
+  };
+  doctorSchedule: {
+    pageTitle: string;
+    pageDescription: string;
+    doctorSelectLabel: string;
+    noDoctors: string;
+    viewDay: string;
+    viewWeek: string;
+    today: string;
+    previous: string;
+    next: string;
+    workingHoursLabel: string;
+    offToday: string;
+    onVacation: string;
+    defaultHoursNotice: string;
+    noAppointmentsDay: string;
+    /** Short form for the narrow week-grid cell — the fuller `noAppointmentsDay` sentence doesn't fit there. */
+    noAppointmentsShort: string;
+    workingDay: string;
+    offDay: string;
+    editWorkingHours: string;
   };
 }

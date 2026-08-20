@@ -4,6 +4,7 @@ import {
   Stethoscope,
   Tags,
   CalendarDays,
+  CalendarClock,
   ClipboardList,
   RotateCcw,
   Receipt,
@@ -76,6 +77,16 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.APPOINTMENTS_VIEW,
   },
   {
+    href: "/doctor-schedule",
+    labelKey: "doctorSchedule",
+    icon: CalendarClock,
+    section: "Clinical",
+    // Same gate /appointments itself uses — a read-oriented planning view,
+    // not clinic configuration (that's /appointments/doctor-schedule,
+    // gated on SETTINGS_MANAGE instead).
+    permission: PERMISSIONS.APPOINTMENTS_VIEW,
+  },
+  {
     href: "/recalls",
     labelKey: "recalls",
     icon: RotateCcw,
@@ -103,7 +114,12 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.INVENTORY_VIEW,
   },
   { href: "/reports", labelKey: "reports", icon: BarChart3, section: "Insights", permission: PERMISSIONS.REPORTS_VIEW },
-  { href: "/settings", labelKey: "settings", icon: Settings, section: "System", permission: PERMISSIONS.SETTINGS_MANAGE },
+  // Ungated: Settings now hosts every staff member's own Preferences
+  // (language/theme), not just clinic configuration. The page itself
+  // conditionally renders the admin-only Doctors section based on
+  // SETTINGS_MANAGE — the nav entry mustn't hide the whole page from
+  // everyone else just because part of it is admin-only.
+  { href: "/settings", labelKey: "settings", icon: Settings, section: "System" },
 ];
 
 export const NAV_SECTION_ORDER: NavSection[] = ["Overview", "Clinical", "Business", "Insights", "System"];

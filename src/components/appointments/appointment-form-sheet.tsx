@@ -27,11 +27,17 @@ export function AppointmentFormSheet({
   chairs,
   visitTypes,
   className,
+  defaultDoctorId,
+  defaultScheduledDate,
 }: {
   doctors: DoctorOption[];
   chairs: Chair[];
   visitTypes: VisitType[];
   className?: string;
+  /** Prefills the Doctor field — used by Doctor Schedule's "New Appointment" entry point so booking from a doctor's day doesn't require re-selecting them. Omitted everywhere else. */
+  defaultDoctorId?: string;
+  /** YYYY-MM-DD. Prefills the Date field the same way. */
+  defaultScheduledDate?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -82,6 +88,8 @@ export function AppointmentFormSheet({
             chairs={chairs}
             visitTypes={visitTypes}
             fieldErrors={fieldErrors}
+            defaultDoctorId={defaultDoctorId}
+            defaultScheduledDate={defaultScheduledDate}
           />
 
           <div className="mt-auto flex justify-end gap-2 pt-2 pb-4">

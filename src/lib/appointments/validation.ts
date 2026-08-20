@@ -124,6 +124,38 @@ export function computeAvailabilityWindows(
     .map((block) => ({ startMinutes: block.startMinutes, endMinutes: block.endMinutes }));
 }
 
+export type DoctorAvailabilityKind = "unconfigured" | "vacation" | "off" | "available";
+
+export interface DoctorAvailabilityForDate {
+  kind: DoctorAvailabilityKind;
+  windows: WorkingHours[];
+}
+
+/**
+ * Classifies *why* a doctor is or isn't available on a date, for the
+ * Doctor Schedule screen. `computeAvailabilityWindows` already returns the
+ * windows themselves, but collapses "never configured," "on vacation," and
+ * "configured, but no weekly block this weekday" into the same empty/null
+ * result — exactly right for booking validation (all three just mean "don't
+ * allow a booking here"), not enough to show the right message on screen.
+ */
+export function describeDoctorAvailability(dateIso: string, schedule: DoctorScheduleInput): DoctorAvailabilityForDate {
+  const hasAnyConfiguration =
+    schedule.weeklyHours.length > 0 || schedule.vacations.length > 0 || schedule.exceptions.length > 0;
+  if (!hasAnyConfiguration) {
+    return { kind: "unconfigured", windows: [DEFAULT_CLINIC_HOURS] };
+  }
+
+  const date = dateIso.slice(0, 10);
+  const onVacation = schedule.vacations.some((vacation) => date >= vacation.startDate && date <= vacation.endDate);
+  if (onVacation) {
+    return { kind: "vacation", windows: [] };
+  }
+
+  const windows = computeAvailabilityWindows(dateIso, schedule) ?? [];
+  return { kind: windows.length === 0 ? "off" : "available", windows };
+}
+
 /** Same as `isWithinWorkingHours`, but against multiple candidate windows (e.g. a split shift with a break). */
 export function isWithinAvailability(
   scheduledStartIso: string,
