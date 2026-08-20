@@ -5,13 +5,40 @@ import {
   PRIMARY_FDI_NUMBERS,
   archForFdiNumber,
   dentitionForFdiNumber,
+  describeToothEvent,
   fdiToPalmer,
   fdiToUniversal,
   isAppointmentForPatient,
   isPlannedOnChart,
   isValidFdiNumber,
   toothNeedsAttention,
+  toothStateLabel,
+  type ToothEventInput,
+  type ToothEventLabels,
 } from "@/lib/dental-chart/calculations";
+
+const LABELS: ToothEventLabels = {
+  status: { present: "Present", missing: "Missing", unerupted: "Unerupted" },
+  condition: { caries: "Caries", filling: "Filling", crown: "Crown", root_canal: "Root Canal", watch: "Watch", other: "Other" },
+  presentNoCondition: "Present, no conditions recorded",
+  observationFallback: "Observation recorded",
+  healthy: "Healthy",
+  stateUpdated: "State updated",
+  markedStatusTemplate: "Marked {status}",
+  conditionChangeConnector: " → ",
+};
+
+function event(overrides: Partial<ToothEventInput>): ToothEventInput {
+  return {
+    event_type: "state_changed",
+    notes: null,
+    previous_status: "present",
+    previous_condition: null,
+    status: "present",
+    condition: null,
+    ...overrides,
+  };
+}
 
 describe("PERMANENT_FDI_NUMBERS / PRIMARY_FDI_NUMBERS / ALL_FDI_NUMBERS", () => {
   it("has exactly 32 permanent teeth", () => {
@@ -178,5 +205,66 @@ describe("isPlannedOnChart", () => {
     expect(isPlannedOnChart({ status: "postponed" })).toBe(false);
     expect(isPlannedOnChart({ status: "rejected" })).toBe(false);
     expect(isPlannedOnChart({ status: "completed" })).toBe(false);
+  });
+});
+
+describe("toothStateLabel", () => {
+  it("uses the status label for anything other than present", () => {
+    expect(toothStateLabel("missing", null, LABELS)).toBe("Missing");
+    expect(toothStateLabel("unerupted", "caries", LABELS)).toBe("Unerupted");
+  });
+
+  it("uses the condition label when present and a condition is set", () => {
+    expect(toothStateLabel("present", "caries", LABELS)).toBe("Caries");
+  });
+
+  it("falls back to the healthy-present sentence when present with no condition", () => {
+    expect(toothStateLabel("present", null, LABELS)).toBe("Present, no conditions recorded");
+  });
+
+  it("falls back to the raw value for an unrecognized status/condition rather than throwing", () => {
+    expect(toothStateLabel("bogus", null, LABELS)).toBe("bogus");
+    expect(toothStateLabel("present", "bogus", LABELS)).toBe("bogus");
+  });
+});
+
+describe("describeToothEvent", () => {
+  it("returns the observation's own notes for an observation event", () => {
+    expect(describeToothEvent(event({ event_type: "observation", notes: "Sensitive to cold" }), LABELS)).toBe(
+      "Sensitive to cold",
+    );
+  });
+
+  it("falls back to the observation placeholder when notes is missing", () => {
+    expect(describeToothEvent(event({ event_type: "observation", notes: null }), LABELS)).toBe("Observation recorded");
+  });
+
+  it("describes a status change as 'Marked <status>', taking priority over any condition change", () => {
+    expect(
+      describeToothEvent(
+        event({ previous_status: "present", status: "missing", previous_condition: "caries", condition: null }),
+        LABELS,
+      ),
+    ).toBe("Marked Missing");
+  });
+
+  it("describes a condition-only change as 'from → to'", () => {
+    expect(
+      describeToothEvent(event({ previous_condition: null, condition: "caries" }), LABELS),
+    ).toBe("Healthy → Caries");
+    expect(
+      describeToothEvent(event({ previous_condition: "caries", condition: "filling" }), LABELS),
+    ).toBe("Caries → Filling");
+  });
+
+  it("uses the locale's own connector between conditions, not a hardcoded arrow", () => {
+    const rtlLabels: ToothEventLabels = { ...LABELS, conditionChangeConnector: " ← " };
+    expect(describeToothEvent(event({ previous_condition: null, condition: "caries" }), rtlLabels)).toBe(
+      "Healthy ← Caries",
+    );
+  });
+
+  it("falls back to 'state updated' when status is unchanged and from/to conditions resolve equal", () => {
+    expect(describeToothEvent(event({ previous_condition: null, condition: null }), LABELS)).toBe("State updated");
   });
 });

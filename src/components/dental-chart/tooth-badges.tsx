@@ -1,5 +1,8 @@
+"use client";
+
 import { Badge, type badgeVariants } from "@/components/ui/badge";
-import { TOOTH_CONDITION_LABELS, TOOTH_STATUS_LABELS, type ToothCondition, type ToothStatus } from "@/types/domain";
+import { useTranslation } from "@/components/locale-provider";
+import type { ToothCondition, ToothStatus } from "@/types/domain";
 import type { VariantProps } from "class-variance-authority";
 
 type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
@@ -12,7 +15,8 @@ const STATUS_BADGE_VARIANT: Record<ToothStatus, BadgeVariant> = {
 };
 
 export function ToothStatusBadge({ status }: { status: ToothStatus }) {
-  return <Badge variant={STATUS_BADGE_VARIANT[status]}>{TOOTH_STATUS_LABELS[status]}</Badge>;
+  const { dentalChart: dict } = useTranslation();
+  return <Badge variant={STATUS_BADGE_VARIANT[status]}>{dict.toothStatus[status]}</Badge>;
 }
 
 /** caries/watch are open clinical concerns (destructive/warning); filling/crown/root_canal/other are existing, already-addressed work (neutral secondary) — same distinction toothNeedsAttention() in calculations.ts encodes. */
@@ -26,5 +30,6 @@ const CONDITION_BADGE_VARIANT: Record<ToothCondition, BadgeVariant> = {
 };
 
 export function ToothConditionBadge({ condition }: { condition: ToothCondition }) {
-  return <Badge variant={CONDITION_BADGE_VARIANT[condition]}>{TOOTH_CONDITION_LABELS[condition]}</Badge>;
+  const { dentalChart: dict } = useTranslation();
+  return <Badge variant={CONDITION_BADGE_VARIANT[condition]}>{dict.toothCondition[condition]}</Badge>;
 }

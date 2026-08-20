@@ -1,7 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { TOOTH_CONDITION_LABELS, TOOTH_STATUS_LABELS, type ToothCondition, type ToothStatus } from "@/types/domain";
+import { toothStateLabel } from "@/lib/dental-chart/calculations";
+import { useTranslation } from "@/components/locale-provider";
+import type { ToothCondition, ToothStatus } from "@/types/domain";
 
 /**
  * Tailwind classes only — no illustrated tooth shape, no charting library.
@@ -29,11 +31,6 @@ function toothAppearance(status: ToothStatus, condition: ToothCondition | null):
   return "border-border bg-popover text-foreground hover:bg-muted";
 }
 
-function toothLabel(status: ToothStatus, condition: ToothCondition | null): string {
-  if (status !== "present") return TOOTH_STATUS_LABELS[status];
-  return condition ? TOOTH_CONDITION_LABELS[condition] : "Present, no conditions recorded";
-}
-
 export function Tooth({
   fdiNumber,
   status,
@@ -49,13 +46,18 @@ export function Tooth({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const label = toothLabel(status, condition);
+  const { dentalChart: dict } = useTranslation();
+  const label = toothStateLabel(status, condition, {
+    status: dict.toothStatus,
+    condition: dict.toothCondition,
+    presentNoCondition: dict.presentNoCondition,
+  });
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      aria-label={`Tooth ${fdiNumber} — ${label}${hasPlanned ? ", treatment planned" : ""}`}
+      aria-label={`${dict.toothAriaPrefix} ${fdiNumber} — ${label}${hasPlanned ? dict.treatmentPlannedSuffix : ""}`}
       aria-pressed={selected}
       className={cn(
         "relative flex size-9 shrink-0 items-center justify-center rounded-lg border text-xs font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:size-10",

@@ -119,4 +119,83 @@ export interface Dictionary {
       deletePatientConfirm: string;
     };
   };
+  dentalChart: {
+    toothStatus: {
+      present: string;
+      missing: string;
+      unerupted: string;
+    };
+    toothCondition: {
+      caries: string;
+      filling: string;
+      crown: string;
+      root_canal: string;
+      watch: string;
+      other: string;
+    };
+    presentNoCondition: string;
+    /** "{count}" is replaced with the actual number — exactly-1 vs 2-or-more, not full CLDR plural rules (matches the simplified counting already used elsewhere in this dictionary, e.g. patientProfile.summaryRail.activeSuffix). */
+    needsAttentionSingular: string;
+    needsAttentionPlural: string;
+    noAttentionNeeded: string;
+    legend: {
+      caries: string;
+      watch: string;
+      existingWork: string;
+      missing: string;
+      planned: string;
+    };
+    dentitionToggleLabel: string;
+    dentition: {
+      permanent: string;
+      primary: string;
+    };
+    /** Each value already reads as a full "<Upper/Lower> arch" label — used both as the odontogram row's aria-label and (combined with `dentition`) the Tooth Sheet's subtitle. */
+    arch: {
+      upper: string;
+      lower: string;
+    };
+    universalPrefix: string;
+    palmerPrefix: string;
+    toothAriaPrefix: string;
+    treatmentPlannedSuffix: string;
+    sheet: {
+      loading: string;
+      currentState: string;
+      edit: string;
+      cancel: string;
+      save: string;
+      markMissing: string;
+      noConditionHealthy: string;
+      notesPlaceholder: string;
+      plannedTreatment: string;
+      nothingPlanned: string;
+      performedTreatment: string;
+      nothingPerformed: string;
+      history: string;
+      addObservation: string;
+      observationPlaceholder: string;
+      noHistory: string;
+      linkedToVisit: string;
+      doctorPrefix: string;
+    };
+    toast: {
+      updated: string;
+      markedMissing: string;
+      observationAdded: string;
+    };
+    events: {
+      observationFallback: string;
+      healthy: string;
+      stateUpdated: string;
+      /** Contains the literal substring "{status}" — see describeToothEvent in lib/dental-chart/calculations.ts. */
+      markedStatusTemplate: string;
+      conditionChangeConnector: string;
+    };
+    select: {
+      noSpecificTooth: string;
+      permanentGroup: string;
+      primaryGroup: string;
+    };
+  };
 }

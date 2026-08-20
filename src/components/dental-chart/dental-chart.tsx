@@ -5,6 +5,7 @@ import { AlertTriangle, CircleCheck } from "lucide-react";
 import { Odontogram } from "@/components/dental-chart/odontogram";
 import { ToothDetailSheet } from "@/components/dental-chart/tooth-detail-sheet";
 import { toothNeedsAttention } from "@/lib/dental-chart/calculations";
+import { useTranslation } from "@/components/locale-provider";
 import type { DentalChartToothSummary } from "@/lib/dental-chart/queries";
 
 /**
@@ -21,6 +22,7 @@ export function DentalChart({
   teeth: DentalChartToothSummary[];
   canEdit: boolean;
 }) {
+  const { dentalChart: dict } = useTranslation();
   const [selectedFdiNumber, setSelectedFdiNumber] = useState<number | null>(null);
   const attentionCount = teeth.filter(toothNeedsAttention).length;
 
@@ -31,13 +33,16 @@ export function DentalChart({
           <>
             <AlertTriangle className="size-4 text-warning-text" />
             <span className="text-foreground">
-              {attentionCount} {attentionCount === 1 ? "tooth needs" : "teeth need"} attention
+              {(attentionCount === 1 ? dict.needsAttentionSingular : dict.needsAttentionPlural).replace(
+                "{count}",
+                String(attentionCount),
+              )}
             </span>
           </>
         ) : (
           <>
             <CircleCheck className="size-4 text-success-text" />
-            <span className="text-muted-foreground">No teeth currently need attention</span>
+            <span className="text-muted-foreground">{dict.noAttentionNeeded}</span>
           </>
         )}
       </div>

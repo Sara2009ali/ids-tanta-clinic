@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PERMANENT_FDI_NUMBERS, PRIMARY_FDI_NUMBERS } from "@/lib/dental-chart/calculations";
+import { useTranslation } from "@/components/locale-provider";
 
 const NO_TOOTH = "__none__";
 
@@ -30,6 +31,8 @@ export function ToothSelect({
   value: number | null;
   onValueChange: (fdiNumber: number | null) => void;
 }) {
+  const { dentalChart: dict } = useTranslation();
+
   function handleChange(next: string | null) {
     if (!next || next === NO_TOOTH) {
       onValueChange(null);
@@ -41,7 +44,7 @@ export function ToothSelect({
   return (
     <Select
       items={{
-        [NO_TOOTH]: "No specific tooth",
+        [NO_TOOTH]: dict.select.noSpecificTooth,
         ...Object.fromEntries(PERMANENT_FDI_NUMBERS.map((fdi) => [String(fdi), String(fdi)])),
         ...Object.fromEntries(PRIMARY_FDI_NUMBERS.map((fdi) => [String(fdi), String(fdi)])),
       }}
@@ -52,10 +55,10 @@ export function ToothSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={NO_TOOTH}>No specific tooth</SelectItem>
+        <SelectItem value={NO_TOOTH}>{dict.select.noSpecificTooth}</SelectItem>
         <SelectSeparator />
         <SelectGroup>
-          <SelectLabel>Permanent</SelectLabel>
+          <SelectLabel>{dict.select.permanentGroup}</SelectLabel>
           {PERMANENT_FDI_NUMBERS.map((fdi) => (
             <SelectItem key={fdi} value={String(fdi)}>
               {fdi}
@@ -63,7 +66,7 @@ export function ToothSelect({
           ))}
         </SelectGroup>
         <SelectGroup>
-          <SelectLabel>Primary</SelectLabel>
+          <SelectLabel>{dict.select.primaryGroup}</SelectLabel>
           {PRIMARY_FDI_NUMBERS.map((fdi) => (
             <SelectItem key={fdi} value={String(fdi)}>
               {fdi}

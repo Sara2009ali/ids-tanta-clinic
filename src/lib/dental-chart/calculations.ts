@@ -142,3 +142,70 @@ export interface SoftDeletableTreatmentPlanItem {
 export function isPlannedOnChart(item: SoftDeletableTreatmentPlanItem): boolean {
   return item.status === "accepted" || item.status === "in_progress";
 }
+
+/**
+ * Labels this module needs to describe a tooth's state or history in
+ * whatever language the caller is rendering in — kept out of this file
+ * entirely (no hardcoded English, no import of the i18n dictionaries) so
+ * these stay pure, dependency-free functions; the Dental Chart components
+ * pass in the current locale's strings.
+ */
+export interface ToothLabels {
+  status: Record<string, string>;
+  condition: Record<string, string>;
+  /** "Present, no conditions recorded" (or equivalent) — shown when a tooth has no condition and no other note-worthy state. */
+  presentNoCondition: string;
+}
+
+/** The Tooth Sheet's "Current state" summary and the odontogram button's accessible name both boil down to this same present→condition-or-healthy resolution — the single source of truth for "what does this tooth's state mean in words." */
+export function toothStateLabel(status: string, condition: string | null, labels: ToothLabels): string {
+  if (status !== "present") return labels.status[status] ?? status;
+  return condition ? (labels.condition[condition] ?? condition) : labels.presentNoCondition;
+}
+
+export interface ToothEventInput {
+  event_type: string;
+  notes: string | null;
+  previous_status: string | null;
+  previous_condition: string | null;
+  status: string | null;
+  condition: string | null;
+}
+
+export interface ToothEventLabels extends ToothLabels {
+  /** Shown for an observation event with no notes text (shouldn't normally happen — notes is required on create — but an older/edge-case row could still lack one). */
+  observationFallback: string;
+  /** Short fallback for a null previous/new condition in the from→to diagram — deliberately shorter than ToothLabels.presentNoCondition, which reads better as a full sentence elsewhere. */
+  healthy: string;
+  /** Neither the status nor the condition actually changed (a notes-only edit doesn't reach this — see applyToothStateChange's `changed` gate — but a from===to condition pair can still occur when only notes changed alongside an unrelated event). */
+  stateUpdated: string;
+  /** Template containing the literal substring "{status}", replaced with the localized status name — e.g. "Marked {status}" / "تم تحديد الحالة: {status}". */
+  markedStatusTemplate: string;
+  /** Placed between the previous and new condition label — direction-aware per locale (e.g. " → " for LTR, " ← " for RTL) rather than relying on bidi text to reposition a fixed glyph correctly. */
+  conditionChangeConnector: string;
+}
+
+/**
+ * One line describing a patient_tooth_events row for the Tooth Sheet's
+ * history list — mirrors applyToothStateChange's event-writing rules
+ * exactly: "observation" rows carry their own notes; "state_changed" rows
+ * either flipped status (missing/unerupted/present) or changed condition
+ * (or, in principle, both, in which case the status change takes priority
+ * since it's the more significant fact).
+ */
+export function describeToothEvent(event: ToothEventInput, labels: ToothEventLabels): string {
+  if (event.event_type === "observation") {
+    return event.notes ?? labels.observationFallback;
+  }
+
+  const from = event.previous_condition ? (labels.condition[event.previous_condition] ?? event.previous_condition) : labels.healthy;
+  const to = event.condition ? (labels.condition[event.condition] ?? event.condition) : labels.healthy;
+  const statusChanged = event.previous_status !== event.status;
+
+  if (statusChanged && event.status) {
+    const statusLabel = labels.status[event.status] ?? event.status;
+    return labels.markedStatusTemplate.replace("{status}", statusLabel);
+  }
+
+  return from === to ? labels.stateUpdated : `${from}${labels.conditionChangeConnector}${to}`;
+}
