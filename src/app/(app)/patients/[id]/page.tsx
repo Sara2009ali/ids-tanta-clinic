@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Stethoscope } from "lucide-react";
 import { getPatientById, listDoctors } from "@/lib/patients/queries";
 import { getPatientFileUrls } from "@/lib/patients/storage";
 import { calculateAge, medicalFlagLabel, MEDICAL_FLAG_KEYS } from "@/lib/patients/utils";
@@ -210,16 +212,23 @@ export default async function PatientProfilePage({
     ? invoiceRows.reduce((sum, row) => sum + Number(row.balance_due), 0)
     : null;
 
+  // Each item with a single natural destination links straight to the tab
+  // that owns the full picture — "concise summary + clear route," not a
+  // second copy of that tab's content. Medical Alerts has no dedicated tab
+  // (its detail already lives in the hero's badges above) and Last Visit
+  // has no single record to jump to, so those two stay plain text.
   const summaryItems: SummaryRailItem[] = [
     {
       label: t.summaryRail.lastVisit,
       value: patient.last_visit_at ? formatDateLabel(patient.last_visit_at) : t.summaryRail.noVisitsYet,
+      href: "?tab=timeline",
     },
     ...(canViewAppointments
       ? [
           {
             label: t.summaryRail.nextAppointment,
             value: nextAppointment ? formatDateTimeLabel(nextAppointment.scheduled_start) : t.summaryRail.noneScheduled,
+            href: "?tab=appointments",
           } satisfies SummaryRailItem,
         ]
       : []),
@@ -230,6 +239,7 @@ export default async function PatientProfilePage({
             value: activeTreatmentPlan
               ? `${planTitle(activeTreatmentPlan)} · ${activeTreatmentPlan.completedPercent}%`
               : t.summaryRail.noActiveTreatment,
+            href: "?tab=treatment-plans",
           } satisfies SummaryRailItem,
           {
             label: t.summaryRail.nextRecall,
@@ -237,6 +247,7 @@ export default async function PatientProfilePage({
               ? `${formatDateLabel(nextRecall.due_date)}${isRecallOverdue(nextRecall) ? t.summaryRail.overdueSuffix : ""}`
               : t.summaryRail.noneDue,
             tone: nextRecall && isRecallOverdue(nextRecall) ? ("warning" as const) : undefined,
+            href: "?tab=recalls",
           } satisfies SummaryRailItem,
         ]
       : []),
@@ -246,6 +257,7 @@ export default async function PatientProfilePage({
             label: t.summaryRail.outstandingBalance,
             value: formatCurrency(outstandingBalance),
             tone: outstandingBalance > 0 ? ("warning" as const) : ("success" as const),
+            href: "?tab=billing",
           } satisfies SummaryRailItem,
         ]
       : []),
@@ -259,7 +271,7 @@ export default async function PatientProfilePage({
   return (
     <div className="space-y-6">
       <Breadcrumb
-        items={[{ label: t.breadcrumbPatients, href: "/patients" }, { label: patient.full_name ?? "Patient" }]}
+        items={[{ label: t.breadcrumbPatients, href: "/patients" }, { label: patient.full_name ?? t.unnamedPatient }]}
       />
 
       <PatientWorkspaceHero
@@ -392,6 +404,38 @@ export default async function PatientProfilePage({
                   <InfoField label={t.overview.dentalHistoryNotes} value={clinicalInfo?.dental_history} />
                 </dl>
               </div>
+
+              {/* "What has been performed recently" — a bounded, 3-row
+                  glance at the same treatmentRecords the Procedures
+                  Performed tab already fetched and fully lists; not a
+                  second copy of that table, just enough to answer the
+                  question without leaving Overview. */}
+              {treatmentRecords.length > 0 && (
+                <div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className={typography.eyebrow}>{t.overview.recentActivity}</p>
+                    <Link href="?tab=procedures-performed" scroll={false} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+                      {t.overview.viewAllProcedures}
+                    </Link>
+                  </div>
+                  <div className="divide-y divide-border rounded-xl border border-border">
+                    {treatmentRecords.slice(0, 3).map((record) => {
+                      const procedureName = visitTypes.find((v) => v.id === record.visit_type_id)?.name ?? "—";
+                      const doctorName = doctors.find((d) => d.id === record.doctor_id)?.full_name ?? "—";
+                      return (
+                        <div key={record.id} className="flex items-center gap-3 p-3.5">
+                          <Stethoscope className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{procedureName}</p>
+                            <p className="truncate text-xs text-muted-foreground">{t.overview.doctorPrefix} {doctorName}</p>
+                          </div>
+                          <p className="shrink-0 text-xs text-muted-foreground">{formatDateLabel(record.created_at)}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </TabsContent>
@@ -424,7 +468,7 @@ export default async function PatientProfilePage({
             clinicId={patient.clinic_id}
             patientId={patient.id}
             fileType="photo"
-            label="Profile Photo"
+            label={t.files.profilePhoto}
             accept="image/*"
             multiple={false}
             setAsProfilePhoto
@@ -435,7 +479,7 @@ export default async function PatientProfilePage({
             clinicId={patient.clinic_id}
             patientId={patient.id}
             fileType="other"
-            label="Documents"
+            label={t.files.documents}
             accept="application/pdf,image/*,.doc,.docx"
             existingFiles={existingFilesFor("other")}
           />
@@ -444,7 +488,7 @@ export default async function PatientProfilePage({
             clinicId={patient.clinic_id}
             patientId={patient.id}
             fileType="radiograph"
-            label="X-Rays"
+            label={t.files.xrays}
             accept="image/*"
             existingFiles={existingFilesFor("radiograph")}
           />
@@ -453,7 +497,7 @@ export default async function PatientProfilePage({
             clinicId={patient.clinic_id}
             patientId={patient.id}
             fileType="consent_form"
-            label="Consent Forms"
+            label={t.files.consentForms}
             accept="application/pdf,image/*"
             existingFiles={existingFilesFor("consent_form")}
           />
@@ -471,7 +515,7 @@ export default async function PatientProfilePage({
               visitTypes={visitTypes}
               doctors={doctors}
               canEdit={canEditClinical}
-              emptyMessage="No treatment recorded for this patient yet."
+              emptyMessage={t.proceduresEmpty}
             />
           </TabsContent>
         )}
@@ -482,7 +526,7 @@ export default async function PatientProfilePage({
               notes={clinicalNotes}
               appointments={appointments}
               canEdit={canEditClinical}
-              emptyMessage="No clinical notes recorded for this patient yet."
+              emptyMessage={t.clinicalNotesEmpty}
             />
           </TabsContent>
         )}

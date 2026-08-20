@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { typography } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -5,6 +6,8 @@ export interface SummaryRailItem {
   label: string;
   value: string;
   tone?: "default" | "warning" | "success";
+  /** When set, the item becomes a link to the relevant tab (e.g. `?tab=recalls`) — the "clear route to that module" the item's number is a summary of. Omitted for items with no single natural destination (Last Visit's own record isn't a tab; Medical Alerts already has its detail in the hero above). */
+  href?: string;
 }
 
 /** Static column-count → class lookup — Tailwind can't see a template-built `grid-cols-${n}` string. */
@@ -26,20 +29,37 @@ export function WorkspaceSummaryRail({ items }: { items: SummaryRailItem[] }) {
 
   return (
     <div className={cn("grid divide-x divide-y divide-border border-t border-border", GRID_COLS[Math.min(items.length, 4)])}>
-      {items.map((item) => (
-        <div key={item.label} className="px-5 py-4">
-          <p className={typography.eyebrow}>{item.label}</p>
-          <p
-            className={cn(
-              "font-heading mt-1 text-lg font-medium tabular-nums",
-              item.tone === "warning" && "text-warning-text",
-              item.tone === "success" && "text-success-text",
-            )}
+      {items.map((item) => {
+        const content = (
+          <>
+            <p className={typography.eyebrow}>{item.label}</p>
+            <p
+              className={cn(
+                "font-heading mt-1 text-lg font-medium tabular-nums",
+                item.tone === "warning" && "text-warning-text",
+                item.tone === "success" && "text-success-text",
+              )}
+            >
+              {item.value}
+            </p>
+          </>
+        );
+
+        return item.href ? (
+          <Link
+            key={item.label}
+            href={item.href}
+            scroll={false}
+            className="px-5 py-4 transition-colors outline-none hover:bg-muted/40 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
           >
-            {item.value}
-          </p>
-        </div>
-      ))}
+            {content}
+          </Link>
+        ) : (
+          <div key={item.label} className="px-5 py-4">
+            {content}
+          </div>
+        );
+      })}
     </div>
   );
 }

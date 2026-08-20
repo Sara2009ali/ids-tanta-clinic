@@ -77,6 +77,9 @@ export const ar: Dictionary = {
       dentalHistoryNotes: "ملاحظات تاريخ الأسنان",
       flagYes: "نعم",
       flagNo: "لا",
+      recentActivity: "النشاط الأخير",
+      viewAllProcedures: "عرض الكل",
+      doctorPrefix: "د.",
     },
     summaryRail: {
       lastVisit: "آخر زيارة",
@@ -99,7 +102,22 @@ export const ar: Dictionary = {
       noInvoicesYet: "لا توجد فواتير لهذا المريض بعد.",
     },
     appointmentsEmpty: "لم يتم تسجيل مواعيد لهذا المريض بعد.",
+    proceduresEmpty: "لم يتم تسجيل أي علاج لهذا المريض بعد.",
+    clinicalNotesEmpty: "لم يتم تسجيل ملاحظات سريرية لهذا المريض بعد.",
+    unnamedPatient: "مريض",
     auditTrailHeading: "سجل التدقيق",
+    files: {
+      profilePhoto: "الصورة الشخصية",
+      documents: "المستندات",
+      xrays: "الأشعة السينية",
+      consentForms: "نماذج الموافقة",
+    },
+    errorState: {
+      title: "تعذّر تحميل بيانات هذا المريض.",
+      description: "حدث خطأ ما. يمكنك المحاولة مرة أخرى أو العودة.",
+      backToPatients: "العودة إلى المرضى",
+      tryAgain: "إعادة المحاولة",
+    },
     actions: {
       edit: "تعديل",
       archive: "أرشفة",
@@ -110,6 +128,7 @@ export const ar: Dictionary = {
       deletePatientDescription:
         "سيؤدي هذا إلى إزالة المريض من جميع القوائم والتقارير. لا يتوفر خيار الاستعادة من سلة المهملات في هذه المرحلة، لذا تابع فقط إذا كنت متأكدًا.",
       deletePatientConfirm: "حذف المريض",
+      patientDeleted: "تم حذف المريض",
     },
   },
   dentalChart: {

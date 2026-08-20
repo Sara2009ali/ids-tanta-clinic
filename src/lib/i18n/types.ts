@@ -86,6 +86,9 @@ export interface Dictionary {
       dentalHistoryNotes: string;
       flagYes: string;
       flagNo: string;
+      recentActivity: string;
+      viewAllProcedures: string;
+      doctorPrefix: string;
     };
     summaryRail: {
       lastVisit: string;
@@ -108,7 +111,22 @@ export interface Dictionary {
       noInvoicesYet: string;
     };
     appointmentsEmpty: string;
+    proceduresEmpty: string;
+    clinicalNotesEmpty: string;
+    unnamedPatient: string;
     auditTrailHeading: string;
+    files: {
+      profilePhoto: string;
+      documents: string;
+      xrays: string;
+      consentForms: string;
+    };
+    errorState: {
+      title: string;
+      description: string;
+      backToPatients: string;
+      tryAgain: string;
+    };
     actions: {
       edit: string;
       archive: string;
@@ -118,6 +136,7 @@ export interface Dictionary {
       deletePatientTitle: string;
       deletePatientDescription: string;
       deletePatientConfirm: string;
+      patientDeleted: string;
     };
   };
   dentalChart: {

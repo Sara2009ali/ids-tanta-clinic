@@ -77,6 +77,9 @@ export const en: Dictionary = {
       dentalHistoryNotes: "Dental history notes",
       flagYes: "Yes",
       flagNo: "No",
+      recentActivity: "Recent Activity",
+      viewAllProcedures: "View all",
+      doctorPrefix: "Dr.",
     },
     summaryRail: {
       lastVisit: "Last Visit",
@@ -99,7 +102,22 @@ export const en: Dictionary = {
       noInvoicesYet: "No invoices yet for this patient.",
     },
     appointmentsEmpty: "No appointments recorded for this patient yet.",
+    proceduresEmpty: "No treatment recorded for this patient yet.",
+    clinicalNotesEmpty: "No clinical notes recorded for this patient yet.",
+    unnamedPatient: "Patient",
     auditTrailHeading: "Audit Trail",
+    files: {
+      profilePhoto: "Profile Photo",
+      documents: "Documents",
+      xrays: "X-Rays",
+      consentForms: "Consent Forms",
+    },
+    errorState: {
+      title: "Couldn't load this patient.",
+      description: "Something went wrong. You can try again or go back.",
+      backToPatients: "Back to Patients",
+      tryAgain: "Try again",
+    },
     actions: {
       edit: "Edit",
       archive: "Archive",
@@ -110,6 +128,7 @@ export const en: Dictionary = {
       deletePatientDescription:
         "This removes the patient from all lists and reports. There's no restore-from-trash option in this phase, so only continue if you're sure.",
       deletePatientConfirm: "Delete patient",
+      patientDeleted: "Patient deleted",
     },
   },
   dentalChart: {

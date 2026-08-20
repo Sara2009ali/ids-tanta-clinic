@@ -59,7 +59,7 @@ export function PatientHeaderActions({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Patient deleted");
+        toast.success(dict.patientDeleted);
         router.push("/patients");
       }
     });
@@ -68,14 +68,14 @@ export function PatientHeaderActions({
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
       {canEdit && (
-        <Button variant="outline" render={<Link href={`/patients/${patientId}/edit`} />}>
+        <Button render={<Link href={`/patients/${patientId}/edit`} />}>
           <Pencil className="size-4" />
           {dict.edit}
         </Button>
       )}
 
       {canEdit && (
-        <Button variant="outline" disabled={archivePending} onClick={handleArchiveToggle}>
+        <Button variant="ghost" disabled={archivePending} onClick={handleArchiveToggle}>
           {archivePending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : isArchived ? (
@@ -89,10 +89,14 @@ export function PatientHeaderActions({
 
       {canDelete && (
         <AlertDialog>
-          <AlertDialogTrigger render={<Button variant="destructive" />}>
-            <Trash2 className="size-4" />
-            {dict.delete}
-          </AlertDialogTrigger>
+          {/* Visually separated from Edit/Archive — destructive, rare, and
+              shouldn't compete with the routine actions for attention. */}
+          <div className="ms-1 border-s border-border ps-2">
+            <AlertDialogTrigger render={<Button variant="destructive" />}>
+              <Trash2 className="size-4" />
+              {dict.delete}
+            </AlertDialogTrigger>
+          </div>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{dict.deletePatientTitle}</AlertDialogTitle>
