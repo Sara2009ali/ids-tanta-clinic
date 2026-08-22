@@ -73,6 +73,10 @@ export interface Dictionary {
       referralSource: string;
       insuranceProvider: string;
       insurancePolicyNumber: string;
+      priceList: string;
+      defaultPriceList: string;
+      insurancePlan: string;
+      insuranceMemberId: string;
       allergies: string;
       currentMedications: string;
       medicalConditions: string;
@@ -224,6 +228,12 @@ export interface Dictionary {
     doctorsCardTitle: string;
     doctorsCardDescription: string;
     manageDoctors: string;
+    priceListsCardTitle: string;
+    priceListsCardDescription: string;
+    managePriceLists: string;
+    insuranceCardTitle: string;
+    insuranceCardDescription: string;
+    manageInsurance: string;
     preferencesCardTitle: string;
     preferencesCardDescription: string;
     managePreferences: string;
@@ -235,6 +245,62 @@ export interface Dictionary {
       languageSectionTitle: string;
       languageSectionDescription: string;
     };
+  };
+  priceLists: {
+    pageTitle: string;
+    pageDescription: string;
+    backToProcedures: string;
+    nameColumn: string;
+    pricingColumn: string;
+    actionsColumn: string;
+    newPriceListPlaceholder: string;
+    addPriceList: string;
+    defaultBadge: string;
+    disabledBadge: string;
+    /** "{count}" replaced with the actual number of custom prices in this list. */
+    itemsCountLabel: string;
+    itemsCountEmpty: string;
+    editPrices: string;
+    rename: string;
+    save: string;
+    disable: string;
+    enable: string;
+    delete: string;
+    cancel: string;
+    deleteConfirmTitle: string;
+    deleteConfirmDescription: string;
+    noPriceLists: string;
+    detail: {
+      backToPriceLists: string;
+      defaultListNotice: string;
+      serviceColumn: string;
+      normalPriceColumn: string;
+      thisListColumn: string;
+      overridePlaceholder: string;
+      usingNormalPrice: string;
+      resetToNormal: string;
+    };
+  };
+  insurance: {
+    pageTitle: string;
+    pageDescription: string;
+    insurersHeading: string;
+    newInsurerPlaceholder: string;
+    addInsurer: string;
+    noInsurers: string;
+    plansHeading: string;
+    newPlanNamePlaceholder: string;
+    coverageLabel: string;
+    addPlan: string;
+    disable: string;
+    enable: string;
+    delete: string;
+    cancel: string;
+    noPlans: string;
+    deleteInsurerConfirmTitle: string;
+    deleteInsurerConfirmDescription: string;
+    deletePlanConfirmTitle: string;
+    deletePlanConfirmDescription: string;
   };
   doctorSchedule: {
     pageTitle: string;

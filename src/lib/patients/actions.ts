@@ -47,6 +47,22 @@ function patientRowFromValues(values: PatientFormValues, clinicId: string) {
     preferred_dentist_id: values.preferred_dentist_id ?? null,
     insurance_provider: values.insurance_provider ?? null,
     insurance_policy_number: values.insurance_policy_number ?? null,
+    price_list_id: values.price_list_id ?? null,
+  };
+}
+
+/**
+ * patient_insurance (0032_insurance_foundation.sql) is a 1:1 extension
+ * table, upserted alongside `patients` in the same action — identical shape
+ * to clinicalInfoRowFromValues()/patient_clinical_info below. Kept separate
+ * from the legacy insurance_provider/insurance_policy_number free-text
+ * columns on `patients`, which this batch leaves untouched.
+ */
+function patientInsuranceRowFromValues(values: PatientFormValues) {
+  return {
+    insurance_plan_id: values.insurance_plan_id ?? null,
+    member_id: values.insurance_member_id ?? null,
+    group_number: values.insurance_group_number ?? null,
   };
 }
 
@@ -139,6 +155,17 @@ export async function createPatient(formData: FormData): Promise<PatientActionSt
     return { error: "Couldn't save the patient's medical information. Please try again." };
   }
 
+  const { error: insuranceError } = await supabase.from("patient_insurance").insert({
+    patient_id: patient.id,
+    clinic_id: staff.clinic_id,
+    ...patientInsuranceRowFromValues(values),
+  });
+
+  if (insuranceError) {
+    console.error("createPatient: insurance insert failed", insuranceError);
+    return { error: "Patient details were saved, but insurance information failed to save." };
+  }
+
   await writeAuditLog(supabase, {
     clinicId: staff.clinic_id,
     actorId: staff.id,
@@ -224,6 +251,20 @@ export async function updatePatient(patientId: string, formData: FormData): Prom
   if (clinicalError) {
     console.error("updatePatient: clinical info upsert failed", clinicalError);
     return { error: "Patient details were saved, but medical information failed to update." };
+  }
+
+  const { error: insuranceError } = await supabase.from("patient_insurance").upsert(
+    {
+      patient_id: patientId,
+      clinic_id: staff.clinic_id,
+      ...patientInsuranceRowFromValues(values),
+    },
+    { onConflict: "patient_id" },
+  );
+
+  if (insuranceError) {
+    console.error("updatePatient: insurance upsert failed", insuranceError);
+    return { error: "Patient details were saved, but insurance information failed to update." };
   }
 
   await writeAuditLog(supabase, {

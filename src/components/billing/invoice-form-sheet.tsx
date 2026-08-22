@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FilePlus2, Loader2, Plus, Trash2 } from "lucide-react";
@@ -8,6 +8,8 @@ import { FilePlus2, Loader2, Plus, Trash2 } from "lucide-react";
 import { createInvoice, updateInvoice } from "@/lib/billing/actions";
 import { computeInvoiceTotals } from "@/lib/billing/calculations";
 import { formatCurrency } from "@/lib/billing/format";
+import { getPatientPriceOverrides, type PatientPriceOverrides } from "@/lib/pricing/actions";
+import { resolveServicePrice } from "@/lib/pricing/resolve";
 import type { InvoiceItemInputValues } from "@/lib/billing/schema";
 import type { InvoiceDetail } from "@/lib/billing/queries";
 import type { VisitType } from "@/types/domain";
@@ -364,6 +366,48 @@ export function InvoiceFormSheet({
   const [taxPercent, setTaxPercent] = useState(invoice ? Number(invoice.tax_percent) : 0);
   const lockPatient = isEdit || !!initialPatient;
 
+  // Resolves the selected patient's pricing context (their assigned Price
+  // List, or the clinic default) whenever the patient changes — the only
+  // place in this form the patient is genuinely dynamic; everywhere else
+  // (Price List item editor, Treatment Plan item dialog) fetches this
+  // server-side once, since the patient there is fixed for the whole page.
+  const [priceContext, setPriceContext] = useState<PatientPriceOverrides | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!patient?.id) {
+      Promise.resolve().then(() => {
+        if (!cancelled) setPriceContext(null);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    getPatientPriceOverrides(patient.id).then((context) => {
+      if (!cancelled) setPriceContext(context);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [patient?.id]);
+
+  // The one price resolution path (resolveServicePrice), applied once here
+  // so every consumer below (ProcedureField's list, the catalog-price reset
+  // button) just sees each procedure's already-resolved price for this
+  // patient — never visit_types.price directly.
+  const pricedVisitTypes = useMemo(() => {
+    const overridesMap = new Map(Object.entries(priceContext?.overrides ?? {}));
+    return visitTypes.map((visitType) => ({
+      ...visitType,
+      price: resolveServicePrice({
+        visitTypeId: visitType.id,
+        basePrice: Number(visitType.price),
+        priceListId: priceContext?.priceListId ?? null,
+        defaultPriceListId: priceContext?.defaultPriceListId ?? null,
+        overrides: overridesMap,
+      }),
+    }));
+  }, [visitTypes, priceContext]);
+
   const totals = useMemo(
     () =>
       computeInvoiceTotals(
@@ -462,6 +506,9 @@ export function InvoiceFormSheet({
             ) : (
               <PatientPicker value={patient} onChange={setPatient} error={fieldErrors.patient_id} />
             )}
+            {priceContext?.priceListName && (
+              <p className="text-xs text-muted-foreground">Pricing: {priceContext.priceListName}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -482,7 +529,7 @@ export function InvoiceFormSheet({
                 <InvoiceItemRow
                   key={index}
                   item={item}
-                  visitTypes={visitTypes}
+                  visitTypes={pricedVisitTypes}
                   onChange={(patch) => updateItem(index, patch)}
                   onRemove={() => removeItem(index)}
                   canRemove={items.length > 1}

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getTreatmentPlanDetail } from "@/lib/treatment-plans/queries";
 import { computeEstimatedTotal } from "@/lib/treatment-plans/calculations";
 import { getAppointmentsForPatient, listVisitTypes } from "@/lib/appointments/queries";
+import { getPatientPriceContext } from "@/lib/pricing/queries";
+import { resolveServicePrice } from "@/lib/pricing/resolve";
 import { getCurrentPermissions, requirePermission } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -27,16 +29,32 @@ export default async function TreatmentPlanDetailPage({
 
   const { id: patientId, planId } = await params;
 
-  const [plan, visitTypes, appointments, permissions] = await Promise.all([
+  const [plan, visitTypes, appointments, permissions, priceContext] = await Promise.all([
     getTreatmentPlanDetail(planId),
     listVisitTypes(),
     getAppointmentsForPatient(patientId),
     getCurrentPermissions(),
+    getPatientPriceContext(patientId),
   ]);
 
   if (!plan || plan.patient_id !== patientId) {
     notFound();
   }
+
+  // Resolved once here (server-side — this patient is fixed for the whole
+  // page, unlike Billing's dynamic patient picker) via the one price
+  // resolution path, so both "Add procedure" and "Create Invoice" below see
+  // this patient's actual prices, never the clinic's raw catalog price.
+  const pricedVisitTypes = visitTypes.map((visitType) => ({
+    ...visitType,
+    price: resolveServicePrice({
+      visitTypeId: visitType.id,
+      basePrice: Number(visitType.price),
+      priceListId: priceContext.priceListId,
+      defaultPriceListId: priceContext.defaultPriceListId,
+      overrides: priceContext.overrides,
+    }),
+  }));
 
   const canEdit = hasPermission(permissions, PERMISSIONS.CLINICAL_EDIT);
   // Existing billing.edit permission, unchanged — Create Invoice is only
@@ -101,7 +119,7 @@ export default async function TreatmentPlanDetailPage({
                 patientId={patientId}
                 patientName={plan.patientName}
                 items={plan.items}
-                visitTypes={visitTypes}
+                visitTypes={pricedVisitTypes}
               />
             </div>
           )}
@@ -112,7 +130,7 @@ export default async function TreatmentPlanDetailPage({
         planId={plan.id}
         planStatus={plan.status as TreatmentPlanStatus}
         items={plan.items}
-        visitTypes={visitTypes}
+        visitTypes={pricedVisitTypes}
         appointments={appointments}
         canEdit={canEdit}
       />

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPatientById, listDoctors } from "@/lib/patients/queries";
+import { listPriceListOptions } from "@/lib/pricing/queries";
+import { listInsurancePlanOptions } from "@/lib/insurance/queries";
 import { PatientForm, type PatientFormDefaultValues } from "@/components/patients/patient-form";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { formatPatientName } from "@/lib/patients/utils";
@@ -16,13 +18,18 @@ export default async function EditPatientPage({
 
   const { id } = await params;
 
-  const [result, doctors] = await Promise.all([getPatientById(id), listDoctors()]);
+  const [result, doctors, priceLists, insurancePlans] = await Promise.all([
+    getPatientById(id),
+    listDoctors(),
+    listPriceListOptions(),
+    listInsurancePlanOptions(),
+  ]);
 
   if (!result) {
     notFound();
   }
 
-  const { patient, clinicalInfo } = result;
+  const { patient, clinicalInfo, insurance } = result;
 
   const defaultValues: PatientFormDefaultValues = {
     first_name: patient.first_name,
@@ -51,6 +58,10 @@ export default async function EditPatientPage({
     preferred_dentist_id: patient.preferred_dentist_id,
     insurance_provider: patient.insurance_provider,
     insurance_policy_number: patient.insurance_policy_number,
+    price_list_id: patient.price_list_id,
+    insurance_plan_id: insurance?.insurancePlanId ?? null,
+    insurance_member_id: insurance?.memberId ?? null,
+    insurance_group_number: insurance?.groupNumber ?? null,
   };
 
   return (
@@ -69,7 +80,14 @@ export default async function EditPatientPage({
         </h1>
         <p className="text-sm text-muted-foreground">Update the patient&apos;s record.</p>
       </div>
-      <PatientForm mode="edit" patientId={id} defaultValues={defaultValues} doctors={doctors} />
+      <PatientForm
+        mode="edit"
+        patientId={id}
+        defaultValues={defaultValues}
+        doctors={doctors}
+        priceLists={priceLists}
+        insurancePlans={insurancePlans}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { PatientSearchRow, PatientStatus } from "@/types/domain";
+import type { PatientInsurance, PatientSearchRow, PatientStatus } from "@/types/domain";
 
 export interface PatientSearchParams {
   query?: string;
@@ -51,7 +51,7 @@ export async function searchPatients(params: PatientSearchParams = {}): Promise<
 export async function getPatientById(id: string) {
   const supabase = await createClient();
 
-  const [patientRes, clinicalInfoRes, alertsRes, filesRes, auditRes] = await Promise.all([
+  const [patientRes, clinicalInfoRes, alertsRes, filesRes, auditRes, priceListRes, insuranceRes] = await Promise.all([
     supabase.from("patients").select("*").eq("id", id).is("deleted_at", null).maybeSingle(),
     supabase.from("patient_clinical_info").select("*").eq("patient_id", id).maybeSingle(),
     supabase
@@ -67,9 +67,22 @@ export async function getPatientById(id: string) {
       .eq("entity_id", id)
       .order("created_at", { ascending: false })
       .limit(50),
+    supabase.from("patients").select("price_lists(id, name, is_default)").eq("id", id).maybeSingle(),
+    supabase
+      .from("patient_insurance")
+      .select("*, insurance_plans(name, coverage_percent, insurers(name))")
+      .eq("patient_id", id)
+      .maybeSingle(),
   ]);
 
   if (!patientRes.data) return null;
+
+  const priceList = (priceListRes.data as { price_lists: { id: string; name: string; is_default: boolean } | null } | null)
+    ?.price_lists ?? null;
+
+  const insuranceRow = insuranceRes.data as
+    | (PatientInsurance & { insurance_plans: { name: string; coverage_percent: number; insurers: { name: string } } | null })
+    | null;
 
   return {
     patient: patientRes.data,
@@ -77,6 +90,17 @@ export async function getPatientById(id: string) {
     alerts: alertsRes.data ?? [],
     files: filesRes.data ?? [],
     auditEntries: auditRes.data ?? [],
+    priceList,
+    insurance: insuranceRow
+      ? {
+          insurancePlanId: insuranceRow.insurance_plan_id,
+          memberId: insuranceRow.member_id,
+          groupNumber: insuranceRow.group_number,
+          planName: insuranceRow.insurance_plans?.name ?? null,
+          insurerName: insuranceRow.insurance_plans?.insurers?.name ?? null,
+          coveragePercent: insuranceRow.insurance_plans?.coverage_percent ?? null,
+        }
+      : null,
   };
 }
 

@@ -8,6 +8,8 @@ import { Loader2 } from "lucide-react";
 import { createPatient, updatePatient } from "@/lib/patients/actions";
 import { calculateAge, MEDICAL_FLAG_KEYS, medicalFlagLabel } from "@/lib/patients/utils";
 import type { DoctorOption } from "@/lib/patients/queries";
+import type { PriceListOption } from "@/lib/pricing/queries";
+import type { InsurancePlanOption } from "@/lib/insurance/queries";
 import { DoctorSelect } from "@/components/patients/doctor-select";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +54,10 @@ export interface PatientFormDefaultValues {
   preferred_dentist_id?: string | null;
   insurance_provider?: string | null;
   insurance_policy_number?: string | null;
+  price_list_id?: string | null;
+  insurance_plan_id?: string | null;
+  insurance_member_id?: string | null;
+  insurance_group_number?: string | null;
 }
 
 interface PatientFormProps {
@@ -59,9 +65,18 @@ interface PatientFormProps {
   patientId?: string;
   defaultValues?: PatientFormDefaultValues;
   doctors: DoctorOption[];
+  priceLists: PriceListOption[];
+  insurancePlans: InsurancePlanOption[];
 }
 
-export function PatientForm({ mode, patientId, defaultValues, doctors }: PatientFormProps) {
+// Base UI's Select can't take "" as an item value (reserved for "no
+// selection"), same reason invoice-form-sheet/treatment-plan-item-dialog use
+// sentinel values instead — normalized back to "unset" in handleSubmit below
+// before formData ever reaches patientFormSchema.
+const NO_PRICE_LIST = "__default__";
+const NO_INSURANCE_PLAN = "__none__";
+
+export function PatientForm({ mode, patientId, defaultValues, doctors, priceLists, insurancePlans }: PatientFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -70,6 +85,9 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
   const age = calculateAge(dateOfBirth);
 
   function handleSubmit(formData: FormData) {
+    if (formData.get("price_list_id") === NO_PRICE_LIST) formData.set("price_list_id", "");
+    if (formData.get("insurance_plan_id") === NO_INSURANCE_PLAN) formData.set("insurance_plan_id", "");
+
     startTransition(async () => {
       const result =
         mode === "create" ? await createPatient(formData) : await updatePatient(patientId!, formData);
@@ -282,6 +300,79 @@ export function PatientForm({ mode, patientId, defaultValues, doctors }: Patient
               id="insurance_policy_number"
               name="insurance_policy_number"
               defaultValue={defaultValues?.insurance_policy_number ?? ""}
+            />
+          </FormField>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pricing &amp; Insurance Plan</CardTitle>
+          <CardDescription>Which prices this patient sees, and their enrolled insurance plan, if any.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            label="Price list"
+            htmlFor="price_list_id"
+            description="Leave unset to use the clinic's default (Normal) pricing."
+          >
+            <Select
+              name="price_list_id"
+              items={{
+                [NO_PRICE_LIST]: "Clinic default (Normal)",
+                ...Object.fromEntries(priceLists.filter((list) => !list.is_default).map((list) => [list.id, list.name])),
+              }}
+              defaultValue={defaultValues?.price_list_id ?? NO_PRICE_LIST}
+            >
+              <SelectTrigger id="price_list_id" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_PRICE_LIST}>Clinic default (Normal)</SelectItem>
+                {priceLists
+                  .filter((list) => !list.is_default)
+                  .map((list) => (
+                    <SelectItem key={list.id} value={list.id}>
+                      {list.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Insurance plan" htmlFor="insurance_plan_id">
+            <Select
+              name="insurance_plan_id"
+              items={{
+                [NO_INSURANCE_PLAN]: "No insurance plan",
+                ...Object.fromEntries(insurancePlans.map((plan) => [plan.id, `${plan.insurer_name} — ${plan.name}`])),
+              }}
+              defaultValue={defaultValues?.insurance_plan_id ?? NO_INSURANCE_PLAN}
+            >
+              <SelectTrigger id="insurance_plan_id" className="w-full">
+                <SelectValue placeholder={insurancePlans.length ? "Select a plan" : "No plans set up yet"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_INSURANCE_PLAN}>No insurance plan</SelectItem>
+                {insurancePlans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id}>
+                    {plan.insurer_name} — {plan.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Member ID" htmlFor="insurance_member_id">
+            <Input
+              id="insurance_member_id"
+              name="insurance_member_id"
+              defaultValue={defaultValues?.insurance_member_id ?? ""}
+            />
+          </FormField>
+          <FormField label="Group number" htmlFor="insurance_group_number">
+            <Input
+              id="insurance_group_number"
+              name="insurance_group_number"
+              defaultValue={defaultValues?.insurance_group_number ?? ""}
             />
           </FormField>
         </CardContent>

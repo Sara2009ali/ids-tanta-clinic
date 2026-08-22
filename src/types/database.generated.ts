@@ -779,6 +779,89 @@ export type Database = {
           },
         ]
       }
+      insurance_plans: {
+        Row: {
+          clinic_id: string
+          coverage_percent: number
+          created_at: string
+          id: string
+          insurer_id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          coverage_percent?: number
+          created_at?: string
+          id?: string
+          insurer_id: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          coverage_percent?: number
+          created_at?: string
+          id?: string
+          insurer_id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_plans_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_plans_insurer_id_fkey"
+            columns: ["insurer_id"]
+            isOneToOne: false
+            referencedRelation: "insurers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurers: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurers_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_categories: {
         Row: {
           clinic_id: string
@@ -1509,6 +1592,58 @@ export type Database = {
           },
         ]
       }
+      patient_insurance: {
+        Row: {
+          clinic_id: string
+          group_number: string | null
+          insurance_plan_id: string | null
+          member_id: string | null
+          notes: string | null
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          group_number?: string | null
+          insurance_plan_id?: string | null
+          member_id?: string | null
+          notes?: string | null
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          group_number?: string | null
+          insurance_plan_id?: string | null
+          member_id?: string | null
+          notes?: string | null
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_insurance_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_insurance_insurance_plan_id_fkey"
+            columns: ["insurance_plan_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_insurance_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_medical_alerts: {
         Row: {
           clinic_id: string
@@ -1738,6 +1873,7 @@ export type Database = {
           phone: string | null
           photo_path: string | null
           preferred_dentist_id: string | null
+          price_list_id: string | null
           referral_source: string | null
           status: Database["public"]["Enums"]["patient_status"]
           tags: string[]
@@ -1768,6 +1904,7 @@ export type Database = {
           phone?: string | null
           photo_path?: string | null
           preferred_dentist_id?: string | null
+          price_list_id?: string | null
           referral_source?: string | null
           status?: Database["public"]["Enums"]["patient_status"]
           tags?: string[]
@@ -1798,6 +1935,7 @@ export type Database = {
           phone?: string | null
           photo_path?: string | null
           preferred_dentist_id?: string | null
+          price_list_id?: string | null
           referral_source?: string | null
           status?: Database["public"]["Enums"]["patient_status"]
           tags?: string[]
@@ -1824,6 +1962,13 @@ export type Database = {
             columns: ["preferred_dentist_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_price_list_id_fkey"
+            columns: ["price_list_id"]
+            isOneToOne: false
+            referencedRelation: "price_lists"
             referencedColumns: ["id"]
           },
           {
@@ -1925,6 +2070,96 @@ export type Database = {
           label?: string
         }
         Relationships: []
+      }
+      price_list_items: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          price: number
+          price_list_id: string
+          updated_at: string
+          visit_type_id: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          price: number
+          price_list_id: string
+          updated_at?: string
+          visit_type_id: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          price?: number
+          price_list_id?: string
+          updated_at?: string
+          visit_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_list_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_list_items_price_list_id_fkey"
+            columns: ["price_list_id"]
+            isOneToOne: false
+            referencedRelation: "price_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_list_items_visit_type_id_fkey"
+            columns: ["visit_type_id"]
+            isOneToOne: false
+            referencedRelation: "visit_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_lists: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_lists_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_order_items: {
         Row: {

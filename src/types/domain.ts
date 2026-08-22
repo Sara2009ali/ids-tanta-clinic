@@ -39,6 +39,13 @@ export type Invoice = Database["public"]["Tables"]["invoices"]["Row"];
 export type InvoiceItem = Database["public"]["Tables"]["invoice_items"]["Row"];
 export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 
+export type PriceList = Database["public"]["Tables"]["price_lists"]["Row"];
+export type PriceListItem = Database["public"]["Tables"]["price_list_items"]["Row"];
+
+export type Insurer = Database["public"]["Tables"]["insurers"]["Row"];
+export type InsurancePlan = Database["public"]["Tables"]["insurance_plans"]["Row"];
+export type PatientInsurance = Database["public"]["Tables"]["patient_insurance"]["Row"];
+
 export type CompensationRule = Database["public"]["Tables"]["compensation_rules"]["Row"];
 export type DoctorEarning = Database["public"]["Tables"]["doctor_earnings"]["Row"];
 export type DoctorSettlement = Database["public"]["Tables"]["doctor_settlements"]["Row"];

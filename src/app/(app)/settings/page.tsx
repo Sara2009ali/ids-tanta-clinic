@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, SlidersHorizontal } from "lucide-react";
+import { Users, SlidersHorizontal, Tags, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireStaff } from "@/lib/auth/session";
@@ -56,6 +56,40 @@ export default async function SettingsPage() {
               <p className="text-sm text-muted-foreground">{dict.doctorsCardDescription}</p>
               <Button size="sm" render={<Link href="/settings/doctors" />}>
                 {dict.manageDoctors}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {canManageClinic && (
+          <Card className="max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Tags className="size-4" />
+                {dict.priceListsCardTitle}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">{dict.priceListsCardDescription}</p>
+              <Button size="sm" render={<Link href="/procedures/price-lists" />}>
+                {dict.managePriceLists}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {canManageClinic && (
+          <Card className="max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck className="size-4" />
+                {dict.insuranceCardTitle}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">{dict.insuranceCardDescription}</p>
+              <Button size="sm" render={<Link href="/settings/insurance" />}>
+                {dict.manageInsurance}
               </Button>
             </CardContent>
           </Card>

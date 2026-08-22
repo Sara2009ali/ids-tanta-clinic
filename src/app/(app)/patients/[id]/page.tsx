@@ -133,7 +133,7 @@ export default async function PatientProfilePage({
     notFound();
   }
 
-  const { patient, clinicalInfo, alerts, files, auditEntries } = result;
+  const { patient, clinicalInfo, alerts, files, auditEntries, priceList, insurance } = result;
   const preferredDentist = doctors.find((doctor) => doctor.id === patient.preferred_dentist_id);
 
   const canViewBilling = hasPermission(permissions, PERMISSIONS.BILLING_VIEW);
@@ -337,8 +337,14 @@ export default async function PatientProfilePage({
             <p className={cn(typography.eyebrow, "mb-3")}>{t.overview.insuranceReferral}</p>
             <dl className="grid gap-x-6 gap-y-5 rounded-xl border border-border p-5 sm:grid-cols-2 lg:grid-cols-3">
               <InfoField label={t.overview.referralSource} value={patient.referral_source} />
+              <InfoField label={t.overview.priceList} value={priceList && !priceList.is_default ? priceList.name : t.overview.defaultPriceList} />
               <InfoField label={t.overview.insuranceProvider} value={patient.insurance_provider} />
               <InfoField label={t.overview.insurancePolicyNumber} value={patient.insurance_policy_number} />
+              <InfoField
+                label={t.overview.insurancePlan}
+                value={insurance?.planName ? `${insurance.insurerName} — ${insurance.planName}` : null}
+              />
+              <InfoField label={t.overview.insuranceMemberId} value={insurance?.memberId} />
             </dl>
           </div>
 

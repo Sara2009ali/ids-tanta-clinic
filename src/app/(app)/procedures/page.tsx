@@ -1,10 +1,14 @@
+import Link from "next/link";
+import { Tags } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { VisitTypesFilters } from "@/components/procedures/visit-types-filters";
 import { VisitTypesManager } from "@/components/procedures/visit-types-manager";
 import type { VisitTypesQueryParams } from "@/components/procedures/visit-types-query-params";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { listVisitTypesForManagement, type VisitTypeForManagement } from "@/lib/appointments/queries";
+import { getLocale, getDictionary } from "@/lib/i18n/server";
 import { typography } from "@/lib/typography";
 
 function firstParam(value: string | string[] | undefined) {
@@ -50,7 +54,8 @@ export default async function ProceduresPage({
   };
   const hasFilters = Boolean(filterValue.query || filterValue.status);
 
-  const visitTypes = await listVisitTypesForManagement();
+  const [visitTypes, locale] = await Promise.all([listVisitTypesForManagement(), getLocale()]);
+  const priceListsDict = getDictionary(locale).settings;
   const filteredVisitTypes = filterVisitTypes(visitTypes, filterValue);
   // Suggestions come from the full clinic catalog, not the filtered view —
   // a category shouldn't disappear from the "add procedure" autocomplete
@@ -61,11 +66,17 @@ export default async function ProceduresPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={typography.pageTitle}>Procedures</h1>
-        <p className="text-sm text-muted-foreground">
-          Add, rename, enable/disable, or remove the procedures your clinic offers.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className={typography.pageTitle}>Procedures</h1>
+          <p className="text-sm text-muted-foreground">
+            Add, rename, enable/disable, or remove the procedures your clinic offers.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" render={<Link href="/procedures/price-lists" />}>
+          <Tags className="size-4" />
+          {priceListsDict.managePriceLists}
+        </Button>
       </div>
 
       <Card>

@@ -56,6 +56,17 @@ export const patientFormSchema = z.object({
     .transform((value) => (value ? value : undefined)),
   insurance_provider: trimmedOptional,
   insurance_policy_number: trimmedOptional,
+
+  price_list_id: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  insurance_plan_id: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  insurance_member_id: trimmedOptional,
+  insurance_group_number: trimmedOptional,
 });
 
 export type PatientFormValues = z.infer<typeof patientFormSchema>;
@@ -108,5 +119,10 @@ export function patientFormValuesFromFormData(formData: FormData) {
     preferred_dentist_id: str(formData, "preferred_dentist_id"),
     insurance_provider: str(formData, "insurance_provider"),
     insurance_policy_number: str(formData, "insurance_policy_number"),
+
+    price_list_id: str(formData, "price_list_id"),
+    insurance_plan_id: str(formData, "insurance_plan_id"),
+    insurance_member_id: str(formData, "insurance_member_id"),
+    insurance_group_number: str(formData, "insurance_group_number"),
   };
 }
