@@ -22,7 +22,9 @@ import { getScheduleForRange, listChairs, listVisitTypes } from "@/lib/appointme
 import { getTreatmentRecordsForAppointments } from "@/lib/treatments/queries";
 import { getInvoiceIdsByAppointmentId } from "@/lib/billing/queries";
 import { listDoctors, type DoctorOption } from "@/lib/patients/queries";
+import { getLocale, getDictionary } from "@/lib/i18n/server";
 import { typography } from "@/lib/typography";
+import type { Dictionary } from "@/lib/i18n/types";
 import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
 
 const VIEWS = new Set<CalendarView>(["day", "week", "month"]);
@@ -56,6 +58,7 @@ async function CalendarBody({
   chairs,
   visitTypes,
   permissions,
+  dict,
 }: {
   view: CalendarView;
   start: Date;
@@ -65,11 +68,13 @@ async function CalendarBody({
   chairs: Chair[];
   visitTypes: VisitType[];
   permissions: string[];
+  dict: Dictionary["appointments"];
 }) {
   const rows = await getScheduleForRange(start.toISOString(), end.toISOString());
+  const weekdayLabels = [dict.weekdays.sun, dict.weekdays.mon, dict.weekdays.tue, dict.weekdays.wed, dict.weekdays.thu, dict.weekdays.fri, dict.weekdays.sat];
 
-  if (view === "week") return <WeekView rows={rows} start={start} />;
-  if (view === "month") return <MonthView rows={rows} start={start} anchor={anchor} />;
+  if (view === "week") return <WeekView rows={rows} start={start} emptyDayLabel={dict.noAppointmentsShort} />;
+  if (view === "month") return <MonthView rows={rows} start={start} anchor={anchor} weekdayLabels={weekdayLabels} />;
 
   const appointmentIds = rows.map((row) => row.id);
   const canViewClinical = hasPermission(permissions, PERMISSIONS.CLINICAL_VIEW);
@@ -84,7 +89,11 @@ async function CalendarBody({
   return (
     <TodaysSchedule
       rows={rows}
-      emptyMessage="No appointments scheduled for this day."
+      emptyMessage={dict.noAppointmentsDay}
+      doctorPrefix={dict.doctorPrefix}
+      emergencyLabel={dict.emergencyBadge}
+      urgentLabel={dict.urgentBadge}
+      highPriorityLabel={dict.highPriorityBadge}
       renderActions={(row) => (
         <AppointmentRowActions
           appointment={row}
@@ -123,12 +132,14 @@ export default async function AppointmentsPage({
   const anchor = parseDateParam(firstParam(sp.date));
   const { start, end } = getViewRange(view, anchor);
 
-  const [doctors, chairs, visitTypes, permissions] = await Promise.all([
+  const [doctors, chairs, visitTypes, permissions, locale] = await Promise.all([
     listDoctors(),
     listChairs(),
     listVisitTypes(),
     getCurrentPermissions(),
+    getLocale(),
   ]);
+  const dict = getDictionary(locale).appointments;
 
   const canCreateAppointment = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_CREATE);
   const canManageSchedules = hasPermission(permissions, PERMISSIONS.SETTINGS_MANAGE);
@@ -137,20 +148,20 @@ export default async function AppointmentsPage({
     <div className="flex h-full flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className={typography.pageTitle}>Appointments</h1>
+          <h1 className={typography.pageTitle}>{dict.pageTitle}</h1>
           <p className="text-sm text-muted-foreground">{formatViewLabel(view, anchor)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canManageSchedules && (
             <Button variant="outline" render={<Link href="/appointments/doctor-schedule" />}>
               <CalendarClock className="size-4" />
-              Doctor Schedules
+              {dict.doctorSchedulesLink}
             </Button>
           )}
           {canManageSchedules && (
             <Button variant="outline" render={<Link href="/appointments/chairs" />}>
               <Armchair className="size-4" />
-              Chairs
+              {dict.chairsLink}
             </Button>
           )}
           {canCreateAppointment && (
@@ -160,8 +171,12 @@ export default async function AppointmentsPage({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <CalendarNav view={view} anchor={anchor} />
-        <CalendarViewSwitcher view={view} anchor={anchor} />
+        <CalendarNav view={view} anchor={anchor} previousLabel={dict.previous} todayLabel={dict.today} nextLabel={dict.next} />
+        <CalendarViewSwitcher
+          view={view}
+          anchor={anchor}
+          viewLabels={{ day: dict.viewDay, week: dict.viewWeek, month: dict.viewMonth }}
+        />
       </div>
 
       <Suspense fallback={<CalendarBodySkeleton />}>
@@ -174,6 +189,7 @@ export default async function AppointmentsPage({
           chairs={chairs}
           visitTypes={visitTypes}
           permissions={permissions}
+          dict={dict}
         />
       </Suspense>
     </div>

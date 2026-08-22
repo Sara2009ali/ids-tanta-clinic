@@ -13,12 +13,17 @@ export function VisitTypeSelect({
   onValueChange,
   id = "visit_type_id",
   name = "visit_type_id",
+  placeholder = "Select a visit type",
+  emptyPlaceholder = "No visit types yet",
 }: {
   visitTypes: VisitType[];
   defaultValue?: string | null;
   onValueChange?: (value: string) => void;
   id?: string;
   name?: string;
+  /** Both default to English for callers outside the localized booking form. */
+  placeholder?: string;
+  emptyPlaceholder?: string;
 }) {
   return (
     <Select
@@ -42,7 +47,7 @@ export function VisitTypeSelect({
       }}
     >
       <SelectTrigger id={id} className="w-full">
-        <SelectValue placeholder={visitTypes.length ? "Select a visit type" : "No visit types yet"} />
+        <SelectValue placeholder={visitTypes.length ? placeholder : emptyPlaceholder} />
       </SelectTrigger>
       <SelectContent>
         {visitTypes.map((visitType) => (

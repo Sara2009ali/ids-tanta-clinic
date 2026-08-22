@@ -9,7 +9,7 @@ import { createInvoice, updateInvoice } from "@/lib/billing/actions";
 import { computeInvoiceTotals } from "@/lib/billing/calculations";
 import { formatCurrency } from "@/lib/billing/format";
 import { getPatientBillingContext, type PatientBillingContext } from "@/lib/pricing/actions";
-import { resolveServicePrice } from "@/lib/pricing/resolve";
+import { reconcileSeededItemPrice, resolveServicePrice } from "@/lib/pricing/resolve";
 import { aggregateInvoiceInsurance, computeLineInsuranceSplit } from "@/lib/insurance/calculations";
 import type { InvoiceItemInputValues } from "@/lib/billing/schema";
 import type { InvoiceDetail } from "@/lib/billing/queries";
@@ -414,6 +414,34 @@ export function InvoiceFormSheet({
       }),
     }));
   }, [visitTypes, priceContext]);
+
+  // A pre-seeded line (e.g. "Create Invoice" from an appointment row, seeded
+  // with the visit type's raw catalog price before this sheet has had a
+  // chance to resolve the patient's Price List) gets corrected the moment
+  // that resolution lands — reconcileSeededItemPrice only ever touches a
+  // line still sitting at the exact unresolved catalog price, so a manually
+  // edited price, a custom line, or a caller that already resolved the
+  // price correctly (Treatment Plan's Create Invoice) is never overwritten.
+  useEffect(() => {
+    if (!priceContext) return;
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          unit_price: reconcileSeededItemPrice(
+            item,
+            visitTypes.find((visitType) => visitType.id === item.visit_type_id)?.price,
+            pricedVisitTypes.find((visitType) => visitType.id === item.visit_type_id)?.price,
+          ),
+        })),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pricedVisitTypes, priceContext, visitTypes]);
 
   const totals = useMemo(
     () =>

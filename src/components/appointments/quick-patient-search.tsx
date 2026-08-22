@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { searchPatientsAction } from "@/lib/appointments/patient-search-action";
 import type { PatientSearchRow } from "@/types/domain";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/components/locale-provider";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -18,6 +19,7 @@ const SEARCH_DEBOUNCE_MS = 300;
  */
 export function QuickPatientSearch() {
   const router = useRouter();
+  const t = useTranslation().appointments.quickSearch;
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<PatientSearchRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -60,21 +62,21 @@ export function QuickPatientSearch() {
       }}
     >
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={searchText}
           onChange={handleChange}
           onFocus={() => setOpen(true)}
-          placeholder="Find a patient…"
-          className="pl-9 sm:w-72"
+          placeholder={t.placeholder}
+          className="ps-9 sm:w-72"
         />
       </div>
 
       {open && searchText.length > 0 && (
         <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-elevation-high">
-          {searching && <p className="px-2 py-1.5 text-sm text-muted-foreground">Searching…</p>}
+          {searching && <p className="px-2 py-1.5 text-sm text-muted-foreground">{t.searching}</p>}
           {!searching && results.length === 0 && (
-            <p className="px-2 py-1.5 text-sm text-muted-foreground">No patients found.</p>
+            <p className="px-2 py-1.5 text-sm text-muted-foreground">{t.noResults}</p>
           )}
           {!searching &&
             results.map((row) => (
@@ -82,7 +84,7 @@ export function QuickPatientSearch() {
                 key={row.id}
                 type="button"
                 onClick={() => handleSelect(row)}
-                className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-start text-sm hover:bg-accent hover:text-accent-foreground"
               >
                 <span>{row.full_name}</span>
                 {row.phone && <span className="text-xs text-muted-foreground">{row.phone}</span>}

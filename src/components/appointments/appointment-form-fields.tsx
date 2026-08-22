@@ -21,6 +21,7 @@ import { DoctorSelect } from "@/components/patients/doctor-select";
 import { ChairSelect } from "@/components/appointments/chair-select";
 import { VisitTypeSelect } from "@/components/appointments/visit-type-select";
 import { PatientPicker, type SelectedPatient } from "@/components/appointments/patient-picker";
+import { useTranslation } from "@/components/locale-provider";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -83,6 +84,7 @@ export function AppointmentFormFields({
   defaultChiefComplaint = "",
   defaultNotes = "",
 }: AppointmentFormFieldsProps) {
+  const t = useTranslation().appointments.form;
   const [patient, setPatient] = useState<SelectedPatient | null>(defaultPatient);
 
   const initialSlot = useMemo(
@@ -114,37 +116,53 @@ export function AppointmentFormFields({
   return (
     <>
       <div className="space-y-2">
-        <Label>Patient *</Label>
+        <Label>
+          {t.patientLabel} <span aria-hidden="true">*</span>
+        </Label>
         <PatientPicker value={patient} onChange={setPatient} error={fieldErrors.patient_id} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="doctor_id">Doctor *</Label>
+        <Label htmlFor="doctor_id">
+          {t.doctorLabel} <span aria-hidden="true">*</span>
+        </Label>
         <DoctorSelect doctors={doctors} defaultValue={defaultDoctorId} id="doctor_id" name="doctor_id" />
         <FieldError message={fieldErrors.doctor_id} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="chair_id">Chair</Label>
-        <ChairSelect chairs={chairs} defaultValue={defaultChairId} id="chair_id" name="chair_id" />
+        <Label htmlFor="chair_id">{t.chairLabel}</Label>
+        <ChairSelect
+          chairs={chairs}
+          defaultValue={defaultChairId}
+          id="chair_id"
+          name="chair_id"
+          unassignedLabel={t.chairUnassigned}
+        />
         <FieldError message={fieldErrors.chair_id} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="visit_type_id">Visit type *</Label>
+        <Label htmlFor="visit_type_id">
+          {t.visitTypeLabel} <span aria-hidden="true">*</span>
+        </Label>
         <VisitTypeSelect
           visitTypes={visitTypes}
           defaultValue={defaultVisitTypeId}
           id="visit_type_id"
           name="visit_type_id"
           onValueChange={handleVisitTypeChange}
+          placeholder={t.visitTypePlaceholder}
+          emptyPlaceholder={t.visitTypeEmpty}
         />
         <FieldError message={fieldErrors.visit_type_id} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="scheduled_date">Date *</Label>
+          <Label htmlFor="scheduled_date">
+            {t.dateLabel} <span aria-hidden="true">*</span>
+          </Label>
           <Input
             id="scheduled_date"
             name="scheduled_date"
@@ -156,7 +174,9 @@ export function AppointmentFormFields({
           <FieldError message={fieldErrors.scheduled_date} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="scheduled_time">Time *</Label>
+          <Label htmlFor="scheduled_time">
+            {t.timeLabel} <span aria-hidden="true">*</span>
+          </Label>
           <Input
             id="scheduled_time"
             name="scheduled_time"
@@ -170,7 +190,9 @@ export function AppointmentFormFields({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="duration_minutes">Duration (minutes) *</Label>
+        <Label htmlFor="duration_minutes">
+          {t.durationLabel} <span aria-hidden="true">*</span>
+        </Label>
         <Input
           id="duration_minutes"
           name="duration_minutes"
@@ -182,24 +204,26 @@ export function AppointmentFormFields({
           onChange={(event) => setDurationMinutes(Number(event.target.value))}
           aria-invalid={!!fieldErrors.duration_minutes}
         />
-        {endsAtLabel && <p className="text-xs text-muted-foreground">Ends at {endsAtLabel}</p>}
+        {endsAtLabel && (
+          <p className="text-xs text-muted-foreground">{t.endsAtLabel.replace("{time}", endsAtLabel)}</p>
+        )}
         <FieldError message={fieldErrors.duration_minutes} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="priority">Priority</Label>
+        <Label htmlFor="priority">{t.priorityLabel}</Label>
         <Select
           name="priority"
-          items={{ normal: "Normal", high: "High", urgent: "Urgent" }}
+          items={{ normal: t.priorityNormal, high: t.priorityHigh, urgent: t.priorityUrgent }}
           defaultValue={defaultPriority}
         >
           <SelectTrigger id="priority" className="w-full">
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder={t.priorityLabel} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="urgent">Urgent</SelectItem>
+            <SelectItem value="normal">{t.priorityNormal}</SelectItem>
+            <SelectItem value="high">{t.priorityHigh}</SelectItem>
+            <SelectItem value="urgent">{t.priorityUrgent}</SelectItem>
           </SelectContent>
         </Select>
         <FieldError message={fieldErrors.priority} />
@@ -208,18 +232,18 @@ export function AppointmentFormFields({
       <div className="flex items-center gap-2">
         <Checkbox id="is_emergency" name="is_emergency" defaultChecked={defaultIsEmergency} />
         <Label htmlFor="is_emergency" className="font-normal">
-          Mark as emergency
+          {t.emergencyLabel}
         </Label>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="chief_complaint">Chief complaint</Label>
+        <Label htmlFor="chief_complaint">{t.chiefComplaintLabel}</Label>
         <Textarea id="chief_complaint" name="chief_complaint" defaultValue={defaultChiefComplaint} />
         <FieldError message={fieldErrors.chief_complaint} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">{t.notesLabel}</Label>
         <Textarea id="notes" name="notes" defaultValue={defaultNotes} />
         <FieldError message={fieldErrors.notes} />
       </div>

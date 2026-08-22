@@ -21,27 +21,30 @@ export function ChairSelect({
   onValueChange,
   id = "chair_id",
   name = "chair_id",
+  unassignedLabel = "Unassigned",
 }: {
   chairs: Chair[];
   defaultValue?: string | null;
   onValueChange?: (value: string) => void;
   id?: string;
   name?: string;
+  /** Defaults to English for callers outside the localized booking form — pass the translated label wherever the surrounding UI is localized. */
+  unassignedLabel?: string;
 }) {
   return (
     <Select
       name={name}
-      items={{ [UNASSIGNED_CHAIR_VALUE]: "Unassigned", ...Object.fromEntries(chairs.map((c) => [c.id, c.label])) }}
+      items={{ [UNASSIGNED_CHAIR_VALUE]: unassignedLabel, ...Object.fromEntries(chairs.map((c) => [c.id, c.label])) }}
       defaultValue={defaultValue ?? UNASSIGNED_CHAIR_VALUE}
       onValueChange={(value) => {
         if (value) onValueChange?.(value);
       }}
     >
       <SelectTrigger id={id} className="w-full">
-        <SelectValue placeholder="Unassigned" />
+        <SelectValue placeholder={unassignedLabel} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={UNASSIGNED_CHAIR_VALUE}>Unassigned</SelectItem>
+        <SelectItem value={UNASSIGNED_CHAIR_VALUE}>{unassignedLabel}</SelectItem>
         {chairs.map((chair) => (
           <SelectItem key={chair.id} value={chair.id}>
             {chair.label}

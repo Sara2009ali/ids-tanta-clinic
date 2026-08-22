@@ -27,6 +27,7 @@ import { AppointmentEditSheet } from "@/components/appointments/appointment-edit
 import { InvoiceFormSheet } from "@/components/billing/invoice-form-sheet";
 import { cancelAppointmentStatus, checkInAppointment, completeAppointment } from "@/lib/appointments/actions";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { useTranslation } from "@/components/locale-provider";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
 import type { DoctorOption } from "@/lib/patients/queries";
@@ -68,6 +69,7 @@ export function AppointmentRowActions({
   invoiceId?: string | null;
 }) {
   const router = useRouter();
+  const t = useTranslation().appointments;
   const [pending, startTransition] = useTransition();
   const [editOpen, setEditOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -90,7 +92,7 @@ export function AppointmentRowActions({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(`${appointment.patient_name} checked in`);
+        toast.success(t.actions.checkedInToast.replace("{name}", appointment.patient_name));
         router.refresh();
       }
     });
@@ -102,7 +104,7 @@ export function AppointmentRowActions({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Visit completed");
+        toast.success(t.actions.completedToast);
         router.refresh();
       }
     });
@@ -114,7 +116,7 @@ export function AppointmentRowActions({
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("Appointment cancelled");
+        toast.success(t.actions.cancelledToast);
         setCancelOpen(false);
         router.refresh();
       }
@@ -126,39 +128,39 @@ export function AppointmentRowActions({
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
           <MoreHorizontal className="size-4" />
-          <span className="sr-only">Actions for {appointment.patient_name}</span>
+          <span className="sr-only">{t.actions.actionsFor.replace("{name}", appointment.patient_name)}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {canCheckIn && (
             <DropdownMenuItem disabled={pending} onClick={handleCheckIn}>
-              <LogIn /> Check in
+              <LogIn /> {t.actions.checkIn}
             </DropdownMenuItem>
           )}
           {canComplete && (
             <DropdownMenuItem disabled={pending} onClick={handleComplete}>
-              <CheckCircle2 /> Complete visit
+              <CheckCircle2 /> {t.actions.completeVisit}
             </DropdownMenuItem>
           )}
           {canEdit && (
             <DropdownMenuItem disabled={pending} onClick={() => setEditOpen(true)}>
-              <Pencil /> Edit
+              <Pencil /> {t.actions.edit}
             </DropdownMenuItem>
           )}
           {canBill &&
             (invoiceId ? (
               <DropdownMenuItem render={<Link href={`/billing/invoices/${invoiceId}`} />}>
-                <FileText /> View Invoice
+                <FileText /> {t.actions.viewInvoice}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem onClick={() => setCreateInvoiceOpen(true)}>
-                <Receipt /> Create Invoice
+                <Receipt /> {t.actions.createInvoice}
               </DropdownMenuItem>
             ))}
           {canCancelNow && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" disabled={pending} onClick={() => setCancelOpen(true)}>
-                <XCircle /> Cancel
+                <XCircle /> {t.actions.cancel}
               </DropdownMenuItem>
             </>
           )}
@@ -199,16 +201,17 @@ export function AppointmentRowActions({
         <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
+              <AlertDialogTitle>{t.actions.cancelConfirmTitle}</AlertDialogTitle>
               <AlertDialogDescription>
-                {appointment.patient_name}&apos;s {formatTime(appointment.scheduled_start)} appointment will be
-                marked cancelled. You can reverse this by editing the appointment again.
+                {t.actions.cancelConfirmDescription
+                  .replace("{name}", appointment.patient_name)
+                  .replace("{time}", formatTime(appointment.scheduled_start))}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={pending}>Keep it</AlertDialogCancel>
+              <AlertDialogCancel disabled={pending}>{t.actions.keepIt}</AlertDialogCancel>
               <AlertDialogAction variant="destructive" disabled={pending} onClick={handleCancel}>
-                Cancel appointment
+                {t.actions.cancelAppointmentConfirm}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

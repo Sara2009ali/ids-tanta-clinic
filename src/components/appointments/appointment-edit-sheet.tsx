@@ -18,6 +18,7 @@ import { AppointmentFormFields } from "@/components/appointments/appointment-for
 import { UNASSIGNED_CHAIR_VALUE } from "@/components/appointments/chair-select";
 import { TreatmentRecordForm } from "@/components/treatments/treatment-record-form";
 import { TreatmentRecordsList } from "@/components/treatments/treatment-records-list";
+import { useTranslation } from "@/components/locale-provider";
 
 // Recording treatment only makes sense once the patient has actually been
 // seen — matches AppointmentRowActions' own COMPLETE_ELIGIBLE set, plus
@@ -58,6 +59,7 @@ export function AppointmentEditSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const t = useTranslation().appointments;
   const [pending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -76,7 +78,7 @@ export function AppointmentEditSheet({
         toast.error(result.error);
         setFieldErrors(result.fieldErrors ?? {});
       } else {
-        toast.success("Appointment updated");
+        toast.success(t.form.updatedToast);
         setFieldErrors({});
         onOpenChange(false);
         router.refresh();
@@ -99,15 +101,15 @@ export function AppointmentEditSheet({
     >
       <SheetContent className="sm:max-w-lg" side="right">
         <SheetHeader>
-          <SheetTitle>Edit Appointment</SheetTitle>
-          <SheetDescription>Update {appointment.patient_name}&apos;s appointment.</SheetDescription>
+          <SheetTitle>{t.editAppointment}</SheetTitle>
+          <SheetDescription>{t.updateAppointmentDescription.replace("{name}", appointment.patient_name)}</SheetDescription>
         </SheetHeader>
 
         <Tabs defaultValue="details" className="flex flex-1 flex-col overflow-y-auto px-5">
           {canViewClinical && (
             <TabsList className="mb-2 self-start">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="treatment">Treatment</TabsTrigger>
+              <TabsTrigger value="details">{t.form.detailsTab}</TabsTrigger>
+              <TabsTrigger value="treatment">{t.form.treatmentTab}</TabsTrigger>
             </TabsList>
           )}
 
@@ -134,11 +136,11 @@ export function AppointmentEditSheet({
 
               <div className="mt-auto flex justify-end gap-2 pt-2 pb-4">
                 <SheetClose render={<Button type="button" variant="outline" disabled={pending} />}>
-                  Cancel
+                  {t.form.cancel}
                 </SheetClose>
                 <Button type="submit" disabled={pending}>
                   {pending && <Loader2 className="size-4 animate-spin" />}
-                  Save changes
+                  {t.form.saveSubmit}
                 </Button>
               </div>
             </form>
@@ -151,7 +153,7 @@ export function AppointmentEditSheet({
                   <TreatmentRecordForm appointmentId={appointment.id} visitTypes={visitTypes} />
                 ) : (
                   <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-                    Check the patient in to begin recording treatment.
+                    {t.form.checkInToRecordTreatment}
                   </p>
                 ))}
               <TreatmentRecordsList

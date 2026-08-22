@@ -20,7 +20,9 @@ import { getInvoiceIdsByAppointmentId } from "@/lib/billing/queries";
 import { listDoctors, type DoctorOption } from "@/lib/patients/queries";
 import { getCurrentPermissions } from "@/lib/authz/session";
 import { hasPermission, PERMISSIONS } from "@/lib/authz/permissions";
+import { getLocale, getDictionary } from "@/lib/i18n/server";
 import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
+import type { Dictionary } from "@/lib/i18n/types";
 
 /**
  * Today's Schedule (which internally has a real 2-stage dependency —
@@ -35,11 +37,13 @@ async function ReceptionScheduleCard({
   chairs,
   visitTypes,
   permissions,
+  dict,
 }: {
   doctors: DoctorOption[];
   chairs: Chair[];
   visitTypes: VisitType[];
   permissions: string[];
+  dict: Dictionary["reception"];
 }) {
   const schedule = await getTodaysSchedule();
   const appointmentIds = schedule.map((row) => row.id);
@@ -63,7 +67,7 @@ async function ReceptionScheduleCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Today&apos;s Schedule</CardTitle>
+        <CardTitle className="text-base">{dict.todaysScheduleTitle}</CardTitle>
       </CardHeader>
       <CardContent>
         <ReceptionSchedule
@@ -80,15 +84,29 @@ async function ReceptionScheduleCard({
   );
 }
 
-async function RecentActivityCard() {
+async function RecentActivityCard({ dict }: { dict: Dictionary["reception"] }) {
   const activity = await getRecentActivity();
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Recent Activity</CardTitle>
+        <CardTitle className="text-base">{dict.recentActivityTitle}</CardTitle>
       </CardHeader>
       <CardContent>
-        <RecentActivityFeed rows={activity} />
+        <RecentActivityFeed
+          rows={activity}
+          dict={{
+            emptyTitle: dict.recentActivityEmptyTitle,
+            emptyDescription: dict.recentActivityEmptyDescription,
+            created: dict.activityCreated,
+            justNow: dict.justNow,
+            minuteAgo: dict.minuteAgo,
+            minutesAgo: dict.minutesAgo,
+            hourAgo: dict.hourAgo,
+            hoursAgo: dict.hoursAgo,
+            dayAgo: dict.dayAgo,
+            daysAgo: dict.daysAgo,
+          }}
+        />
       </CardContent>
     </Card>
   );
@@ -120,13 +138,15 @@ function ReceptionCardSkeleton() {
  * highlighting.
  */
 export default async function ReceptionWorkspacePage() {
-  const [counts, doctors, chairs, visitTypes, permissions] = await Promise.all([
+  const [counts, doctors, chairs, visitTypes, permissions, locale] = await Promise.all([
     getDashboardCounts(),
     listDoctors(),
     listChairs(),
     listVisitTypes(),
     getCurrentPermissions(),
+    getLocale(),
   ]);
+  const dict = getDictionary(locale).reception;
 
   const canCreateAppointment = hasPermission(permissions, PERMISSIONS.APPOINTMENTS_CREATE);
   const remainingToday = Math.max(
@@ -138,8 +158,8 @@ export default async function ReceptionWorkspacePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className={typography.pageTitle}>Reception Workspace</h1>
-          <p className="text-sm text-muted-foreground">Today&apos;s front-desk operations at a glance.</p>
+          <h1 className={typography.pageTitle}>{dict.pageTitle}</h1>
+          <p className="text-sm text-muted-foreground">{dict.pageDescription}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <QuickPatientSearch />
@@ -150,12 +170,12 @@ export default async function ReceptionWorkspacePage() {
       </div>
 
       <div className="space-y-3">
-        <h2 className={typography.eyebrow}>Today</h2>
+        <h2 className={typography.eyebrow}>{dict.todaySectionTitle}</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Today's Appointments" value={counts.todayTotal} icon={CalendarDays} />
-          <StatCard label="Patients Checked In" value={counts.checkedIn} icon={CheckCircle2} />
-          <StatCard label="Remaining Today" value={remainingToday} icon={Clock} />
-          <StatCard label="Available Chairs" value={counts.availableChairsCount} icon={Armchair} />
+          <StatCard label={dict.statTodayAppointments} value={counts.todayTotal} icon={CalendarDays} />
+          <StatCard label={dict.statCheckedIn} value={counts.checkedIn} icon={CheckCircle2} />
+          <StatCard label={dict.statRemainingToday} value={remainingToday} icon={Clock} />
+          <StatCard label={dict.statAvailableChairs} value={counts.availableChairsCount} icon={Armchair} />
         </div>
       </div>
 
@@ -163,11 +183,17 @@ export default async function ReceptionWorkspacePage() {
           full width, same weight it gets on the Dashboard, rather than
           squeezed into two-thirds of the row next to a lighter-weight card. */}
       <Suspense fallback={<ReceptionCardSkeleton />}>
-        <ReceptionScheduleCard doctors={doctors} chairs={chairs} visitTypes={visitTypes} permissions={permissions} />
+        <ReceptionScheduleCard
+          doctors={doctors}
+          chairs={chairs}
+          visitTypes={visitTypes}
+          permissions={permissions}
+          dict={dict}
+        />
       </Suspense>
 
       <Suspense fallback={<ReceptionCardSkeleton />}>
-        <RecentActivityCard />
+        <RecentActivityCard dict={dict} />
       </Suspense>
     </div>
   );

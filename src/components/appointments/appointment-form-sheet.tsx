@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AppointmentFormFields } from "@/components/appointments/appointment-form-fields";
 import { UNASSIGNED_CHAIR_VALUE } from "@/components/appointments/chair-select";
+import { useTranslation } from "@/components/locale-provider";
 
 export function AppointmentFormSheet({
   doctors,
@@ -40,6 +41,7 @@ export function AppointmentFormSheet({
   defaultScheduledDate?: string;
 }) {
   const router = useRouter();
+  const t = useTranslation().appointments;
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -55,7 +57,7 @@ export function AppointmentFormSheet({
         toast.error(result.error);
         setFieldErrors(result.fieldErrors ?? {});
       } else {
-        toast.success("Appointment created");
+        toast.success(t.form.createdToast);
         setOpen(false);
         setFieldErrors({});
         router.refresh();
@@ -73,12 +75,12 @@ export function AppointmentFormSheet({
     >
       <SheetTrigger render={<Button className={className} />}>
         <CalendarPlus className="size-4" />
-        New Appointment
+        {t.newAppointment}
       </SheetTrigger>
       <SheetContent className="sm:max-w-lg" side="right">
         <SheetHeader>
-          <SheetTitle>New Appointment</SheetTitle>
-          <SheetDescription>Book a patient into the schedule.</SheetDescription>
+          <SheetTitle>{t.newAppointment}</SheetTitle>
+          <SheetDescription>{t.bookPatientDescription}</SheetDescription>
         </SheetHeader>
 
         <form action={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-5">
@@ -94,11 +96,11 @@ export function AppointmentFormSheet({
 
           <div className="mt-auto flex justify-end gap-2 pt-2 pb-4">
             <SheetClose render={<Button type="button" variant="outline" disabled={pending} />}>
-              Cancel
+              {t.form.cancel}
             </SheetClose>
             <Button type="submit" disabled={pending}>
               {pending && <Loader2 className="size-4 animate-spin" />}
-              Create appointment
+              {t.form.createSubmit}
             </Button>
           </div>
         </form>

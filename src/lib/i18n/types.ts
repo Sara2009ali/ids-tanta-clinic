@@ -329,4 +329,130 @@ export interface Dictionary {
     offDay: string;
     editWorkingHours: string;
   };
+  appointments: {
+    pageTitle: string;
+    viewDay: string;
+    viewWeek: string;
+    viewMonth: string;
+    today: string;
+    previous: string;
+    next: string;
+    doctorSchedulesLink: string;
+    chairsLink: string;
+    newAppointment: string;
+    editAppointment: string;
+    bookPatientDescription: string;
+    updateAppointmentDescription: string;
+    noAppointmentsDay: string;
+    /** Short form for the narrow week-grid cell — the fuller `noAppointmentsDay` sentence doesn't fit there. */
+    noAppointmentsShort: string;
+    doctorPrefix: string;
+    emergencyBadge: string;
+    urgentBadge: string;
+    highPriorityBadge: string;
+    weekdays: {
+      sun: string;
+      mon: string;
+      tue: string;
+      wed: string;
+      thu: string;
+      fri: string;
+      sat: string;
+    };
+    form: {
+      patientLabel: string;
+      doctorLabel: string;
+      chairLabel: string;
+      chairUnassigned: string;
+      visitTypeLabel: string;
+      visitTypePlaceholder: string;
+      visitTypeEmpty: string;
+      dateLabel: string;
+      timeLabel: string;
+      durationLabel: string;
+      /** "Ends at {time}" — {time} is substituted by the caller. */
+      endsAtLabel: string;
+      priorityLabel: string;
+      priorityNormal: string;
+      priorityHigh: string;
+      priorityUrgent: string;
+      emergencyLabel: string;
+      chiefComplaintLabel: string;
+      notesLabel: string;
+      cancel: string;
+      createSubmit: string;
+      saveSubmit: string;
+      createdToast: string;
+      updatedToast: string;
+      detailsTab: string;
+      treatmentTab: string;
+      checkInToRecordTreatment: string;
+    };
+    actions: {
+      checkIn: string;
+      completeVisit: string;
+      edit: string;
+      viewInvoice: string;
+      createInvoice: string;
+      cancel: string;
+      /** "Actions for {name}" — {name} is substituted by the caller. */
+      actionsFor: string;
+      /** "{name} checked in" — {name} is substituted by the caller. */
+      checkedInToast: string;
+      completedToast: string;
+      cancelledToast: string;
+      cancelConfirmTitle: string;
+      /** "{name}'s {time} appointment will be marked cancelled. You can reverse this by editing the appointment again." */
+      cancelConfirmDescription: string;
+      keepIt: string;
+      cancelAppointmentConfirm: string;
+    };
+    patientPicker: {
+      searchPlaceholder: string;
+      searching: string;
+      noResults: string;
+      newPatient: string;
+      firstNamePlaceholder: string;
+      lastNamePlaceholder: string;
+      phonePlaceholder: string;
+      createPatient: string;
+      cancel: string;
+      clearSelected: string;
+      createdToast: string;
+    };
+    quickSearch: {
+      placeholder: string;
+      searching: string;
+      noResults: string;
+    };
+  };
+  reception: {
+    pageTitle: string;
+    pageDescription: string;
+    todaySectionTitle: string;
+    statTodayAppointments: string;
+    statCheckedIn: string;
+    statRemainingToday: string;
+    statAvailableChairs: string;
+    todaysScheduleTitle: string;
+    recentActivityTitle: string;
+    filters: {
+      all: string;
+      upcoming: string;
+      completed: string;
+      cancelled: string;
+      noShow: string;
+    };
+    filteredEmptyMessage: string;
+    recentActivityEmptyTitle: string;
+    recentActivityEmptyDescription: string;
+    activityCreated: string;
+    justNow: string;
+    minuteAgo: string;
+    minutesAgo: string;
+    hourAgo: string;
+    hoursAgo: string;
+    dayAgo: string;
+    daysAgo: string;
+  };
 }

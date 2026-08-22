@@ -4,19 +4,23 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TodaysSchedule } from "@/components/appointments/todays-schedule";
 import { AppointmentRowActions } from "@/components/appointments/appointment-row-actions";
+import { useTranslation } from "@/components/locale-provider";
 import type { ScheduleRow } from "@/lib/appointments/queries";
 import type { Chair, TreatmentRecord, VisitType } from "@/types/domain";
 import type { DoctorOption } from "@/lib/patients/queries";
+import type { Dictionary } from "@/lib/i18n/types";
 
 type FilterKey = "all" | "upcoming" | "completed" | "cancelled" | "no_show";
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "Today" },
-  { key: "upcoming", label: "Upcoming" },
-  { key: "completed", label: "Completed" },
-  { key: "cancelled", label: "Cancelled" },
-  { key: "no_show", label: "No-show" },
-];
+function filterList(dict: Dictionary["reception"]["filters"]): { key: FilterKey; label: string }[] {
+  return [
+    { key: "all", label: dict.all },
+    { key: "upcoming", label: dict.upcoming },
+    { key: "completed", label: dict.completed },
+    { key: "cancelled", label: dict.cancelled },
+    { key: "no_show", label: dict.noShow },
+  ];
+}
 
 const CLOSED_STATUSES = new Set(["completed", "cancelled", "no_show"]);
 
@@ -58,6 +62,9 @@ export function ReceptionSchedule({
   invoiceIdByAppointmentId: Record<string, string>;
   permissions: string[];
 }) {
+  const dict = useTranslation();
+  const t = dict.reception;
+  const tAppointments = dict.appointments;
   const [filter, setFilter] = useState<FilterKey>("all");
   // Captured once via useState's lazy initializer (the sanctioned way to
   // read an impure value exactly once) rather than re-evaluated live —
@@ -66,11 +73,12 @@ export function ReceptionSchedule({
   const [now] = useState(() => Date.now());
 
   const filteredRows = useMemo(() => rows.filter((row) => matchesFilter(row, filter, now)), [rows, filter, now]);
+  const filters = filterList(t.filters);
 
   return (
     <div className="space-y-3">
       <div className="flex w-fit flex-wrap gap-1 rounded-lg bg-muted p-[3px]">
-        {FILTERS.map(({ key, label }) => {
+        {filters.map(({ key, label }) => {
           const count = rows.filter((row) => matchesFilter(row, key, now)).length;
           return (
             <Button
@@ -88,7 +96,11 @@ export function ReceptionSchedule({
 
       <TodaysSchedule
         rows={filteredRows}
-        emptyMessage="No appointments match this filter."
+        emptyMessage={t.filteredEmptyMessage}
+        doctorPrefix={tAppointments.doctorPrefix}
+        emergencyLabel={tAppointments.emergencyBadge}
+        urgentLabel={tAppointments.urgentBadge}
+        highPriorityLabel={tAppointments.highPriorityBadge}
         renderActions={(row) => (
           <AppointmentRowActions
             appointment={row}

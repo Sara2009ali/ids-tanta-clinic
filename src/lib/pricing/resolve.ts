@@ -47,3 +47,28 @@ export function resolveServicePrice({
 export function buildPriceOverrideMap(items: { visit_type_id: string; price: number }[]): Map<string, number> {
   return new Map(items.map((item) => [item.visit_type_id, Number(item.price)]));
 }
+
+/**
+ * Corrects a pre-seeded invoice line's unit_price to the patient's actually
+ * resolved price, once that resolution becomes available — the fix for
+ * callers that seed a catalog-linked line (e.g. "Create Invoice" from an
+ * appointment row, using the visit type's raw catalog price) before the
+ * invoice form has had a chance to resolve the patient's Price List.
+ *
+ * Only ever corrects a line still sitting at the exact unresolved catalog
+ * price — the same "is this still the catalog default" comparison
+ * InvoiceItemRow's own "reset to catalog price" button already uses — so it
+ * never overwrites a price a user has since edited, nor a line a caller
+ * already resolved correctly (e.g. Treatment Plan's Create Invoice, which
+ * resolves server-side before seeding). Never touches a custom/no-catalog
+ * line (visitTypeId is null).
+ */
+export function reconcileSeededItemPrice(
+  item: { visit_type_id: string | null; unit_price: number },
+  rawPrice: number | undefined,
+  resolvedPrice: number | undefined,
+): number {
+  if (!item.visit_type_id || rawPrice == null || resolvedPrice == null) return item.unit_price;
+  if (Number(item.unit_price) !== Number(rawPrice)) return item.unit_price;
+  return resolvedPrice;
+}

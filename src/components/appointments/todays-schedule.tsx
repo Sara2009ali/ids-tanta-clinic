@@ -30,10 +30,19 @@ function formatTime(iso: string) {
 export function TodaysSchedule({
   rows,
   emptyMessage = "No appointments scheduled for today.",
+  doctorPrefix = "Dr.",
+  emergencyLabel = "Emergency",
+  urgentLabel = "Urgent",
+  highPriorityLabel = "High priority",
   renderActions,
 }: {
   rows: ScheduleRow[];
   emptyMessage?: string;
+  /** All four default to English — pass the translated labels from a localized caller (Reception Workspace, Appointments day view). */
+  doctorPrefix?: string;
+  emergencyLabel?: string;
+  urgentLabel?: string;
+  highPriorityLabel?: string;
   /** Optional per-row actions slot (Reception Workspace, Appointments day view). Omitted everywhere else — same look as before. The whole row is a link to the patient's profile when this is absent; when present, only the patient's name links there instead, since a Link can't safely wrap the interactive buttons this slot renders. */
   renderActions?: (row: ScheduleRow) => ReactNode;
 }) {
@@ -67,12 +76,12 @@ export function TodaysSchedule({
                 ) : (
                   <p className="truncate text-sm font-medium">{row.patient_name}</p>
                 )}
-                {row.is_emergency && <Badge variant="destructive">Emergency</Badge>}
-                {!row.is_emergency && row.priority === "urgent" && <Badge variant="destructive">Urgent</Badge>}
-                {!row.is_emergency && row.priority === "high" && <Badge variant="outline">High priority</Badge>}
+                {row.is_emergency && <Badge variant="destructive">{emergencyLabel}</Badge>}
+                {!row.is_emergency && row.priority === "urgent" && <Badge variant="destructive">{urgentLabel}</Badge>}
+                {!row.is_emergency && row.priority === "high" && <Badge variant="outline">{highPriorityLabel}</Badge>}
               </div>
               <p className="truncate text-xs text-muted-foreground">
-                Dr. {row.doctor_name} · {row.visit_type_name}
+                {doctorPrefix} {row.doctor_name} · {row.visit_type_name}
                 {row.chair_label ? ` · ${row.chair_label}` : ""}
               </p>
             </div>

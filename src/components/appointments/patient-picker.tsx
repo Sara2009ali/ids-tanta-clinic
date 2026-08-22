@@ -10,6 +10,7 @@ import type { PatientSearchRow } from "@/types/domain";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/components/locale-provider";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -27,6 +28,7 @@ export function PatientPicker({
   onChange: (patient: SelectedPatient | null) => void;
   error?: string;
 }) {
+  const t = useTranslation().appointments.patientPicker;
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<PatientSearchRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -75,7 +77,7 @@ export function PatientPicker({
       } else if (result.patientId) {
         const firstName = String(formData.get("first_name") ?? "").trim();
         const lastName = String(formData.get("last_name") ?? "").trim();
-        toast.success("Patient created");
+        toast.success(t.createdToast);
         onChange({ id: result.patientId, full_name: `${firstName} ${lastName}`.trim() });
         setShowNewPatientForm(false);
       }
@@ -91,21 +93,21 @@ export function PatientPicker({
           <span className="text-sm">{value.full_name}</span>
           <Button type="button" variant="ghost" size="icon-sm" onClick={handleClear}>
             <X className="size-4" />
-            <span className="sr-only">Clear selected patient</span>
+            <span className="sr-only">{t.clearSelected}</span>
           </Button>
         </div>
       ) : showNewPatientForm ? (
         <div className="space-y-2 rounded-lg border border-input p-3">
           <form action={handleCreatePatient} className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <Input name="first_name" placeholder="First name" required />
-              <Input name="last_name" placeholder="Last name" required />
+              <Input name="first_name" placeholder={t.firstNamePlaceholder} required />
+              <Input name="last_name" placeholder={t.lastNamePlaceholder} required />
             </div>
-            <Input name="phone" type="tel" placeholder="Phone (optional)" />
+            <Input name="phone" type="tel" placeholder={t.phonePlaceholder} />
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={creating}>
                 {creating && <Loader2 className="size-4 animate-spin" />}
-                Create patient
+                {t.createPatient}
               </Button>
               <Button
                 type="button"
@@ -114,7 +116,7 @@ export function PatientPicker({
                 disabled={creating}
                 onClick={() => setShowNewPatientForm(false)}
               >
-                Cancel
+                {t.cancel}
               </Button>
             </div>
           </form>
@@ -129,22 +131,22 @@ export function PatientPicker({
           }}
         >
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchText}
               onChange={handleSearchChange}
               onFocus={() => setOpen(true)}
-              placeholder="Search by name or phone..."
-              className="pl-9"
+              placeholder={t.searchPlaceholder}
+              className="ps-9"
               aria-invalid={!!error}
             />
           </div>
 
           {open && searchText.length > 0 && (
             <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-elevation-high">
-              {searching && <p className="px-2 py-1.5 text-sm text-muted-foreground">Searching…</p>}
+              {searching && <p className="px-2 py-1.5 text-sm text-muted-foreground">{t.searching}</p>}
               {!searching && results.length === 0 && (
-                <p className="px-2 py-1.5 text-sm text-muted-foreground">No patients found.</p>
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">{t.noResults}</p>
               )}
               {!searching &&
                 results.map((row) => (
@@ -152,7 +154,7 @@ export function PatientPicker({
                     key={row.id}
                     type="button"
                     onClick={() => handleSelect(row)}
-                    className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                    className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-start text-sm hover:bg-accent hover:text-accent-foreground"
                   >
                     <span>{row.full_name}</span>
                     {row.phone && <span className="text-xs text-muted-foreground">{row.phone}</span>}
@@ -169,7 +171,7 @@ export function PatientPicker({
             onClick={() => setShowNewPatientForm(true)}
           >
             <UserPlus className="size-4" />
-            New Patient
+            {t.newPatient}
           </Button>
         </div>
       )}

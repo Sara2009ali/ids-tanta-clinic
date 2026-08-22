@@ -3,14 +3,25 @@ import { addDays, dateKey, groupByDateKey } from "@/lib/appointments/calendar-da
 import type { ScheduleRow } from "@/lib/appointments/queries";
 
 const MAX_VISIBLE_PER_DAY = 3;
-const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DEFAULT_WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 /** `start` must be the grid-start Sunday returned by `getViewRange("month", anchor).start`. */
-export function MonthView({ rows, start, anchor }: { rows: ScheduleRow[]; start: Date; anchor: Date }) {
+export function MonthView({
+  rows,
+  start,
+  anchor,
+  weekdayLabels = DEFAULT_WEEKDAY_LABELS,
+}: {
+  rows: ScheduleRow[];
+  start: Date;
+  anchor: Date;
+  /** Sun..Sat, defaults to English — pass the translated labels from the (localized) caller page. */
+  weekdayLabels?: string[];
+}) {
   const grouped = groupByDateKey(rows);
   const today = dateKey(new Date().toISOString());
   const currentMonth = anchor.getMonth();
@@ -19,7 +30,7 @@ export function MonthView({ rows, start, anchor }: { rows: ScheduleRow[]; start:
   return (
     <div className="overflow-x-auto">
       <div className="grid min-w-[840px] grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
-        {WEEKDAY_LABELS.map((label) => (
+        {weekdayLabels.map((label) => (
           <div key={label} className="bg-muted px-2 py-1.5 text-center text-xs font-medium text-muted-foreground">
             {label}
           </div>
