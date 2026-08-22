@@ -68,6 +68,8 @@ export const en: Dictionary = {
       defaultPriceList: "Clinic default (Normal)",
       insurancePlan: "Insurance plan",
       insuranceMemberId: "Member ID",
+      insuranceGroupNumber: "Group number",
+      insuranceCoverage: "Coverage",
       allergies: "Allergies",
       currentMedications: "Current medications",
       medicalConditions: "Medical conditions",

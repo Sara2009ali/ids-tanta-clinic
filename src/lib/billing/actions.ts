@@ -23,6 +23,8 @@ import {
   computeLineTotal,
 } from "@/lib/billing/calculations";
 import { formatCurrency } from "@/lib/billing/format";
+import { computeLineInsuranceSplit } from "@/lib/insurance/calculations";
+import { getPatientBillingInsurance } from "@/lib/insurance/queries";
 import type { InvoiceStatus } from "@/types/domain";
 
 export interface InvoiceActionState {
@@ -49,21 +51,43 @@ function fieldErrorsFromZod(error: import("zod").ZodError): Record<string, strin
   return fieldErrors;
 }
 
-function invoiceItemRows(values: InvoiceFormValues, invoiceId: string, clinicId: string) {
-  return values.items.map((item) => ({
-    invoice_id: invoiceId,
-    clinic_id: clinicId,
-    description: item.description,
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    discount_amount: item.discount_amount,
-    visit_type_id: item.visit_type_id,
-    line_total: computeLineTotal({
+/**
+ * `insuranceCoveragePercent` is resolved server-side (getPatientBillingInsurance,
+ * called once per save from the values.patient_id — see createInvoice/
+ * updateInvoice) and passed in here, never trusted from client input: a
+ * client could otherwise submit an inflated insurance_covered_amount
+ * directly. Computed once per line through the one insurance calculation
+ * path (computeLineInsuranceSplit) and written as a permanent snapshot,
+ * the same way line_total already is.
+ */
+function invoiceItemRows(
+  values: InvoiceFormValues,
+  invoiceId: string,
+  clinicId: string,
+  insuranceCoveragePercent: number | null,
+) {
+  return values.items.map((item) => {
+    const lineTotal = computeLineTotal({
       quantity: item.quantity,
       unitPrice: item.unit_price,
       discountAmount: item.discount_amount,
-    }),
-  }));
+    });
+    const insurance = computeLineInsuranceSplit(lineTotal, insuranceCoveragePercent);
+
+    return {
+      invoice_id: invoiceId,
+      clinic_id: clinicId,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      discount_amount: item.discount_amount,
+      visit_type_id: item.visit_type_id,
+      line_total: lineTotal,
+      insurance_coverage_percent: insurance.insuranceCoveragePercent,
+      insurance_covered_amount: insurance.insuranceCoveredAmount,
+      patient_responsibility: insurance.patientResponsibility,
+    };
+  });
 }
 
 function revalidateInvoicePaths(invoiceId?: string) {
@@ -108,9 +132,10 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionSt
     return { error: "Couldn't create the invoice. Please try again." };
   }
 
+  const insurance = await getPatientBillingInsurance(values.patient_id);
   const { error: itemsError } = await supabase
     .from("invoice_items")
-    .insert(invoiceItemRows(values, invoice.id, staff.clinic_id));
+    .insert(invoiceItemRows(values, invoice.id, staff.clinic_id, insurance?.coveragePercent ?? null));
 
   if (itemsError) {
     console.error("createInvoice: items insert failed", itemsError);
@@ -184,9 +209,10 @@ export async function updateInvoice(invoiceId: string, formData: FormData): Prom
     return { error: "Couldn't update the invoice items. Please try again." };
   }
 
+  const insurance = await getPatientBillingInsurance(values.patient_id);
   const { error: insertItemsError } = await supabase
     .from("invoice_items")
-    .insert(invoiceItemRows(values, invoiceId, staff.clinic_id));
+    .insert(invoiceItemRows(values, invoiceId, staff.clinic_id, insurance?.coveragePercent ?? null));
   if (insertItemsError) {
     console.error("updateInvoice: item replace (insert) failed", insertItemsError);
     return { error: "Couldn't update the invoice items. Please try again." };

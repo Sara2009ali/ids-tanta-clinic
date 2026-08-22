@@ -6,6 +6,7 @@ import { ensurePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { writeAuditLog } from "@/lib/audit/log";
 import { getPatientPriceContext } from "@/lib/pricing/queries";
+import { getPatientBillingInsurance, type PatientBillingInsurance } from "@/lib/insurance/queries";
 import {
   priceListFormSchema,
   priceListFormValuesFromFormData,
@@ -257,30 +258,37 @@ export async function setPriceListItem(
   return { success: true };
 }
 
-export interface PatientPriceOverrides {
+export interface PatientBillingContext {
   priceListId: string | null;
   priceListName: string | null;
   defaultPriceListId: string | null;
   overrides: Record<string, number>;
+  /** null when the patient has no active structured insurance plan — billing then behaves exactly as before this phase. */
+  insurance: PatientBillingInsurance | null;
 }
 
 /**
  * Client-callable read (a server action, not a mutation) backing
  * InvoiceFormSheet's dynamic patient picker — the one place a patient's
- * pricing context is resolved after the initial page load, since the
- * patient there can change without a navigation. Everywhere else (the
+ * pricing AND insurance context both need resolving after the initial page
+ * load, since the patient there can change without a navigation. One round
+ * trip for both, rather than two separate effects. Everywhere else (the
  * Price List item editor, the Treatment Plan item dialog) already has the
- * patient fixed for the whole page and fetches getPatientPriceContext()
- * directly in the server component instead. Returns a plain object, not a
- * Map, to keep the server action's payload uncontroversial across the RPC
- * boundary.
+ * patient fixed for the whole page and fetches getPatientPriceContext()/
+ * getPatientBillingInsurance() directly in the server component instead.
+ * Returns plain objects, not a Map, to keep the server action's payload
+ * uncontroversial across the RPC boundary.
  */
-export async function getPatientPriceOverrides(patientId: string): Promise<PatientPriceOverrides> {
-  const context = await getPatientPriceContext(patientId);
+export async function getPatientBillingContext(patientId: string): Promise<PatientBillingContext> {
+  const [context, insurance] = await Promise.all([
+    getPatientPriceContext(patientId),
+    getPatientBillingInsurance(patientId),
+  ]);
   return {
     priceListId: context.priceListId,
     priceListName: context.priceListName,
     defaultPriceListId: context.defaultPriceListId,
     overrides: Object.fromEntries(context.overrides),
+    insurance,
   };
 }

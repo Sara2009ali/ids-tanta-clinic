@@ -91,3 +91,38 @@ export async function getPatientInsurance(patientId: string): Promise<PatientIns
     coverage_percent: insurance_plans?.coverage_percent ?? null,
   };
 }
+
+export interface PatientBillingInsurance {
+  coveragePercent: number;
+  planName: string;
+  insurerName: string;
+}
+
+/**
+ * The insurance coverage that should actually apply to this patient's next
+ * invoice line — the one query Billing consults (createInvoice/updateInvoice
+ * in src/lib/billing/actions.ts, and the live form preview). Deliberately
+ * narrower than getPatientInsurance(): only a *structured, active* plan
+ * counts (this plan and its insurer both is_active) — never the legacy
+ * free-text patients.insurance_provider/insurance_policy_number, and never
+ * a plan or insurer an admin has since disabled. Returns null for "not
+ * applicable", which is exactly what computeLineInsuranceSplit() expects
+ * for a patient with no active structured insurance.
+ */
+export async function getPatientBillingInsurance(patientId: string): Promise<PatientBillingInsurance | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("patient_insurance")
+    .select("insurance_plans!inner(name, coverage_percent, is_active, insurers!inner(name, is_active))")
+    .eq("patient_id", patientId)
+    .eq("insurance_plans.is_active", true)
+    .eq("insurance_plans.insurers.is_active", true)
+    .maybeSingle();
+
+  const plan = (
+    data as { insurance_plans: { name: string; coverage_percent: number; insurers: { name: string } } } | null
+  )?.insurance_plans;
+  if (!plan) return null;
+
+  return { coveragePercent: Number(plan.coverage_percent), planName: plan.name, insurerName: plan.insurers.name };
+}

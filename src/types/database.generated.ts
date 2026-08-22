@@ -1083,8 +1083,11 @@ export type Database = {
           description: string
           discount_amount: number
           id: string
+          insurance_coverage_percent: number | null
+          insurance_covered_amount: number
           invoice_id: string
           line_total: number
+          patient_responsibility: number
           quantity: number
           unit_price: number
           updated_at: string
@@ -1096,8 +1099,11 @@ export type Database = {
           description: string
           discount_amount?: number
           id?: string
+          insurance_coverage_percent?: number | null
+          insurance_covered_amount?: number
           invoice_id: string
           line_total?: number
+          patient_responsibility?: number
           quantity?: number
           unit_price?: number
           updated_at?: string
@@ -1109,8 +1115,11 @@ export type Database = {
           description?: string
           discount_amount?: number
           id?: string
+          insurance_coverage_percent?: number | null
+          insurance_covered_amount?: number
           invoice_id?: string
           line_total?: number
+          patient_responsibility?: number
           quantity?: number
           unit_price?: number
           updated_at?: string

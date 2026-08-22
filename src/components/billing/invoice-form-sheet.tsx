@@ -8,8 +8,9 @@ import { FilePlus2, Loader2, Plus, Trash2 } from "lucide-react";
 import { createInvoice, updateInvoice } from "@/lib/billing/actions";
 import { computeInvoiceTotals } from "@/lib/billing/calculations";
 import { formatCurrency } from "@/lib/billing/format";
-import { getPatientPriceOverrides, type PatientPriceOverrides } from "@/lib/pricing/actions";
+import { getPatientBillingContext, type PatientBillingContext } from "@/lib/pricing/actions";
 import { resolveServicePrice } from "@/lib/pricing/resolve";
+import { aggregateInvoiceInsurance, computeLineInsuranceSplit } from "@/lib/insurance/calculations";
 import type { InvoiceItemInputValues } from "@/lib/billing/schema";
 import type { InvoiceDetail } from "@/lib/billing/queries";
 import type { VisitType } from "@/types/domain";
@@ -366,12 +367,13 @@ export function InvoiceFormSheet({
   const [taxPercent, setTaxPercent] = useState(invoice ? Number(invoice.tax_percent) : 0);
   const lockPatient = isEdit || !!initialPatient;
 
-  // Resolves the selected patient's pricing context (their assigned Price
-  // List, or the clinic default) whenever the patient changes — the only
-  // place in this form the patient is genuinely dynamic; everywhere else
-  // (Price List item editor, Treatment Plan item dialog) fetches this
-  // server-side once, since the patient there is fixed for the whole page.
-  const [priceContext, setPriceContext] = useState<PatientPriceOverrides | null>(null);
+  // Resolves the selected patient's pricing AND insurance context (their
+  // assigned Price List, or the clinic default; their active structured
+  // insurance plan, if any) whenever the patient changes — the only place
+  // in this form the patient is genuinely dynamic; everywhere else (Price
+  // List item editor, Treatment Plan item dialog) fetches this server-side
+  // once, since the patient there is fixed for the whole page.
+  const [priceContext, setPriceContext] = useState<PatientBillingContext | null>(null);
   useEffect(() => {
     let cancelled = false;
     if (!patient?.id) {
@@ -382,7 +384,7 @@ export function InvoiceFormSheet({
         cancelled = true;
       };
     }
-    getPatientPriceOverrides(patient.id).then((context) => {
+    getPatientBillingContext(patient.id).then((context) => {
       if (!cancelled) setPriceContext(context);
     });
     return () => {
@@ -420,6 +422,28 @@ export function InvoiceFormSheet({
       ),
     [items, taxPercent],
   );
+
+  // Live preview only — the values actually saved are computed server-side
+  // in invoiceItemRows() (src/lib/billing/actions.ts), from the same pure
+  // computeLineInsuranceSplit(), so this can never disagree with what gets
+  // stored (and never lets a tampered client value slip through, since the
+  // server never trusts this computation, only re-derives its own).
+  const insuranceTotals = useMemo(() => {
+    const coveragePercent = priceContext?.insurance?.coveragePercent ?? null;
+    const lines = items.map((item) => {
+      const lineTotal = Math.max(
+        0,
+        (Number(item.quantity) || 0) * (Number(item.unit_price) || 0) - (Number(item.discount_amount) || 0),
+      );
+      const split = computeLineInsuranceSplit(lineTotal, coveragePercent);
+      return {
+        insurance_coverage_percent: split.insuranceCoveragePercent,
+        insurance_covered_amount: split.insuranceCoveredAmount,
+        patient_responsibility: split.patientResponsibility,
+      };
+    });
+    return aggregateInvoiceInsurance(lines);
+  }, [items, priceContext]);
 
   function resetForm() {
     setFieldErrors({});
@@ -509,6 +533,12 @@ export function InvoiceFormSheet({
             {priceContext?.priceListName && (
               <p className="text-xs text-muted-foreground">Pricing: {priceContext.priceListName}</p>
             )}
+            {priceContext?.insurance && (
+              <p className="text-xs text-muted-foreground">
+                Insurance: {priceContext.insurance.insurerName} — {priceContext.insurance.planName} (
+                {priceContext.insurance.coveragePercent}% covered)
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -563,6 +593,12 @@ export function InvoiceFormSheet({
               <span className="text-muted-foreground">Subtotal</span>
               <span className="tabular-nums">{formatCurrency(totals.subtotal)}</span>
             </div>
+            {insuranceTotals.applied && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Insurance</span>
+                <span className="tabular-nums">−{formatCurrency(insuranceTotals.insuranceTotal)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tax</span>
               <span className="tabular-nums">{formatCurrency(totals.taxAmount)}</span>
@@ -571,6 +607,12 @@ export function InvoiceFormSheet({
               <span>Total</span>
               <span className="tabular-nums">{formatCurrency(totals.total)}</span>
             </div>
+            {insuranceTotals.applied && (
+              <div className="flex justify-between border-t border-border pt-1 font-semibold">
+                <span>Patient responsibility</span>
+                <span className="tabular-nums">{formatCurrency(insuranceTotals.patientResponsibilityTotal)}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2 pb-4">

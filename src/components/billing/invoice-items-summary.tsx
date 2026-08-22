@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/billing/format";
+import { aggregateInvoiceInsurance } from "@/lib/insurance/calculations";
 import type { InvoiceItem } from "@/types/domain";
 
 export function InvoiceItemsSummary({
@@ -15,6 +16,12 @@ export function InvoiceItemsSummary({
   taxAmount: number;
   total: number;
 }) {
+  // Reads only what was actually stored on each invoice_items row at
+  // creation time — never re-resolves the patient's *current* insurance —
+  // so this stays correct even if the patient's plan or coverage has since
+  // changed (see 0033_insurance_billing.sql's header).
+  const insuranceTotals = aggregateInvoiceInsurance(items);
+
   return (
     <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border border-border">
@@ -26,6 +33,8 @@ export function InvoiceItemsSummary({
               <TableHead className="text-right">Unit Price</TableHead>
               <TableHead className="text-right">Discount</TableHead>
               <TableHead className="text-right">Line Total</TableHead>
+              {insuranceTotals.applied && <TableHead className="text-right">Insurance</TableHead>}
+              {insuranceTotals.applied && <TableHead className="text-right">Patient Owes</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -40,17 +49,33 @@ export function InvoiceItemsSummary({
                 <TableCell className="text-right font-medium tabular-nums">
                   {formatCurrency(Number(item.line_total))}
                 </TableCell>
+                {insuranceTotals.applied && (
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {item.insurance_coverage_percent != null ? `${Number(item.insurance_coverage_percent)}%` : "—"}
+                  </TableCell>
+                )}
+                {insuranceTotals.applied && (
+                  <TableCell className="text-right tabular-nums">
+                    {formatCurrency(Number(item.patient_responsibility))}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
 
-      <div className="ml-auto max-w-xs space-y-1 rounded-xl bg-muted p-3 text-sm">
+      <div className="ms-auto max-w-xs space-y-1 rounded-xl bg-muted p-3 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
           <span className="tabular-nums">{formatCurrency(subtotal)}</span>
         </div>
+        {insuranceTotals.applied && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Insurance</span>
+            <span className="tabular-nums">−{formatCurrency(insuranceTotals.insuranceTotal)}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted-foreground">Tax ({Number(taxPercent)}%)</span>
           <span className="tabular-nums">{formatCurrency(taxAmount)}</span>
@@ -59,6 +84,12 @@ export function InvoiceItemsSummary({
           <span>Total</span>
           <span className="tabular-nums">{formatCurrency(total)}</span>
         </div>
+        {insuranceTotals.applied && (
+          <div className="flex justify-between border-t border-border pt-1 font-semibold">
+            <span>Patient responsibility</span>
+            <span className="tabular-nums">{formatCurrency(insuranceTotals.patientResponsibilityTotal)}</span>
+          </div>
+        )}
       </div>
     </div>
   );

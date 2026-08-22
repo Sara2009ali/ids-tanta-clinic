@@ -77,6 +77,8 @@ export interface Dictionary {
       defaultPriceList: string;
       insurancePlan: string;
       insuranceMemberId: string;
+      insuranceGroupNumber: string;
+      insuranceCoverage: string;
       allergies: string;
       currentMedications: string;
       medicalConditions: string;

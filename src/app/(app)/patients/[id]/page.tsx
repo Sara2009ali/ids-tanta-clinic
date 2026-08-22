@@ -345,6 +345,11 @@ export default async function PatientProfilePage({
                 value={insurance?.planName ? `${insurance.insurerName} — ${insurance.planName}` : null}
               />
               <InfoField label={t.overview.insuranceMemberId} value={insurance?.memberId} />
+              <InfoField label={t.overview.insuranceGroupNumber} value={insurance?.groupNumber} />
+              <InfoField
+                label={t.overview.insuranceCoverage}
+                value={insurance?.coveragePercent != null ? `${Number(insurance.coveragePercent)}%` : null}
+              />
             </dl>
           </div>
 

@@ -68,6 +68,8 @@ export const ar: Dictionary = {
       defaultPriceList: "الافتراضية للعيادة (عادية)",
       insurancePlan: "خطة التأمين",
       insuranceMemberId: "رقم العضوية",
+      insuranceGroupNumber: "رقم المجموعة",
+      insuranceCoverage: "نسبة التغطية",
       allergies: "الحساسية",
       currentMedications: "الأدوية الحالية",
       medicalConditions: "الحالات المرضية",

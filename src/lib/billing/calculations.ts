@@ -24,7 +24,7 @@ import type { InvoiceStatus } from "@/types/domain";
  * create/edit form's live total preview can disagree with the saved
  * invoice by a cent.
  */
-function round2(value: number): number {
+export function round2(value: number): number {
   return Math.round((value + Number.EPSILON * Math.abs(value)) * 100) / 100;
 }
 
