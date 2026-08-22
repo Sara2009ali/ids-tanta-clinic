@@ -264,6 +264,10 @@ export const en: Dictionary = {
     detail: {
       backToPriceLists: "Back to Price Lists",
       defaultListNotice: "This is the Normal Price List — edit prices for it from Procedures instead.",
+      editorHint: "Leave a service blank to keep charging the Normal price for it.",
+      searchPlaceholder: "Search services…",
+      noSearchResults: "No services match your search.",
+      customBadge: "Custom",
       serviceColumn: "Service",
       normalPriceColumn: "Normal price",
       thisListColumn: "This list's price",

@@ -263,6 +263,10 @@ export const ar: Dictionary = {
     detail: {
       backToPriceLists: "الرجوع إلى قوائم الأسعار",
       defaultListNotice: "هذه هي قائمة الأسعار العادية — عدّل أسعارها من صفحة الإجراءات بدلاً من هنا.",
+      editorHint: "اترك الخدمة فارغة لإبقاء سعرها العادي كما هو.",
+      searchPlaceholder: "ابحث عن خدمة…",
+      noSearchResults: "لا توجد خدمات مطابقة لبحثك.",
+      customBadge: "مخصص",
       serviceColumn: "الخدمة",
       normalPriceColumn: "السعر العادي",
       thisListColumn: "سعر هذه القائمة",

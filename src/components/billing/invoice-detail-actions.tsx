@@ -122,18 +122,27 @@ export function InvoiceDetailActions({
         </Button>
       )}
 
-      {canCancel && (
-        <Button variant="outline" disabled={pending} onClick={() => setCancelOpen(true)}>
-          <Ban className="size-4" />
-          Cancel
-        </Button>
-      )}
+      {(canCancel || canDelete) && (
+        // Visually separated from the routine actions above — cancelling and
+        // deleting are rare and consequential, and shouldn't compete for
+        // attention the same way Edit/Issue/Record Payment do. Same
+        // separation pattern as PatientHeaderActions' destructive action and
+        // the Treatment Plan detail page's billing action.
+        <div className="ms-1 flex items-center gap-2 border-s border-border ps-2">
+          {canCancel && (
+            <Button variant="outline" disabled={pending} onClick={() => setCancelOpen(true)}>
+              <Ban className="size-4" />
+              Cancel
+            </Button>
+          )}
 
-      {canDelete && (
-        <Button variant="destructive" disabled={pending} onClick={() => setDeleteOpen(true)}>
-          <Trash2 className="size-4" />
-          Delete
-        </Button>
+          {canDelete && (
+            <Button variant="destructive" disabled={pending} onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="size-4" />
+              Delete
+            </Button>
+          )}
+        </div>
       )}
 
       {isDraft && (

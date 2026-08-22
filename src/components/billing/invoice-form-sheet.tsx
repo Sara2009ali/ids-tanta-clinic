@@ -372,9 +372,14 @@ export function InvoiceFormSheet({
   // insurance plan, if any) whenever the patient changes — the only place
   // in this form the patient is genuinely dynamic; everywhere else (Price
   // List item editor, Treatment Plan item dialog) fetches this server-side
-  // once, since the patient there is fixed for the whole page.
+  // once, since the patient there is fixed for the whole page. Gated on
+  // `open`: an uncontrolled InvoiceFormSheet (its own "New Invoice" trigger)
+  // is mounted the moment its parent page renders, well before anyone opens
+  // it — without this gate, every page that renders one would fire this
+  // request on load whether or not the sheet is ever used.
   const [priceContext, setPriceContext] = useState<PatientBillingContext | null>(null);
   useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     if (!patient?.id) {
       Promise.resolve().then(() => {
@@ -390,7 +395,7 @@ export function InvoiceFormSheet({
     return () => {
       cancelled = true;
     };
-  }, [patient?.id]);
+  }, [open, patient?.id]);
 
   // The one price resolution path (resolveServicePrice), applied once here
   // so every consumer below (ProcedureField's list, the catalog-price reset
@@ -535,8 +540,7 @@ export function InvoiceFormSheet({
             )}
             {priceContext?.insurance && (
               <p className="text-xs text-muted-foreground">
-                Insurance: {priceContext.insurance.insurerName} — {priceContext.insurance.planName} (
-                {priceContext.insurance.coveragePercent}% covered)
+                Insurance: {priceContext.insurance.insurerName} — {priceContext.insurance.planName}
               </p>
             )}
           </div>
@@ -595,24 +599,27 @@ export function InvoiceFormSheet({
             </div>
             {insuranceTotals.applied && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Insurance</span>
+                <span className="text-muted-foreground">Insurance ({priceContext?.insurance?.coveragePercent ?? 0}%)</span>
                 <span className="tabular-nums">−{formatCurrency(insuranceTotals.insuranceTotal)}</span>
+              </div>
+            )}
+            {insuranceTotals.applied && (
+              <div className="flex justify-between font-medium">
+                <span>
+                  Patient responsibility
+                  {Number(taxPercent) > 0 && <span className="text-muted-foreground"> (before tax)</span>}
+                </span>
+                <span className="tabular-nums">{formatCurrency(insuranceTotals.patientResponsibilityTotal)}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tax</span>
               <span className="tabular-nums">{formatCurrency(totals.taxAmount)}</span>
             </div>
-            <div className="flex justify-between font-semibold">
+            <div className="flex justify-between border-t border-border pt-1 font-semibold">
               <span>Total</span>
               <span className="tabular-nums">{formatCurrency(totals.total)}</span>
             </div>
-            {insuranceTotals.applied && (
-              <div className="flex justify-between border-t border-border pt-1 font-semibold">
-                <span>Patient responsibility</span>
-                <span className="tabular-nums">{formatCurrency(insuranceTotals.patientResponsibilityTotal)}</span>
-              </div>
-            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2 pb-4">

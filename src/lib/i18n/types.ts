@@ -275,6 +275,10 @@ export interface Dictionary {
     detail: {
       backToPriceLists: string;
       defaultListNotice: string;
+      editorHint: string;
+      searchPlaceholder: string;
+      noSearchResults: string;
+      customBadge: string;
       serviceColumn: string;
       normalPriceColumn: string;
       thisListColumn: string;
