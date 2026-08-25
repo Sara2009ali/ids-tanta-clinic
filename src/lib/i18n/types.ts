@@ -230,6 +230,9 @@ export interface Dictionary {
     doctorsCardTitle: string;
     doctorsCardDescription: string;
     manageDoctors: string;
+    staffCardTitle: string;
+    staffCardDescription: string;
+    manageStaff: string;
     priceListsCardTitle: string;
     priceListsCardDescription: string;
     managePriceLists: string;
@@ -424,6 +427,78 @@ export interface Dictionary {
       placeholder: string;
       searching: string;
       noResults: string;
+    };
+  };
+  onboarding: {
+    signup: {
+      pageTitle: string;
+      pageSubtitle: string;
+      clinicNameLabel: string;
+      clinicNamePlaceholder: string;
+      addressLabel: string;
+      addressPlaceholder: string;
+      timezoneLabel: string;
+      fullNameLabel: string;
+      fullNamePlaceholder: string;
+      emailLabel: string;
+      emailPlaceholder: string;
+      passwordLabel: string;
+      confirmPasswordLabel: string;
+      submit: string;
+      haveAccount: string;
+      signIn: string;
+      newClinicQuestion: string;
+      newClinicCta: string;
+    };
+    activate: {
+      pageTitle: string;
+      pageSubtitle: string;
+      passwordLabel: string;
+      confirmPasswordLabel: string;
+      submit: string;
+      checking: string;
+      invalidLink: string;
+      passwordTooShort: string;
+      passwordsDontMatch: string;
+      genericError: string;
+    };
+  };
+  staff: {
+    title: string;
+    subtitle: string;
+    addStaff: string;
+    nameColumn: string;
+    roleColumn: string;
+    statusColumn: string;
+    statusPending: string;
+    statusActive: string;
+    statusInactive: string;
+    resendInvite: string;
+    deactivate: string;
+    reactivate: string;
+    noStaffTitle: string;
+    noStaffDescription: string;
+    form: {
+      title: string;
+      description: string;
+      fullNameLabel: string;
+      fullNamePlaceholder: string;
+      emailLabel: string;
+      emailPlaceholder: string;
+      phoneLabel: string;
+      roleLabel: string;
+      rolePlaceholder: string;
+      submit: string;
+      cancel: string;
+      invitedToast: string;
+    };
+    roles: {
+      super_admin: string;
+      admin: string;
+      doctor: string;
+      assistant: string;
+      reception: string;
+      accounting: string;
     };
   };
   reception: {

@@ -1,15 +1,18 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { login, type LoginFormState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/components/locale-provider";
 
 const initialState: LoginFormState = {};
 
 export function LoginForm() {
+  const dict = useTranslation().onboarding.signup;
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
@@ -48,6 +51,13 @@ export function LoginForm() {
         {pending && <Loader2 className="size-4 animate-spin" />}
         Sign in
       </Button>
+
+      <p className="text-center text-sm text-muted-foreground">
+        {dict.newClinicQuestion}{" "}
+        <Link href="/signup" className="text-foreground underline underline-offset-2">
+          {dict.newClinicCta}
+        </Link>
+      </p>
     </form>
   );
 }

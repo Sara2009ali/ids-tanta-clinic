@@ -1,0 +1,233 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ensurePermission } from "@/lib/authz/session";
+import { PERMISSIONS } from "@/lib/authz/permissions";
+import { writeAuditLog } from "@/lib/audit/log";
+import { isDuplicateAuthError } from "@/lib/auth/errors";
+import { getAppOrigin } from "@/lib/http/origin";
+import { fieldErrorsFromZod } from "@/lib/forms/zod-errors";
+import {
+  staffCreateFormSchema,
+  staffCreateFormValuesFromFormData,
+  isStaffAssignableRole,
+} from "@/lib/staff/schema";
+
+export interface StaffActionState {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  success?: boolean;
+  staffId?: string;
+}
+
+const STAFF_PATH = "/settings/staff";
+/** Supabase's documented convention for an effectively permanent ban (~100 years) — matches PERMANENT_BAN in doctors/actions.ts. */
+const PERMANENT_BAN = "876000h";
+
+/**
+ * Invites a new staff member by email — the general-purpose counterpart to
+ * createDoctor(), for every role that doesn't need doctor_profiles' extra
+ * fields. Unlike doctors (created with a permanently-banned auto-generated
+ * password an admin later enables), this uses a real Supabase Auth invite:
+ * the new account only gets a password once the invitee sets one themselves
+ * from the emailed link (see /activate), so the application never handles
+ * or stores a staff member's password. clinic_id always comes from the
+ * caller's own session (ensurePermission → staff.clinic_id), never from the
+ * form, so a crafted request can't attach a new staff member to a
+ * different clinic.
+ */
+export async function inviteStaffMember(formData: FormData): Promise<StaffActionState> {
+  const authz = await ensurePermission(PERMISSIONS.SETTINGS_MANAGE);
+  if (!authz.ok) return { error: authz.error };
+  const staff = authz.staff;
+  if (!staff.clinic_id) return { error: "Your account isn't assigned to a clinic yet." };
+
+  const parsed = staffCreateFormSchema.safeParse(staffCreateFormValuesFromFormData(formData));
+  if (!parsed.success) {
+    return { error: "Please fix the highlighted fields.", fieldErrors: fieldErrorsFromZod(parsed.error) };
+  }
+  const values = parsed.data;
+
+  if (!isStaffAssignableRole(values.role)) {
+    return { error: "Choose a valid role.", fieldErrors: { role: "Choose a valid role" } };
+  }
+
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (error) {
+    console.error("inviteStaffMember: admin client unavailable", error);
+    return { error: "Staff accounts aren't configured in this environment yet. Contact your administrator." };
+  }
+
+  const origin = await getAppOrigin();
+  const { data: created, error: inviteError } = await admin.auth.admin.inviteUserByEmail(values.email, {
+    data: { full_name: values.full_name },
+    redirectTo: `${origin}/activate`,
+  });
+
+  if (inviteError || !created?.user) {
+    if (isDuplicateAuthError(inviteError)) {
+      return { error: "This email is already in use.", fieldErrors: { email: "Already in use" } };
+    }
+    console.error("inviteStaffMember: invite failed", inviteError);
+    return { error: "Couldn't send the invitation. Please try again." };
+  }
+
+  const staffId = created.user.id;
+  const supabase = await createClient();
+
+  const { error: staffError } = await supabase.from("staff_profiles").insert({
+    id: staffId,
+    clinic_id: staff.clinic_id,
+    full_name: values.full_name,
+    role: values.role,
+    phone: values.phone ?? null,
+  });
+
+  if (staffError) {
+    console.error("inviteStaffMember: staff_profiles insert failed", staffError);
+    await admin.auth.admin.deleteUser(staffId);
+    return { error: "Couldn't add the staff member. Please try again." };
+  }
+
+  await writeAuditLog(supabase, {
+    clinicId: staff.clinic_id,
+    actorId: staff.id,
+    action: "staff.invited",
+    entityType: "staff",
+    entityId: staffId,
+    changes: { role: values.role },
+  });
+
+  revalidatePath(STAFF_PATH);
+  return { success: true, staffId };
+}
+
+/**
+ * Activate/deactivate a staff member's roster status, mirroring
+ * setDoctorActive() — except reactivating here also lifts the ban. Staff
+ * (unlike Doctors) has no separate "enable access" step: an invited
+ * account's only access gate is is_active/ban together, so reactivating a
+ * mistakenly-deactivated staff member should let them sign in again right
+ * away rather than leaving them stuck banned with no UI to unban them.
+ *
+ * Every read/write here is scoped to `.eq("clinic_id", staff.clinic_id)` in
+ * addition to RLS — belt-and-suspenders so a staffId from another clinic
+ * (or a doctor/super_admin row, which this action must never touch) simply
+ * doesn't match, rather than relying solely on Postgres silently filtering
+ * the row out.
+ */
+export async function setStaffActive(staffId: string, isActive: boolean): Promise<StaffActionState> {
+  const authz = await ensurePermission(PERMISSIONS.SETTINGS_MANAGE);
+  if (!authz.ok) return { error: authz.error };
+  const staff = authz.staff;
+  if (!staff.clinic_id) return { error: "Your account isn't assigned to a clinic yet." };
+
+  if (staffId === staff.id) {
+    return { error: "You can't change your own access here." };
+  }
+
+  const supabase = await createClient();
+  const { data: target } = await supabase
+    .from("staff_profiles")
+    .select("id, role")
+    .eq("id", staffId)
+    .eq("clinic_id", staff.clinic_id)
+    .maybeSingle();
+
+  if (!target) {
+    return { error: "Staff member not found." };
+  }
+  if (!isStaffAssignableRole(target.role)) {
+    return { error: "This account is managed from a different screen." };
+  }
+
+  const { error } = await supabase
+    .from("staff_profiles")
+    .update({ is_active: isActive })
+    .eq("id", staffId)
+    .eq("clinic_id", staff.clinic_id);
+
+  if (error) {
+    console.error("setStaffActive: update failed", error);
+    return { error: "Couldn't update the staff member. Please try again." };
+  }
+
+  try {
+    const admin = createAdminClient();
+    await admin.auth.admin.updateUserById(staffId, { ban_duration: isActive ? "none" : PERMANENT_BAN });
+  } catch (accessError) {
+    console.error("setStaffActive: updating account access failed", accessError);
+  }
+
+  await writeAuditLog(supabase, {
+    clinicId: staff.clinic_id,
+    actorId: staff.id,
+    action: isActive ? "staff.reactivated" : "staff.deactivated",
+    entityType: "staff",
+    entityId: staffId,
+  });
+
+  revalidatePath(STAFF_PATH);
+  return { success: true, staffId };
+}
+
+/**
+ * Resends an invite — the only "duplicate invitation" case worth a
+ * dedicated action in v1 (a fresh invite for a brand-new email is just
+ * inviteStaffMember, which already rejects emails already in use). Blocks
+ * resending to an account that has already completed activation, so a
+ * stale "Resend" click can't reset an active teammate's credentials.
+ */
+export async function resendStaffInvite(staffId: string): Promise<StaffActionState> {
+  const authz = await ensurePermission(PERMISSIONS.SETTINGS_MANAGE);
+  if (!authz.ok) return { error: authz.error };
+  const staff = authz.staff;
+  if (!staff.clinic_id) return { error: "Your account isn't assigned to a clinic yet." };
+
+  const supabase = await createClient();
+  const { data: target } = await supabase
+    .from("staff_profiles")
+    .select("id, full_name, role, is_active")
+    .eq("id", staffId)
+    .eq("clinic_id", staff.clinic_id)
+    .maybeSingle();
+
+  if (!target) return { error: "Staff member not found." };
+  if (!isStaffAssignableRole(target.role)) return { error: "This account is managed from a different screen." };
+  if (!target.is_active) return { error: "Reactivate this staff member before resending their invite." };
+
+  let admin;
+  try {
+    admin = createAdminClient();
+  } catch (error) {
+    console.error("resendStaffInvite: admin client unavailable", error);
+    return { error: "Staff accounts aren't configured in this environment yet. Contact your administrator." };
+  }
+
+  const { data: userRes, error: userError } = await admin.auth.admin.getUserById(staffId);
+  if (userError || !userRes?.user?.email) {
+    console.error("resendStaffInvite: account lookup failed", userError);
+    return { error: "Couldn't find this account's email." };
+  }
+  if (userRes.user.last_sign_in_at) {
+    return { error: "This staff member has already activated their account." };
+  }
+
+  const origin = await getAppOrigin();
+  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(userRes.user.email, {
+    data: { full_name: target.full_name },
+    redirectTo: `${origin}/activate`,
+  });
+
+  if (inviteError) {
+    console.error("resendStaffInvite: invite failed", inviteError);
+    return { error: "Couldn't resend the invitation. Please try again." };
+  }
+
+  revalidatePath(STAFF_PATH);
+  return { success: true, staffId };
+}

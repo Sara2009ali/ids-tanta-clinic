@@ -4,7 +4,12 @@ import { env } from "@/lib/env";
 import type { Database } from "@/types/database.generated";
 import { VERIFIED_STAFF_ID_HEADER } from "@/lib/auth/verified-headers";
 
-const PUBLIC_PATHS = ["/login"];
+// /activate is public even though it's only ever reached via a signed
+// Supabase invite link, not a real "logged out" page: the invite session it
+// establishes is set client-side from the URL after this initial request
+// (see components/auth/activate-form.tsx), so the very first request here
+// still looks unauthenticated to this proxy and must not be redirected away.
+const PUBLIC_PATHS = ["/login", "/signup", "/activate"];
 
 /**
  * Refreshes the Supabase session cookie on every request and enforces the

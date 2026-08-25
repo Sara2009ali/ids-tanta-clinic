@@ -7,6 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensurePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { writeAuditLog } from "@/lib/audit/log";
+import { isDuplicateAuthError } from "@/lib/auth/errors";
+import { fieldErrorsFromZod } from "@/lib/forms/zod-errors";
 import {
   doctorCreateFormSchema,
   doctorCreateFormValuesFromFormData,
@@ -34,17 +36,6 @@ const PERMANENT_BAN = "876000h";
 /** A handful of visually distinct swatches to auto-assign at creation, matching visit_types' own default color rather than asking the admin to pick one up front. */
 const DOCTOR_COLOR_PALETTE = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#0ea5e9", "#ec4899", "#14b8a6"];
 
-function fieldErrorsFromZod(error: import("zod").ZodError): Record<string, string> {
-  const fieldErrors: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const key = issue.path[0];
-    if (typeof key === "string" && !fieldErrors[key]) {
-      fieldErrors[key] = issue.message;
-    }
-  }
-  return fieldErrors;
-}
-
 function revalidateDoctorPaths(doctorId?: string) {
   revalidatePath(DOCTORS_PATH);
   if (doctorId) revalidatePath(`${DOCTORS_PATH}/${doctorId}`);
@@ -57,12 +48,6 @@ function generateTemporaryPassword(): string {
 
 function randomDoctorColor(): string {
   return DOCTOR_COLOR_PALETTE[Math.floor(Math.random() * DOCTOR_COLOR_PALETTE.length)];
-}
-
-function isDuplicateEmailError(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false;
-  if (error.code === "email_exists") return true;
-  return /already been registered|already exists/i.test(error.message ?? "");
 }
 
 /**
@@ -103,7 +88,7 @@ export async function createDoctor(formData: FormData): Promise<DoctorActionStat
   });
 
   if (createError || !created?.user) {
-    if (isDuplicateEmailError(createError)) {
+    if (isDuplicateAuthError(createError)) {
       return { error: "This email is already in use.", fieldErrors: { email: "Already in use" } };
     }
     console.error("createDoctor: auth user creation failed", createError);
