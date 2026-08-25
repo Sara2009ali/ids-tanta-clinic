@@ -10,6 +10,7 @@ import {
   isAppointmentTreatmentEligible,
   isBillableTreatmentPlanItemStatus,
   isCustomPlanItem,
+  isTreatmentPlanItemDefinitionEditable,
   orderItemsBySequence,
   resolveInvoiceAppointmentId,
   resolveTreatmentPlanItemUnitPrice,
@@ -51,6 +52,28 @@ describe("canTransitionPlanStatus — plan status validation", () => {
     expect(canTransitionPlanStatus("abandoned", "activate")).toBe(false);
     expect(canTransitionPlanStatus("abandoned", "complete")).toBe(false);
     expect(canTransitionPlanStatus("abandoned", "abandon")).toBe(false);
+  });
+});
+
+describe("isTreatmentPlanItemDefinitionEditable — item definition lock", () => {
+  it("allows editing a draft plan's items", () => {
+    expect(isTreatmentPlanItemDefinitionEditable("draft")).toBe(true);
+  });
+
+  it("locks an active plan's items", () => {
+    expect(isTreatmentPlanItemDefinitionEditable("active")).toBe(false);
+  });
+
+  it("locks a completed plan's items", () => {
+    expect(isTreatmentPlanItemDefinitionEditable("completed")).toBe(false);
+  });
+
+  it("locks an abandoned plan's items", () => {
+    expect(isTreatmentPlanItemDefinitionEditable("abandoned")).toBe(false);
+  });
+
+  it("locks an unrecognized status closed by default", () => {
+    expect(isTreatmentPlanItemDefinitionEditable("something-unexpected")).toBe(false);
   });
 });
 

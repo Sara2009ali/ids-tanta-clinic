@@ -13,7 +13,12 @@ import {
   treatmentPlanItemFormValuesFromFormData,
   treatmentPlanItemStatusSchema,
 } from "@/lib/treatment-plans/schema";
-import { canTransitionPlanStatus, isAppointmentForPatient, type TreatmentPlanTransitionAction } from "@/lib/treatment-plans/calculations";
+import {
+  canTransitionPlanStatus,
+  isAppointmentForPatient,
+  isTreatmentPlanItemDefinitionEditable,
+  type TreatmentPlanTransitionAction,
+} from "@/lib/treatment-plans/calculations";
 import type { Database } from "@/types/database.generated";
 
 export interface TreatmentPlanActionState {
@@ -347,7 +352,15 @@ async function findItemWithPlan(
   return { ...item, patient_id: plan.patient_id, planStatus: plan.status };
 }
 
-/** Content fields only — status and sequence are changed exclusively through changeTreatmentPlanItemStatus()/reorderTreatmentPlanItems() below, never here. */
+/**
+ * Content fields only — status and sequence are changed exclusively through
+ * changeTreatmentPlanItemStatus()/reorderTreatmentPlanItems() below, never
+ * here. Only writable while the parent plan is still `draft`
+ * (isTreatmentPlanItemDefinitionEditable), re-checked here server-side —
+ * same rule and same reasoning as deleteTreatmentPlanItem()'s own guard —
+ * so a stale client (edit dialog left open while someone else activates the
+ * plan) can never push a definition change into an already-proposed plan.
+ */
 export async function updateTreatmentPlanItem(
   itemId: string,
   formData: FormData,
@@ -367,6 +380,10 @@ export async function updateTreatmentPlanItem(
   if (!existing) {
     console.error("updateTreatmentPlanItem: item lookup failed");
     return { error: "Couldn't find this item." };
+  }
+
+  if (!isTreatmentPlanItemDefinitionEditable(existing.planStatus)) {
+    return { error: "Items can only be edited while the plan is still a draft." };
   }
 
   const patientId = existing.patient_id;
@@ -530,7 +547,7 @@ export async function deleteTreatmentPlanItem(itemId: string): Promise<Treatment
     return { error: "Couldn't find this item." };
   }
 
-  if (existing.planStatus !== "draft") {
+  if (!isTreatmentPlanItemDefinitionEditable(existing.planStatus)) {
     return { error: "Items can only be removed while the plan is still a draft." };
   }
 

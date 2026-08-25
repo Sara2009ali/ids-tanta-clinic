@@ -42,6 +42,26 @@ export function canTransitionPlanStatus(
   return false;
 }
 
+/**
+ * A treatment plan item's DEFINITION (procedure, price, quantity, tooth,
+ * priority, notes, linked appointment) is only mutable while the plan
+ * itself is still `draft` — once proposed, the plan's content is what was
+ * actually communicated, so it becomes a historical record. This is the
+ * exact same rule deleteTreatmentPlanItem() already enforced inline
+ * (`planStatus !== "draft"`) and canDeleteItems/canReorderItems already
+ * apply in the UI; updateTreatmentPlanItem() now reuses this one function
+ * instead of a third, previously-missing copy of the same check.
+ *
+ * Item STATUS (accepted/postponed/rejected/in_progress/completed) and
+ * Performed Treatment are deliberately unaffected by this rule — those
+ * track progress against an already-locked plan, not the plan's own
+ * definition, and continue to use their own separate gates
+ * (canChangeItemStatus, canRecordTreatment).
+ */
+export function isTreatmentPlanItemDefinitionEditable(planStatus: TreatmentPlanStatus | string): boolean {
+  return planStatus === "draft";
+}
+
 export interface ItemProgressInput {
   status: string;
 }

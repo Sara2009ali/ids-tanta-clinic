@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deleteTreatmentPlanItem, reorderTreatmentPlanItems } from "@/lib/treatment-plans/actions";
+import { isTreatmentPlanItemDefinitionEditable } from "@/lib/treatment-plans/calculations";
 import { TreatmentPlanItemDialog } from "@/components/treatment-plans/treatment-plan-item-dialog";
 import { TreatmentPlanItemRow } from "@/components/treatment-plans/treatment-plan-item-row";
 import { TreatmentPlanRecordTreatmentDialog } from "@/components/treatment-plans/treatment-plan-record-treatment-dialog";
@@ -49,11 +50,16 @@ export function TreatmentPlanItemsList({
   // Items can only be hard-deleted while the plan itself is still draft — see
   // deleteTreatmentPlanItem()'s own server-side check, which re-enforces
   // this regardless of what the UI shows.
-  const canDeleteItems = canEdit && planStatus === "draft";
+  const canDeleteItems = canEdit && isTreatmentPlanItemDefinitionEditable(planStatus);
+  // Same draft-only rule — an item's definition (procedure, price, quantity,
+  // tooth, etc.) becomes a historical record once the plan is no longer a
+  // draft. updateTreatmentPlanItem() re-enforces this server-side regardless
+  // of what the UI shows (see isTreatmentPlanItemDefinitionEditable).
+  const canEditItemDefinition = canEdit && isTreatmentPlanItemDefinitionEditable(planStatus);
   // Reordering is a "building the plan" activity — once proposed, the
   // sequence is the plan as communicated, so the control disappears rather
   // than inviting changes to a plan that's already active/finished.
-  const canReorderItems = canEdit && planStatus === "draft";
+  const canReorderItems = canEdit && isTreatmentPlanItemDefinitionEditable(planStatus);
   // Once a plan is completed/abandoned its item statuses are a historical
   // record, not something to casually re-toggle — this is the "reduce
   // editing affordances" requirement from the approved UX pass, presentation
@@ -120,6 +126,7 @@ export function TreatmentPlanItemsList({
               key={item.id}
               item={item}
               canEdit={canEdit}
+              canEditDefinition={canEditItemDefinition}
               canChangeStatus={canChangeItemStatus}
               canReorder={canReorderItems}
               canDelete={canDeleteItems}

@@ -34,6 +34,7 @@ function formatDate(iso: string): string {
 export function TreatmentPlanItemRow({
   item,
   canEdit,
+  canEditDefinition,
   canChangeStatus,
   canReorder,
   canDelete,
@@ -47,6 +48,8 @@ export function TreatmentPlanItemRow({
 }: {
   item: TreatmentPlanItemWithContext;
   canEdit: boolean;
+  /** True only while the plan is still draft — the item's definition (procedure, price, quantity, tooth, etc.) becomes a historical record once proposed. Distinct from canEdit: Record Treatment/reorder/delete keep their own gates below, since performing treatment and tracking status both legitimately happen on an active plan. */
+  canEditDefinition: boolean;
   /** False once the plan itself is completed/abandoned — status becomes a historical fact, not something to casually re-toggle. */
   canChangeStatus: boolean;
   /** True only while the plan is still draft — reordering is a "building the plan" activity, not a "tracking it" one. */
@@ -161,7 +164,7 @@ export function TreatmentPlanItemRow({
         {Number(item.quantity) !== 1 && ` × ${Number(item.quantity)}`}
       </p>
 
-      {canEdit && (
+      {canEdit && (canRecordTreatment || canReorder || canEditDefinition || canDelete) && (
         <div className="flex flex-wrap items-center justify-between gap-1 border-t border-border pt-2">
           {canRecordTreatment ? (
             <Button variant="outline" size="sm" onClick={onRecordTreatment}>
@@ -183,10 +186,12 @@ export function TreatmentPlanItemRow({
                 </Button>
               </>
             )}
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
+            {canEditDefinition && (
+              <Button variant="ghost" size="sm" onClick={onEdit}>
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+            )}
             {canDelete && (
               <Button
                 variant="ghost"
