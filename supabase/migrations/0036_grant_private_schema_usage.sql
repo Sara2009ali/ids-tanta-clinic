@@ -1,0 +1,21 @@
+-- Fixes a real bug in 0034_report_revenue_series_fix.sql discovered during
+-- live verification: report_revenue_series() calls
+-- private.current_clinic_id() directly from its own (non-security-definer)
+-- body, which requires the calling role to have USAGE on the `private`
+-- schema to even resolve the schema-qualified name — and `authenticated`
+-- never had it. This went unnoticed until now because every other
+-- reference to private.* functions in this codebase is either embedded
+-- inside an RLS policy expression (which Postgres evaluates without this
+-- same schema-usage check) or inside a `security definer` function
+-- (public.current_permissions()), neither of which needed the grant.
+-- report_revenue_series() is the first plain function to call into
+-- `private` directly, so it's the first to need this.
+--
+-- This grant exposes no new capability: every value private.current_
+-- clinic_id()/current_staff_role() can return is already observable by an
+-- authenticated user indirectly (their own staff_profiles row, and every
+-- RLS policy in this schema already conditions on these same functions).
+-- USAGE alone does not grant EXECUTE on any specific function — Postgres
+-- already defaults to PUBLIC EXECUTE on functions unless explicitly
+-- revoked, which none of these have been.
+grant usage on schema private to authenticated;
