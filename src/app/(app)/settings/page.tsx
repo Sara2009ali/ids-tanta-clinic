@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, UsersRound, SlidersHorizontal, Tags, ShieldCheck } from "lucide-react";
+import { Building2, Users, UsersRound, SlidersHorizontal, Tags, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireStaff } from "@/lib/auth/session";
@@ -43,6 +43,23 @@ export default async function SettingsPage() {
             </Button>
           </CardContent>
         </Card>
+
+        {canManageClinic && (
+          <Card className="max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 className="size-4" />
+                {dict.clinicCardTitle}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">{dict.clinicCardDescription}</p>
+              <Button size="sm" render={<Link href="/settings/clinic" />}>
+                {dict.manageClinic}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {canManageClinic && (
           <Card className="max-w-md">

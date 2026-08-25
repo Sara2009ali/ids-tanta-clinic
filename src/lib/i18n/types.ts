@@ -227,6 +227,9 @@ export interface Dictionary {
   settings: {
     title: string;
     subtitle: string;
+    clinicCardTitle: string;
+    clinicCardDescription: string;
+    manageClinic: string;
     doctorsCardTitle: string;
     doctorsCardDescription: string;
     manageDoctors: string;
@@ -500,6 +503,36 @@ export interface Dictionary {
       reception: string;
       accounting: string;
     };
+  };
+  clinic: {
+    pageTitle: string;
+    pageSubtitle: string;
+    identitySectionTitle: string;
+    identitySectionDescription: string;
+    regionalSectionTitle: string;
+    regionalSectionDescription: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    phoneLabel: string;
+    addressLabel: string;
+    timezoneLabel: string;
+    logoLabel: string;
+    logoDescription: string;
+    noLogo: string;
+    uploadLogo: string;
+    replaceLogo: string;
+    removeLogo: string;
+    save: string;
+    savedToast: string;
+    invalidLogoType: string;
+    logoTooLarge: string;
+    logoUploadFailed: string;
+    logoRemovedToast: string;
+  };
+  doctors: {
+    accountAccessNote: string;
+    deactivatedToast: string;
+    reactivatedToast: string;
   };
   reception: {
     pageTitle: string;

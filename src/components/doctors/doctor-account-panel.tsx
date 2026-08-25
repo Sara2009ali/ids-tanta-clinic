@@ -8,6 +8,7 @@ import { enableDoctorAccess, revokeDoctorAccess } from "@/lib/doctors/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "@/components/locale-provider";
 
 /**
  * "Enable access" doubles as "reset password" once access is already on —
@@ -24,6 +25,7 @@ export function DoctorAccountPanel({
   email: string | null;
   hasAccess: boolean;
 }) {
+  const dict = useTranslation().doctors;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
@@ -70,6 +72,7 @@ export function DoctorAccountPanel({
           </div>
           <Badge variant={hasAccess ? "secondary" : "outline"}>{hasAccess ? "Active access" : "No access"}</Badge>
         </div>
+        <p className="text-xs text-muted-foreground">{dict.accountAccessNote}</p>
         <div className="flex flex-wrap gap-2">
           {hasAccess ? (
             <>
