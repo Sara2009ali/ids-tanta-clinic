@@ -51,7 +51,7 @@ export default async function RevenueReportPage({
   const [revenueTotal, billingCounts, series] = await Promise.all([
     getRevenueTotal(range),
     getBillingDashboardCounts(),
-    staff.clinic_id ? getRevenueSeries(staff.clinic_id, range, bucket) : Promise.resolve([]),
+    staff.clinic_id ? getRevenueSeries(range, bucket) : Promise.resolve([]),
   ]);
 
   return (

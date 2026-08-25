@@ -8,6 +8,8 @@ import {
   computeInvoiceTotals,
   computeLineTotal,
   deriveInvoiceStatus,
+  netPaymentAmount,
+  sumNetPayments,
 } from "@/lib/billing/calculations";
 
 describe("computeLineTotal", () => {
@@ -153,5 +155,83 @@ describe("canRefundPayment", () => {
   it("is false for draft and cancelled", () => {
     expect(canRefundPayment("draft")).toBe(false);
     expect(canRefundPayment("cancelled")).toBe(false);
+  });
+});
+
+describe("netPaymentAmount", () => {
+  it("is positive for an ordinary payment", () => {
+    expect(netPaymentAmount({ amount: 1000, type: "payment" })).toBe(1000);
+  });
+
+  it("is negative for a refund", () => {
+    expect(netPaymentAmount({ amount: 200, type: "refund" })).toBe(-200);
+  });
+
+  it("coerces a string amount (as returned over the wire for numeric columns)", () => {
+    expect(netPaymentAmount({ amount: "150.50", type: "payment" })).toBe(150.5);
+    expect(netPaymentAmount({ amount: "150.50", type: "refund" })).toBe(-150.5);
+  });
+});
+
+describe("sumNetPayments — Revenue == Billing paidThisMonth definition", () => {
+  it("sums payments only", () => {
+    expect(
+      sumNetPayments([
+        { amount: 1000, type: "payment" },
+        { amount: 500, type: "payment" },
+      ]),
+    ).toBe(1500);
+  });
+
+  it("sums refunds only, as a negative total", () => {
+    expect(
+      sumNetPayments([
+        { amount: 200, type: "refund" },
+        { amount: 50, type: "refund" },
+      ]),
+    ).toBe(-250);
+  });
+
+  it("nets a payment against a refund — the exact 1000/200 example from the bug report", () => {
+    expect(
+      sumNetPayments([
+        { amount: 1000, type: "payment" },
+        { amount: 200, type: "refund" },
+      ]),
+    ).toBe(800);
+  });
+
+  it("nets multiple payments and multiple refunds together", () => {
+    expect(
+      sumNetPayments([
+        { amount: 1000, type: "payment" },
+        { amount: 500, type: "payment" },
+        { amount: 300, type: "payment" },
+        { amount: 200, type: "refund" },
+        { amount: 100, type: "refund" },
+      ]),
+    ).toBe(1500);
+  });
+
+  it("returns the full sum when there are zero refunds", () => {
+    expect(
+      sumNetPayments([
+        { amount: 400, type: "payment" },
+        { amount: 600, type: "payment" },
+      ]),
+    ).toBe(1000);
+  });
+
+  it("returns 0 for an empty list", () => {
+    expect(sumNetPayments([])).toBe(0);
+  });
+
+  it("can go negative when refunds exceed payments in the set", () => {
+    expect(
+      sumNetPayments([
+        { amount: 100, type: "payment" },
+        { amount: 300, type: "refund" },
+      ]),
+    ).toBe(-200);
   });
 });

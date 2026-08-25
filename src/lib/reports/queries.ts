@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { rangeToTimestampBounds, type ReportDateRange } from "@/lib/reports/date-range";
 import { aggregateProcedureRevenue, type ProcedureAmount } from "@/lib/reports/calculations";
+import { sumNetPayments } from "@/lib/billing/calculations";
 
 /**
  * Reports & Analytics data layer. Per the approved architecture: every
@@ -19,18 +20,19 @@ import { aggregateProcedureRevenue, type ProcedureAmount } from "@/lib/reports/c
  */
 
 // ---------------------------------------------------------------------------
-// Revenue — "completed payments," Billing's own definition
-// (getBillingDashboardCounts()'s paidThisMonth), generalized to any range.
+// Revenue — "net payments" (payments minus refunds), exactly Billing's own
+// definition (getBillingDashboardCounts()'s paidThisMonth, via the shared
+// sumNetPayments()), generalized to any range.
 // ---------------------------------------------------------------------------
 
-/** Sum of payments.amount, deleted_at is null, in range — same query shape as getBillingDashboardCounts()'s paidThisMonth, no `type` filter, replicated faithfully. */
+/** Net of payments.amount (refunds subtracted, via sumNetPayments) in range — same query shape and same definition as getBillingDashboardCounts()'s paidThisMonth. */
 export async function getRevenueTotal(range: ReportDateRange): Promise<number> {
   const supabase = await createClient();
   const { startIso, endIsoExclusive } = rangeToTimestampBounds(range);
 
   const { data, error } = await supabase
     .from("payments")
-    .select("amount")
+    .select("amount, type")
     .is("deleted_at", null)
     .gte("paid_at", startIso)
     .lt("paid_at", endIsoExclusive);
@@ -39,7 +41,7 @@ export async function getRevenueTotal(range: ReportDateRange): Promise<number> {
     console.error("getRevenueTotal failed", error);
     return 0;
   }
-  return (data ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+  return sumNetPayments(data ?? []);
 }
 
 export interface RevenueBucket {
@@ -49,16 +51,24 @@ export interface RevenueBucket {
 
 export type RevenueBucketGranularity = "day" | "week" | "month" | "year";
 
-/** Only the report that genuinely needs a date_trunc()-grouped aggregate — see report_revenue_series() (0017_reports.sql). Only buckets with at least one payment are returned; zero-revenue gaps aren't filled in (no chart consumes this yet to need it). */
+/**
+ * Only the report that genuinely needs a date_trunc()-grouped aggregate —
+ * see report_revenue_series() (0034_report_revenue_series_fix.sql). Only
+ * buckets with at least one payment are returned; zero-revenue gaps aren't
+ * filled in (no chart consumes this yet to need it).
+ *
+ * No clinic id is passed here — the function derives it from the caller's
+ * own session (private.current_clinic_id()) exactly like every RLS-scoped
+ * table read elsewhere in this app, rather than trusting a client-supplied
+ * value the way the original 0017 version did.
+ */
 export async function getRevenueSeries(
-  clinicId: string,
   range: ReportDateRange,
   bucket: RevenueBucketGranularity,
 ): Promise<RevenueBucket[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("report_revenue_series", {
-    p_clinic_id: clinicId,
     p_start: range.start,
     p_end: range.end,
     p_bucket: bucket,

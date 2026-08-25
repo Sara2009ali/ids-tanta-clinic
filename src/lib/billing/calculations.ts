@@ -103,3 +103,30 @@ export function canCancelInvoice(status: InvoiceStatus, paidAmount: number): boo
 export function canRefundPayment(status: InvoiceStatus): boolean {
   return status !== "draft" && status !== "cancelled";
 }
+
+export interface NetPaymentAmountInput {
+  amount: number | string;
+  type: string;
+}
+
+/**
+ * A payment row's contribution to revenue: positive for an ordinary
+ * payment, negative for a refund. `payments.amount` is always stored
+ * positive regardless of `type` (0012_billing_payment_model.sql) — `type`
+ * carries the sign instead, so it must be consulted here or a refund
+ * inflates revenue instead of reducing it. This is the single definition of
+ * "net payment amount" for the whole app: it mirrors
+ * recalculate_invoice_totals()'s `case when type = 'refund' then -amount
+ * else amount end` in SQL exactly, and getBillingDashboardCounts()
+ * ("paidThisMonth") and Reports' revenue figures both reduce over this
+ * instead of each re-deriving their own sign logic.
+ */
+export function netPaymentAmount(payment: NetPaymentAmountInput): number {
+  const amount = Number(payment.amount);
+  return payment.type === "refund" ? -amount : amount;
+}
+
+/** Sum of netPaymentAmount() across every row — "revenue," the one definition every caller (Billing dashboard, Revenue report total and series) reuses rather than re-summing amount directly. */
+export function sumNetPayments(payments: readonly NetPaymentAmountInput[]): number {
+  return payments.reduce((sum, payment) => sum + netPaymentAmount(payment), 0);
+}

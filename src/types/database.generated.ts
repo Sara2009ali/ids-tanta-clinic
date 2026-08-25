@@ -2877,7 +2877,6 @@ export type Database = {
       report_revenue_series: {
         Args: {
           p_bucket: string
-          p_clinic_id: string
           p_end: string
           p_start: string
         }

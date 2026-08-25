@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { sumNetPayments } from "@/lib/billing/calculations";
 import type { AuditLogEntry, Invoice, InvoiceItem, InvoiceStatus, Payment } from "@/types/domain";
 
 export interface InvoiceListRow {
@@ -279,15 +280,10 @@ export async function getBillingDashboardCounts(): Promise<BillingDashboardCount
   ]);
 
   const outstandingTotal = (outstandingRes.data ?? []).reduce((sum, row) => sum + Number(row.balance_due), 0);
-  // Nets refunds out instead of summing every row's amount as positive —
-  // amount is always stored positive regardless of type (see
-  // 0012_billing_payment_model.sql's comment), so `type` must be consulted
-  // here the same way recalculate_invoice_totals() does in SQL, or a
-  // refunded payment inflates this figure instead of cancelling it out.
-  const paidThisMonth = (paidRes.data ?? []).reduce(
-    (sum, row) => sum + (row.type === "refund" ? -Number(row.amount) : Number(row.amount)),
-    0,
-  );
+  // Nets refunds out via the shared netPaymentAmount() definition instead of
+  // summing every row's amount as positive — see its doc comment for why
+  // `type` must be consulted.
+  const paidThisMonth = sumNetPayments(paidRes.data ?? []);
 
   return {
     outstandingTotal,
