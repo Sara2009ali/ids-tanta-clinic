@@ -7,6 +7,8 @@
  * established in this codebase, for the same reason.
  */
 
+import { netPaymentAmount, type NetPaymentAmountInput } from "@/lib/billing/calculations";
+
 export interface ProcedureAmount {
   visitTypeId: string | null;
   revenue: number;
@@ -199,4 +201,112 @@ export function computeCompletionRate(completedCount: number, dismissedCount: nu
   const denominator = completedCount + dismissedCount;
   if (denominator === 0) return null;
   return completedCount / denominator;
+}
+
+// ---------------------------------------------------------------------------
+// Cash Reconciliation (Batch 6) — "how much money was actually recorded
+// today, by method, net of refunds." Reuses netPaymentAmount() (Batch 4)
+// for the per-row signed contribution instead of re-deriving `gross -
+// refunds` by hand, so there remains exactly one definition of "net
+// payment" in the app — this report can never silently disagree with
+// Billing's own figures for the same rows. Recorded transactions only:
+// there is no opening-cash/expected-cash concept anywhere in this schema
+// (payments has no such column), so this deliberately never fabricates one.
+// ---------------------------------------------------------------------------
+
+export interface CashReconciliationRow extends NetPaymentAmountInput {
+  method: string;
+}
+
+export interface CashReconciliationMethodTotal {
+  method: string;
+  count: number;
+  gross: number;
+  refunds: number;
+  net: number;
+}
+
+export interface CashReconciliationSummary {
+  methods: CashReconciliationMethodTotal[];
+  paymentCount: number;
+  totalGross: number;
+  totalRefunds: number;
+  totalNet: number;
+}
+
+/** Zero-activity input produces zero-activity output (empty `methods`, all totals 0) rather than a division/NaN artifact — the UI renders this as "No payment activity recorded" instead of a broken table. */
+export function summarizeCashReconciliation(rows: readonly CashReconciliationRow[]): CashReconciliationSummary {
+  const byMethod = new Map<string, CashReconciliationMethodTotal>();
+
+  for (const row of rows) {
+    const existing = byMethod.get(row.method) ?? { method: row.method, count: 0, gross: 0, refunds: 0, net: 0 };
+    const amount = Number(row.amount);
+
+    if (row.type === "refund") {
+      existing.refunds += amount;
+    } else {
+      existing.gross += amount;
+    }
+    existing.net += netPaymentAmount(row);
+    existing.count += 1;
+    byMethod.set(row.method, existing);
+  }
+
+  const methods = Array.from(byMethod.values()).sort((a, b) => a.method.localeCompare(b.method));
+
+  return {
+    methods,
+    paymentCount: rows.length,
+    totalGross: methods.reduce((sum, m) => sum + m.gross, 0),
+    totalRefunds: methods.reduce((sum, m) => sum + m.refunds, 0),
+    totalNet: methods.reduce((sum, m) => sum + m.net, 0),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Referral / Acquisition Source (Batch 6) — patients.referral_source is
+// freeform text with no existing normalization convention anywhere in this
+// codebase, so this deliberately does NOT merge case variants ("Instagram"
+// vs "instagram" stay distinct) — only whitespace is trimmed, and an
+// empty/null value collapses to one explicit "unspecified" bucket (`source:
+// null`) rather than several silently-different blanks. The UI maps `null`
+// to its own translated "Unknown / Not specified" label; this module stays
+// free of any hardcoded display string.
+// ---------------------------------------------------------------------------
+
+export interface ReferralSourcePatientRow {
+  referralSource: string | null | undefined;
+}
+
+export interface ReferralSourceCount {
+  /** null = no referral source recorded (blank or whitespace-only) — the UI renders this as its own "Unknown / Not specified" bucket, never silently dropped or merged into a real source. */
+  source: string | null;
+  count: number;
+  /** 0-100, one decimal place. */
+  percent: number;
+}
+
+/** Trims whitespace only — never lowercases/merges values, since no such normalization convention exists elsewhere for this column. Blank/whitespace-only collapses to null. */
+export function normalizeReferralSource(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/** Population = every row passed in (the caller decides the date range/window, e.g. patients created within a period) — an empty list returns an empty array, never a divide-by-zero percentage. */
+export function aggregateReferralSources(rows: readonly ReferralSourcePatientRow[]): ReferralSourceCount[] {
+  const total = rows.length;
+  const counts = new Map<string | null, number>();
+
+  for (const row of rows) {
+    const key = normalizeReferralSource(row.referralSource);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([source, count]) => ({
+      source,
+      count,
+      percent: total === 0 ? 0 : Math.round((count / total) * 1000) / 10,
+    }))
+    .sort((a, b) => b.count - a.count);
 }

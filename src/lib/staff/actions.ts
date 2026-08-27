@@ -14,6 +14,8 @@ import {
   staffCreateFormValuesFromFormData,
   isStaffAssignableRole,
 } from "@/lib/staff/schema";
+import { createNotification, getStaffIdsWithPermission } from "@/lib/notifications/service";
+import { buildStaffInvitedNotification } from "@/lib/notifications/events";
 
 export interface StaffActionState {
   error?: string;
@@ -101,6 +103,26 @@ export async function inviteStaffMember(formData: FormData): Promise<StaffAction
     entityId: staffId,
     changes: { role: values.role },
   });
+
+  // Best-effort, informational only — never blocks the invite that already
+  // succeeded above. No email, invite link, or token is included (per the
+  // approved design: this is an internal event notice, not a substitute for
+  // the actual Supabase Auth invite email). No separate dedup mechanism is
+  // needed here: a retried call can only ever reach this point once per
+  // email, since a second `inviteUserByEmail` for the same address fails
+  // with isDuplicateAuthError() well before this line runs.
+  const recipientStaffIds = await getStaffIdsWithPermission(supabase, staff.clinic_id, PERMISSIONS.SETTINGS_MANAGE);
+  await createNotification(
+    supabase,
+    buildStaffInvitedNotification({
+      clinicId: staff.clinic_id,
+      staffId,
+      fullName: values.full_name,
+      role: values.role,
+      createdBy: staff.id,
+      recipientStaffIds,
+    }),
+  );
 
   revalidatePath(STAFF_PATH);
   return { success: true, staffId };

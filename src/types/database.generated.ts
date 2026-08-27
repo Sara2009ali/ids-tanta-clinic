@@ -2310,6 +2310,7 @@ export type Database = {
           patient_id: string
           reason: string
           status: string
+          treatment_record_id: string | null
           updated_at: string
           visit_type_id: string | null
         }
@@ -2327,6 +2328,7 @@ export type Database = {
           patient_id: string
           reason: string
           status?: string
+          treatment_record_id?: string | null
           updated_at?: string
           visit_type_id?: string | null
         }
@@ -2344,10 +2346,18 @@ export type Database = {
           patient_id?: string
           reason?: string
           status?: string
+          treatment_record_id?: string | null
           updated_at?: string
           visit_type_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "recalls_treatment_record_id_fkey"
+            columns: ["treatment_record_id"]
+            isOneToOne: true
+            referencedRelation: "treatment_records"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "recalls_appointment_id_fkey"
             columns: ["appointment_id"]
@@ -2804,6 +2814,7 @@ export type Database = {
           is_active: boolean
           name: string
           price: number
+          recall_interval_months: number | null
           updated_at: string
         }
         Insert: {
@@ -2817,6 +2828,7 @@ export type Database = {
           is_active?: boolean
           name: string
           price?: number
+          recall_interval_months?: number | null
           updated_at?: string
         }
         Update: {
@@ -2830,6 +2842,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number
+          recall_interval_months?: number | null
           updated_at?: string
         }
         Relationships: [

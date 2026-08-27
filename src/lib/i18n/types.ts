@@ -504,6 +504,31 @@ export interface Dictionary {
       accounting: string;
     };
   };
+  reports: {
+    cashReconciliation: {
+      pageTitle: string;
+      pageDescription: string;
+      methodColumn: string;
+      countColumn: string;
+      grossColumn: string;
+      refundsColumn: string;
+      netColumn: string;
+      totalRow: string;
+      emptyTitle: string;
+      emptyDescription: string;
+    };
+    referralSources: {
+      pageTitle: string;
+      pageDescription: string;
+      sourceColumn: string;
+      patientCountColumn: string;
+      percentColumn: string;
+      totalRow: string;
+      unknownSource: string;
+      emptyTitle: string;
+      emptyDescription: string;
+    };
+  };
   clinic: {
     pageTitle: string;
     pageSubtitle: string;

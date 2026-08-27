@@ -47,6 +47,9 @@ function VisitTypeRow({
   const [price, setPrice] = useState(String(visitType.price));
   const [billingCode, setBillingCode] = useState(visitType.billing_code ?? "");
   const [color, setColor] = useState(visitType.color);
+  const [recallInterval, setRecallInterval] = useState(
+    visitType.recall_interval_months != null ? String(visitType.recall_interval_months) : "",
+  );
   const [error, setError] = useState<string | undefined>();
 
   function handleSave() {
@@ -58,6 +61,7 @@ function VisitTypeRow({
       formData.set("price", price);
       formData.set("billing_code", billingCode);
       formData.set("color", color);
+      formData.set("recall_interval_months", recallInterval);
       const result = await updateVisitType(visitType.id, formData);
       if (result.error) {
         setError(
@@ -66,6 +70,7 @@ function VisitTypeRow({
             result.fieldErrors?.price ??
             result.fieldErrors?.category ??
             result.fieldErrors?.billing_code ??
+            result.fieldErrors?.recall_interval_months ??
             result.error,
         );
         toast.error(result.error);
@@ -85,6 +90,7 @@ function VisitTypeRow({
     setPrice(String(visitType.price));
     setBillingCode(visitType.billing_code ?? "");
     setColor(visitType.color);
+    setRecallInterval(visitType.recall_interval_months != null ? String(visitType.recall_interval_months) : "");
     setError(undefined);
   }
 
@@ -199,6 +205,25 @@ function VisitTypeRow({
           (visitType.billing_code ?? "—")
         )}
       </TableCell>
+      <TableCell className="text-muted-foreground">
+        {editing ? (
+          <Input
+            type="number"
+            min={1}
+            step={1}
+            value={recallInterval}
+            onChange={(event) => setRecallInterval(event.target.value)}
+            disabled={pending}
+            placeholder="None"
+            aria-label="Recall interval in months"
+            className="h-8 w-20"
+          />
+        ) : visitType.recall_interval_months != null ? (
+          `${visitType.recall_interval_months} mo`
+        ) : (
+          "—"
+        )}
+      </TableCell>
       <TableCell className="text-muted-foreground">{visitType.clinic_name ?? "—"}</TableCell>
       <TableCell>
         <Badge variant={visitType.is_active ? "secondary" : "outline"}>
@@ -283,6 +308,7 @@ export function VisitTypesManager({
   const [newDuration, setNewDuration] = useState("30");
   const [newPrice, setNewPrice] = useState("0");
   const [newBillingCode, setNewBillingCode] = useState("");
+  const [newRecallInterval, setNewRecallInterval] = useState("");
   const [newColor, setNewColor] = useState(DEFAULT_COLOR);
   const [createError, setCreateError] = useState<string | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<VisitTypeForManagement | null>(null);
@@ -297,6 +323,7 @@ export function VisitTypesManager({
             result.fieldErrors?.price ??
             result.fieldErrors?.category ??
             result.fieldErrors?.billing_code ??
+            result.fieldErrors?.recall_interval_months ??
             result.error,
         );
         toast.error(result.error);
@@ -306,6 +333,7 @@ export function VisitTypesManager({
         setNewDuration("30");
         setNewPrice("0");
         setNewBillingCode("");
+        setNewRecallInterval("");
         setNewColor(DEFAULT_COLOR);
         setCreateError(undefined);
         toast.success("Procedure added");
@@ -421,6 +449,23 @@ export function VisitTypesManager({
             className="h-8 w-28"
           />
         </div>
+        <div className="space-y-1">
+          <Label htmlFor="new_visit_type_recall_interval" className="text-xs">
+            Recall interval (months)
+          </Label>
+          <Input
+            id="new_visit_type_recall_interval"
+            name="recall_interval_months"
+            type="number"
+            min={1}
+            step={1}
+            value={newRecallInterval}
+            onChange={(event) => setNewRecallInterval(event.target.value)}
+            placeholder="None"
+            disabled={pending}
+            className="h-8 w-24"
+          />
+        </div>
         {createError && <p className="text-xs text-destructive">{createError}</p>}
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
@@ -450,6 +495,7 @@ export function VisitTypesManager({
               <TableHead>Duration</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Billing code</TableHead>
+              <TableHead>Recall interval</TableHead>
               <TableHead>Clinic</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>

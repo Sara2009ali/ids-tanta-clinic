@@ -55,6 +55,7 @@ export async function createVisitType(formData: FormData): Promise<VisitTypeActi
       price: parsed.data.price,
       billing_code: parsed.data.billing_code,
       color: parsed.data.color,
+      recall_interval_months: parsed.data.recall_interval_months ?? null,
       clinic_id: staff.clinic_id,
     })
     .select()
@@ -101,6 +102,7 @@ export async function updateVisitType(visitTypeId: string, formData: FormData): 
       price: parsed.data.price,
       billing_code: parsed.data.billing_code,
       color: parsed.data.color,
+      recall_interval_months: parsed.data.recall_interval_months ?? null,
     })
     .eq("id", visitTypeId);
 

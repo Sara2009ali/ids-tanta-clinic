@@ -2,7 +2,14 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import { rangeToTimestampBounds, type ReportDateRange } from "@/lib/reports/date-range";
-import { aggregateProcedureRevenue, type ProcedureAmount } from "@/lib/reports/calculations";
+import {
+  aggregateProcedureRevenue,
+  aggregateReferralSources,
+  summarizeCashReconciliation,
+  type ProcedureAmount,
+  type ReferralSourceCount,
+  type CashReconciliationSummary,
+} from "@/lib/reports/calculations";
 import { sumNetPayments } from "@/lib/billing/calculations";
 
 /**
@@ -467,4 +474,57 @@ export async function getPaymentMethodDistribution(range: ReportDateRange): Prom
     totals.set(row.method, existing);
   }
   return Array.from(totals.entries()).map(([method, v]) => ({ method, ...v }));
+}
+
+// ---------------------------------------------------------------------------
+// Cash Reconciliation — recorded payment activity only (see
+// summarizeCashReconciliation's own doc comment for why there is no
+// opening/expected-cash figure). Clinic scope comes entirely from RLS on
+// `payments`, exactly like every other query in this file — no clinic_id is
+// ever accepted as a parameter here.
+// ---------------------------------------------------------------------------
+
+export async function getCashReconciliation(range: ReportDateRange): Promise<CashReconciliationSummary> {
+  const supabase = await createClient();
+  const { startIso, endIsoExclusive } = rangeToTimestampBounds(range);
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("amount, type, method")
+    .is("deleted_at", null)
+    .gte("paid_at", startIso)
+    .lt("paid_at", endIsoExclusive);
+
+  if (error) {
+    console.error("getCashReconciliation failed", error);
+    return summarizeCashReconciliation([]);
+  }
+
+  return summarizeCashReconciliation(data ?? []);
+}
+
+// ---------------------------------------------------------------------------
+// Referral / Acquisition Source — population is every patient *created* in
+// the selected range (patients.created_at), per the approved design: there
+// is no more-established "acquisition date" concept anywhere else in this
+// schema to prefer instead. No revenue/appointment attribution is claimed
+// here — patient count only, exactly per the approved v1 scope.
+// ---------------------------------------------------------------------------
+
+export async function getReferralSourceBreakdown(range: ReportDateRange): Promise<ReferralSourceCount[]> {
+  const supabase = await createClient();
+  const { startIso, endIsoExclusive } = rangeToTimestampBounds(range);
+
+  const { data, error } = await supabase
+    .from("patients")
+    .select("referral_source")
+    .gte("created_at", startIso)
+    .lt("created_at", endIsoExclusive);
+
+  if (error) {
+    console.error("getReferralSourceBreakdown failed", error);
+    return [];
+  }
+
+  return aggregateReferralSources((data ?? []).map((row) => ({ referralSource: row.referral_source })));
 }

@@ -113,11 +113,14 @@ export function RecallsTable({
                 </TableCell>
                 <TableCell>
                   <p className="line-clamp-2">{row.reason}</p>
-                  {row.procedure_name && (
-                    <Badge variant="outline" className="mt-1">
-                      {row.procedure_name}
-                    </Badge>
-                  )}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {row.procedure_name && <Badge variant="outline">{row.procedure_name}</Badge>}
+                    {row.treatment_record_id && (
+                      <Badge variant="secondary" title="Automatically generated from a completed treatment">
+                        Auto
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
                   {formatDate(row.due_date)}

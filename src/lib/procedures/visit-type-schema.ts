@@ -36,6 +36,18 @@ export const visitTypeFormSchema = z.object({
     .string()
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, "Use a hex color like #6366f1"),
+  // Nullable, no default — a service with no interval configured never
+  // generates an automatic recall (see recalls/calculations.ts's
+  // buildAutoRecallInsert). Deliberately no hardcoded clinical suggestion
+  // (3/6/12 months): the clinic decides, per procedure, or leaves it unset.
+  recall_interval_months: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? Number(value) : undefined))
+    .refine((value) => value === undefined || (Number.isInteger(value) && value > 0), {
+      message: "Enter a whole number of months greater than zero",
+    }),
 });
 
 export type VisitTypeFormValues = z.infer<typeof visitTypeFormSchema>;
@@ -53,5 +65,6 @@ export function visitTypeFormValuesFromFormData(formData: FormData) {
     price: str(formData, "price") ?? "0",
     billing_code: str(formData, "billing_code") ?? "",
     color: str(formData, "color") ?? "#6366f1",
+    recall_interval_months: str(formData, "recall_interval_months") ?? "",
   };
 }

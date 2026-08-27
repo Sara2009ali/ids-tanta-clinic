@@ -107,6 +107,31 @@ describe("visitTypeFormSchema", () => {
     expect(visitTypeFormSchema.safeParse({ ...VALID, price: "0" }).success).toBe(true);
     expect(visitTypeFormSchema.safeParse({ ...VALID, price: "-1" }).success).toBe(false);
   });
+
+  it("allows an empty recall interval, normalizing it to undefined (no automatic recall)", () => {
+    const result = visitTypeFormSchema.safeParse({ ...VALID, recall_interval_months: "" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.recall_interval_months).toBeUndefined();
+    }
+  });
+
+  it("parses a configured recall interval as a whole number", () => {
+    const result = visitTypeFormSchema.safeParse({ ...VALID, recall_interval_months: "6" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.recall_interval_months).toBe(6);
+    }
+  });
+
+  it("rejects a zero or negative recall interval", () => {
+    expect(visitTypeFormSchema.safeParse({ ...VALID, recall_interval_months: "0" }).success).toBe(false);
+    expect(visitTypeFormSchema.safeParse({ ...VALID, recall_interval_months: "-3" }).success).toBe(false);
+  });
+
+  it("rejects a fractional recall interval", () => {
+    expect(visitTypeFormSchema.safeParse({ ...VALID, recall_interval_months: "1.5" }).success).toBe(false);
+  });
 });
 
 describe("visitTypeFormValuesFromFormData", () => {
@@ -118,6 +143,7 @@ describe("visitTypeFormValuesFromFormData", () => {
     formData.set("price", "800");
     formData.set("billing_code", "D7140");
     formData.set("color", "#22c55e");
+    formData.set("recall_interval_months", "6");
     expect(visitTypeFormValuesFromFormData(formData)).toEqual({
       name: "Extraction",
       category: "Surgical",
@@ -125,6 +151,7 @@ describe("visitTypeFormValuesFromFormData", () => {
       price: "800",
       billing_code: "D7140",
       color: "#22c55e",
+      recall_interval_months: "6",
     });
   });
 
@@ -137,6 +164,7 @@ describe("visitTypeFormValuesFromFormData", () => {
       price: "0",
       billing_code: "",
       color: "#6366f1",
+      recall_interval_months: "",
     });
   });
 });

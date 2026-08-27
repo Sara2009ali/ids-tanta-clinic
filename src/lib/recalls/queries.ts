@@ -5,7 +5,7 @@ import type { AppointmentStatus, RecallStatus } from "@/types/domain";
 
 /** Shared select — every join a worklist row or a patient-scoped row needs, in one place so the two query functions below can't drift. */
 const RECALL_SELECT =
-  "id, patient_id, doctor_id, visit_type_id, appointment_id, reason, due_date, status, decided_at, notes, dismissed_reason, created_at, " +
+  "id, patient_id, doctor_id, visit_type_id, appointment_id, treatment_record_id, reason, due_date, status, decided_at, notes, dismissed_reason, created_at, " +
   "patients ( full_name, patient_number ), " +
   "staff_profiles ( full_name ), " +
   "visit_types ( name ), " +
@@ -24,6 +24,8 @@ export interface RecallListRow {
   appointment_scheduled_start: string | null;
   /** The linked appointment's *current* status, shown as context only — never used to change the recall's own status. See changeRecallStatus() / the "no auto-sync" rule. */
   appointment_status: AppointmentStatus | null;
+  /** Non-null only for a recall automatically generated from createTreatmentRecord() (Batch 6) — the sole signal distinguishing it from a manually created one (treatment_record_id is the idempotency key, see 0037_recall_automation.sql), never a separate "source" column. */
+  treatment_record_id: string | null;
   reason: string;
   due_date: string;
   status: RecallStatus;
@@ -39,6 +41,7 @@ interface RecallQueryRow {
   doctor_id: string | null;
   visit_type_id: string | null;
   appointment_id: string | null;
+  treatment_record_id: string | null;
   reason: string;
   due_date: string;
   status: RecallStatus;
@@ -65,6 +68,7 @@ function toRecallListRow(row: RecallQueryRow): RecallListRow {
     appointment_id: row.appointment_id,
     appointment_scheduled_start: row.appointments?.scheduled_start ?? null,
     appointment_status: row.appointments?.status ?? null,
+    treatment_record_id: row.treatment_record_id,
     reason: row.reason,
     due_date: row.due_date,
     status: row.status,

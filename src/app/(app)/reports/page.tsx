@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Activity,
+  Banknote,
   BarChart3,
   Boxes,
   CalendarDays,
@@ -60,6 +61,20 @@ const CATEGORIES = [
     description: "Due, overdue, scheduled, and completed recalls.",
     icon: RotateCcw,
     permission: PERMISSIONS.CLINICAL_VIEW,
+  },
+  {
+    href: "/reports/cash-reconciliation",
+    label: "Cash Reconciliation",
+    description: "Recorded payment activity by method, net of refunds.",
+    icon: Banknote,
+    permission: PERMISSIONS.BILLING_VIEW,
+  },
+  {
+    href: "/reports/referral-sources",
+    label: "Referral Sources",
+    description: "Where new patients say they heard about the clinic.",
+    icon: UserPlus,
+    permission: PERMISSIONS.PATIENTS_VIEW,
   },
 ] as const;
 

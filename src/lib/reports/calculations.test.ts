@@ -3,10 +3,13 @@ import {
   aggregateCountByDoctor,
   aggregateProcedureActivity,
   aggregateProcedureRevenue,
+  aggregateReferralSources,
   averageDaysBetween,
   computeCompletionRate,
   countByStatus,
+  normalizeReferralSource,
   partitionFulfillment,
+  summarizeCashReconciliation,
 } from "@/lib/reports/calculations";
 
 /**
@@ -227,5 +230,131 @@ describe("computeCompletionRate — Recall Performance's completed/(completed+di
 
   it("returns null when nothing has been decided yet, rather than dividing by zero", () => {
     expect(computeCompletionRate(0, 0)).toBeNull();
+  });
+});
+
+describe("summarizeCashReconciliation", () => {
+  it("returns zero-activity output for an empty dataset", () => {
+    expect(summarizeCashReconciliation([])).toEqual({
+      methods: [],
+      paymentCount: 0,
+      totalGross: 0,
+      totalRefunds: 0,
+      totalNet: 0,
+    });
+  });
+
+  it("summarizes a single payment", () => {
+    const result = summarizeCashReconciliation([{ method: "cash", type: "payment", amount: 500 }]);
+    expect(result.totalGross).toBe(500);
+    expect(result.totalRefunds).toBe(0);
+    expect(result.totalNet).toBe(500);
+    expect(result.paymentCount).toBe(1);
+    expect(result.methods).toEqual([{ method: "cash", count: 1, gross: 500, refunds: 0, net: 500 }]);
+  });
+
+  it("summarizes a single refund", () => {
+    const result = summarizeCashReconciliation([{ method: "cash", type: "refund", amount: 200 }]);
+    expect(result.totalGross).toBe(0);
+    expect(result.totalRefunds).toBe(200);
+    expect(result.totalNet).toBe(-200);
+  });
+
+  it("nets a payment against a refund on the same method", () => {
+    const result = summarizeCashReconciliation([
+      { method: "cash", type: "payment", amount: 1000 },
+      { method: "cash", type: "refund", amount: 200 },
+    ]);
+    expect(result.totalNet).toBe(800);
+    expect(result.methods[0]).toEqual({ method: "cash", count: 2, gross: 1000, refunds: 200, net: 800 });
+  });
+
+  it("aggregates multiple payment methods independently", () => {
+    const result = summarizeCashReconciliation([
+      { method: "cash", type: "payment", amount: 500 },
+      { method: "visa", type: "payment", amount: 1000 },
+      { method: "visa", type: "refund", amount: 100 },
+      { method: "bank_transfer", type: "payment", amount: 300 },
+    ]);
+    expect(result.methods).toHaveLength(3);
+    expect(result.totalGross).toBe(1800);
+    expect(result.totalRefunds).toBe(100);
+    expect(result.totalNet).toBe(1700);
+    const visa = result.methods.find((m) => m.method === "visa");
+    expect(visa).toEqual({ method: "visa", count: 2, gross: 1000, refunds: 100, net: 900 });
+  });
+
+  it("allows net to go negative when refunds exceed payments for a method", () => {
+    const result = summarizeCashReconciliation([
+      { method: "cash", type: "payment", amount: 100 },
+      { method: "cash", type: "refund", amount: 300 },
+    ]);
+    expect(result.totalNet).toBe(-200);
+  });
+});
+
+describe("normalizeReferralSource", () => {
+  it("trims whitespace", () => {
+    expect(normalizeReferralSource("  Instagram  ")).toBe("Instagram");
+  });
+
+  it("does not normalize case — distinct casings remain distinct", () => {
+    expect(normalizeReferralSource("instagram")).toBe("instagram");
+    expect(normalizeReferralSource("Instagram")).toBe("Instagram");
+  });
+
+  it("collapses null/undefined/blank/whitespace-only to null", () => {
+    expect(normalizeReferralSource(null)).toBeNull();
+    expect(normalizeReferralSource(undefined)).toBeNull();
+    expect(normalizeReferralSource("")).toBeNull();
+    expect(normalizeReferralSource("   ")).toBeNull();
+  });
+});
+
+describe("aggregateReferralSources", () => {
+  it("returns an empty array for an empty dataset", () => {
+    expect(aggregateReferralSources([])).toEqual([]);
+  });
+
+  it("counts a single referral source at 100%", () => {
+    const result = aggregateReferralSources([{ referralSource: "Instagram" }, { referralSource: "Instagram" }]);
+    expect(result).toEqual([{ source: "Instagram", count: 2, percent: 100 }]);
+  });
+
+  it("splits multiple referral sources with correct percentages", () => {
+    const result = aggregateReferralSources([
+      { referralSource: "Instagram" },
+      { referralSource: "Instagram" },
+      { referralSource: "Friend" },
+      { referralSource: "Friend" },
+      { referralSource: "Friend" },
+      { referralSource: "Google" },
+    ]);
+    expect(result).toEqual([
+      { source: "Friend", count: 3, percent: 50 },
+      { source: "Instagram", count: 2, percent: 33.3 },
+      { source: "Google", count: 1, percent: 16.7 },
+    ]);
+  });
+
+  it("groups null/empty/whitespace-only referral sources into one 'unspecified' bucket", () => {
+    const result = aggregateReferralSources([
+      { referralSource: null },
+      { referralSource: "" },
+      { referralSource: "   " },
+      { referralSource: undefined },
+    ]);
+    expect(result).toEqual([{ source: null, count: 4, percent: 100 }]);
+  });
+
+  it("sorts by count descending", () => {
+    const result = aggregateReferralSources([
+      { referralSource: "Rare" },
+      { referralSource: "Common" },
+      { referralSource: "Common" },
+      { referralSource: "Common" },
+    ]);
+    expect(result[0].source).toBe("Common");
+    expect(result[1].source).toBe("Rare");
   });
 });

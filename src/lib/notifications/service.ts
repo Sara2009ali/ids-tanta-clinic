@@ -73,3 +73,40 @@ export async function createNotification(
 
   return data;
 }
+
+/**
+ * Resolves clinic-scoped recipient staff ids for a given permission key —
+ * the same staff_profiles -> role_permissions -> permissions join
+ * sync_doctor_compensation() already performs in SQL
+ * (0016_notifications.sql, compensation.rule_missing), expressed as
+ * sequential PostgREST queries so a TS Server Action can resolve recipients
+ * itself instead of needing a new database function per event. Deliberately
+ * clinic-scoped only (no super_admin special-case) — recipient resolution
+ * for a specific clinic's operational event has never needed to reach
+ * platform-wide staff, matching the one existing precedent's own scope.
+ */
+export async function getStaffIdsWithPermission(
+  supabase: SupabaseClient<Database>,
+  clinicId: string,
+  permissionKey: string,
+): Promise<string[]> {
+  const { data: permission } = await supabase.from("permissions").select("id").eq("key", permissionKey).maybeSingle();
+  if (!permission) return [];
+
+  const { data: rolePermissions } = await supabase
+    .from("role_permissions")
+    .select("role_id")
+    .eq("permission_id", permission.id);
+  const roleIds = (rolePermissions ?? []).map((row) => row.role_id);
+  if (roleIds.length === 0) return [];
+
+  const { data: staff } = await supabase
+    .from("staff_profiles")
+    .select("id")
+    .eq("clinic_id", clinicId)
+    .in("role_id", roleIds)
+    .eq("is_active", true)
+    .is("deleted_at", null);
+
+  return (staff ?? []).map((row) => row.id);
+}
