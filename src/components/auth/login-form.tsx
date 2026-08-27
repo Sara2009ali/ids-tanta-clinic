@@ -12,7 +12,8 @@ import { useTranslation } from "@/components/locale-provider";
 const initialState: LoginFormState = {};
 
 export function LoginForm() {
-  const dict = useTranslation().onboarding.signup;
+  const { onboarding, auth } = useTranslation();
+  const dict = onboarding.signup;
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
@@ -31,7 +32,12 @@ export function LoginForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link href="/forgot-password" className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
+            {auth.forgotPasswordLink}
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"

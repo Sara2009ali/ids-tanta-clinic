@@ -50,6 +50,32 @@ export function staffCreateFormValuesFromFormData(formData: FormData) {
   };
 }
 
+export type StaffRoleReassignmentBlockReason = "self" | "invalid_role" | "target_not_assignable";
+
+export type StaffRoleReassignmentDecision =
+  | { allowed: true }
+  | { allowed: false; reason: StaffRoleReassignmentBlockReason };
+
+/**
+ * Pure authorization decision for changeStaffRole(), kept separate from the
+ * clinic-scoped DB lookup so the security-critical part — can this actor
+ * touch this target at all — is unit-testable without a Supabase client.
+ * Clinic-membership matching still happens in actions.ts via
+ * `.eq("clinic_id", staff.clinic_id)` on the target fetch, since that's a
+ * property of the database row, not something this function is given.
+ */
+export function decideStaffRoleReassignment(input: {
+  actorId: string;
+  targetId: string;
+  targetRole: string;
+  newRole: string;
+}): StaffRoleReassignmentDecision {
+  if (input.targetId === input.actorId) return { allowed: false, reason: "self" };
+  if (!isStaffAssignableRole(input.newRole)) return { allowed: false, reason: "invalid_role" };
+  if (!isStaffAssignableRole(input.targetRole)) return { allowed: false, reason: "target_not_assignable" };
+  return { allowed: true };
+}
+
 export type StaffInvitationStatus = "pending" | "active" | "inactive";
 
 /**

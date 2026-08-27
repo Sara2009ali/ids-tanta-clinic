@@ -5,6 +5,7 @@ import {
   staffCreateFormValuesFromFormData as fromFormData,
   isStaffAssignableRole,
   deriveStaffInvitationStatus,
+  decideStaffRoleReassignment,
   STAFF_ASSIGNABLE_ROLES,
 } from "@/lib/staff/schema";
 
@@ -104,5 +105,60 @@ describe("deriveStaffInvitationStatus", () => {
 
   it("returns active once they've signed in at least once", () => {
     expect(deriveStaffInvitationStatus({ isActive: true, lastSignInAt: "2026-01-01T00:00:00Z" })).toBe("active");
+  });
+});
+
+describe("decideStaffRoleReassignment", () => {
+  const base = { actorId: "actor-1", targetId: "target-1", targetRole: "reception", newRole: "admin" };
+
+  it("allows an admin to reassign another staff member between assignable roles", () => {
+    expect(decideStaffRoleReassignment(base)).toEqual({ allowed: true });
+  });
+
+  it("blocks self-reassignment even when the new role is itself assignable — prevents self-escalation", () => {
+    expect(decideStaffRoleReassignment({ ...base, targetId: "actor-1" })).toEqual({
+      allowed: false,
+      reason: "self",
+    });
+  });
+
+  it("blocks a self-reassignment attempt to a non-assignable role too — self-check runs before role validity", () => {
+    expect(decideStaffRoleReassignment({ ...base, targetId: "actor-1", newRole: "super_admin" })).toEqual({
+      allowed: false,
+      reason: "self",
+    });
+  });
+
+  it("rejects doctor and super_admin as a new role", () => {
+    expect(decideStaffRoleReassignment({ ...base, newRole: "doctor" })).toEqual({
+      allowed: false,
+      reason: "invalid_role",
+    });
+    expect(decideStaffRoleReassignment({ ...base, newRole: "super_admin" })).toEqual({
+      allowed: false,
+      reason: "invalid_role",
+    });
+  });
+
+  it("rejects an arbitrary/unknown new role", () => {
+    expect(decideStaffRoleReassignment({ ...base, newRole: "owner" })).toEqual({
+      allowed: false,
+      reason: "invalid_role",
+    });
+  });
+
+  it("refuses to retarget a doctor or super_admin row, regardless of the requested new role", () => {
+    expect(decideStaffRoleReassignment({ ...base, targetRole: "doctor" })).toEqual({
+      allowed: false,
+      reason: "target_not_assignable",
+    });
+    expect(decideStaffRoleReassignment({ ...base, targetRole: "super_admin" })).toEqual({
+      allowed: false,
+      reason: "target_not_assignable",
+    });
+  });
+
+  it("allows a no-op reassignment (new role equals current role)", () => {
+    expect(decideStaffRoleReassignment({ ...base, newRole: base.targetRole })).toEqual({ allowed: true });
   });
 });

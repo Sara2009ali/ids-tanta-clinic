@@ -9,7 +9,7 @@ import { VERIFIED_STAFF_ID_HEADER } from "@/lib/auth/verified-headers";
 // establishes is set client-side from the URL after this initial request
 // (see components/auth/activate-form.tsx), so the very first request here
 // still looks unauthenticated to this proxy and must not be redirected away.
-const PUBLIC_PATHS = ["/login", "/signup", "/activate"];
+const PUBLIC_PATHS = ["/login", "/signup", "/activate", "/forgot-password"];
 
 /**
  * Refreshes the Supabase session cookie on every request and enforces the

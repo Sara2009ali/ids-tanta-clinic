@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, LogOut, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, LogOut, SlidersHorizontal, KeyRound } from "lucide-react";
 import { logout } from "@/lib/auth/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -45,6 +45,10 @@ export async function UserMenu({ fullName, role }: { fullName: string; role: Sta
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="sm:hidden" />
+        <DropdownMenuItem render={<Link href="/settings/account" />}>
+          <KeyRound />
+          {dict.accountMenuItem}
+        </DropdownMenuItem>
         <DropdownMenuItem render={<Link href="/settings/preferences" />}>
           <SlidersHorizontal />
           {dict.preferencesMenuItem}

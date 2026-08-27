@@ -246,6 +246,10 @@ export interface Dictionary {
     preferencesCardDescription: string;
     managePreferences: string;
     preferencesMenuItem: string;
+    accountCardTitle: string;
+    accountCardDescription: string;
+    manageAccount: string;
+    accountMenuItem: string;
     preferences: {
       pageTitle: string;
       pageDescription: string;
@@ -481,6 +485,8 @@ export interface Dictionary {
     reactivate: string;
     noStaffTitle: string;
     noStaffDescription: string;
+    changeRoleLabel: string;
+    roleChangedToast: string;
     form: {
       title: string;
       description: string;
@@ -587,5 +593,37 @@ export interface Dictionary {
     hoursAgo: string;
     dayAgo: string;
     daysAgo: string;
+  };
+  auth: {
+    forgotPasswordLink: string;
+    forgotPassword: {
+      pageTitle: string;
+      pageSubtitle: string;
+      emailLabel: string;
+      emailPlaceholder: string;
+      submit: string;
+      successMessage: string;
+      backToLogin: string;
+      missingEmailError: string;
+    };
+  };
+  account: {
+    pageTitle: string;
+    pageSubtitle: string;
+    identitySectionTitle: string;
+    nameLabel: string;
+    emailLabel: string;
+    roleLabel: string;
+    passwordSectionTitle: string;
+    passwordSectionDescription: string;
+    currentPasswordLabel: string;
+    newPasswordLabel: string;
+    confirmPasswordLabel: string;
+    submit: string;
+    passwordUpdatedToast: string;
+    currentPasswordIncorrect: string;
+    passwordTooShort: string;
+    passwordsDontMatch: string;
+    genericError: string;
   };
 }

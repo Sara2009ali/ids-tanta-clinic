@@ -4,16 +4,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StaffStatusActions } from "@/components/staff/staff-status-actions";
+import { StaffRoleSelect } from "@/components/staff/staff-role-select";
 import { useTranslation } from "@/components/locale-provider";
 import type { StaffForManagement } from "@/lib/staff/queries";
-import type { StaffInvitationStatus } from "@/lib/staff/schema";
+import { isStaffAssignableRole, type StaffInvitationStatus } from "@/lib/staff/schema";
 
 function StatusBadge({ status, labels }: { status: StaffInvitationStatus; labels: Record<StaffInvitationStatus, string> }) {
   const variant = status === "active" ? "secondary" : status === "pending" ? "outline" : "outline";
   return <Badge variant={variant}>{labels[status]}</Badge>;
 }
 
-export function StaffTable({ staff }: { staff: StaffForManagement[] }) {
+export function StaffTable({ staff, currentStaffId }: { staff: StaffForManagement[]; currentStaffId: string }) {
   const dict = useTranslation().staff;
 
   if (staff.length === 0) {
@@ -46,7 +47,13 @@ export function StaffTable({ staff }: { staff: StaffForManagement[] }) {
                   {member.email && <span className="text-xs text-muted-foreground">{member.email}</span>}
                 </div>
               </TableCell>
-              <TableCell className="text-muted-foreground">{dict.roles[member.role]}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {isStaffAssignableRole(member.role) && member.id !== currentStaffId ? (
+                  <StaffRoleSelect staffId={member.id} role={member.role} />
+                ) : (
+                  dict.roles[member.role]
+                )}
+              </TableCell>
               <TableCell>
                 <StatusBadge status={member.status} labels={statusLabels} />
               </TableCell>

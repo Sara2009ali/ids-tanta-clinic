@@ -18,7 +18,7 @@ import { typography } from "@/lib/typography";
  * covers every other role.
  */
 export default async function StaffPage() {
-  await requirePermission(PERMISSIONS.SETTINGS_MANAGE);
+  const currentStaff = await requirePermission(PERMISSIONS.SETTINGS_MANAGE);
   const [staff, locale] = await Promise.all([listStaffForManagement(), getLocale()]);
   const dict = getDictionary(locale).staff;
 
@@ -42,7 +42,7 @@ export default async function StaffPage() {
           <CardTitle className="text-base">{dict.title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <StaffTable staff={staff} />
+          <StaffTable staff={staff} currentStaffId={currentStaff.id} />
         </CardContent>
       </Card>
     </div>

@@ -13,6 +13,7 @@ import {
   staffCreateFormSchema,
   staffCreateFormValuesFromFormData,
   isStaffAssignableRole,
+  decideStaffRoleReassignment,
 } from "@/lib/staff/schema";
 import { createNotification, getStaffIdsWithPermission } from "@/lib/notifications/service";
 import { buildStaffInvitedNotification } from "@/lib/notifications/events";
@@ -191,6 +192,81 @@ export async function setStaffActive(staffId: string, isActive: boolean): Promis
     action: isActive ? "staff.reactivated" : "staff.deactivated",
     entityType: "staff",
     entityId: staffId,
+  });
+
+  revalidatePath(STAFF_PATH);
+  return { success: true, staffId };
+}
+
+/**
+ * Reassigns a staff member's role among the same clinic-manageable set
+ * inviteStaffMember() already allows (admin/assistant/reception/
+ * accounting) — never doctor or super_admin, so this action can never
+ * become a path into either the doctor-specific flow or the platform
+ * role. Mirrors setStaffActive()'s exact guard shape: self-modification is
+ * blocked outright (an admin cannot change their own role here, which is
+ * both "prevent self-escalation" and, just as importantly, "prevent an
+ * admin from locking themselves out of admin by mistake"), the target is
+ * re-fetched scoped to the caller's own clinic_id before any write (belt-
+ * and-suspenders on top of RLS), and only a row already holding one of the
+ * assignable roles can be retargeted — a doctor or super_admin row is
+ * never reachable through this action, regardless of what id is passed.
+ */
+export async function changeStaffRole(staffId: string, newRole: string): Promise<StaffActionState> {
+  const authz = await ensurePermission(PERMISSIONS.SETTINGS_MANAGE);
+  if (!authz.ok) return { error: authz.error };
+  const staff = authz.staff;
+  if (!staff.clinic_id) return { error: "Your account isn't assigned to a clinic yet." };
+
+  const supabase = await createClient();
+  const { data: target } = await supabase
+    .from("staff_profiles")
+    .select("id, role")
+    .eq("id", staffId)
+    .eq("clinic_id", staff.clinic_id)
+    .maybeSingle();
+
+  if (!target) {
+    return { error: "Staff member not found." };
+  }
+
+  const decision = decideStaffRoleReassignment({
+    actorId: staff.id,
+    targetId: staffId,
+    targetRole: target.role,
+    newRole,
+  });
+
+  if (!decision.allowed || !isStaffAssignableRole(newRole)) {
+    if (decision.allowed === false && decision.reason === "self") return { error: "You can't change your own role." };
+    if (decision.allowed === false && decision.reason === "target_not_assignable") {
+      return { error: "This account is managed from a different screen." };
+    }
+    return { error: "Choose a valid role." };
+  }
+
+  if (target.role === newRole) {
+    return { success: true, staffId };
+  }
+
+  const { error } = await supabase
+    .from("staff_profiles")
+    .update({ role: newRole })
+    .eq("id", staffId)
+    .eq("clinic_id", staff.clinic_id);
+
+  if (error) {
+    console.error("changeStaffRole: update failed", error);
+    return { error: "Couldn't update this staff member's role. Please try again." };
+  }
+
+  await writeAuditLog(supabase, {
+    clinicId: staff.clinic_id,
+    actorId: staff.id,
+    action: "staff.role_changed",
+    entityType: "staff",
+    entityId: staffId,
+    changes: { from: target.role, to: newRole },
   });
 
   revalidatePath(STAFF_PATH);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Users, UsersRound, SlidersHorizontal, Tags, ShieldCheck } from "lucide-react";
+import { Building2, Users, UsersRound, SlidersHorizontal, Tags, ShieldCheck, KeyRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { requireStaff } from "@/lib/auth/session";
@@ -40,6 +40,21 @@ export default async function SettingsPage() {
             <p className="text-sm text-muted-foreground">{dict.preferencesCardDescription}</p>
             <Button size="sm" render={<Link href="/settings/preferences" />}>
               {dict.managePreferences}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <KeyRound className="size-4" />
+              {dict.accountCardTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">{dict.accountCardDescription}</p>
+            <Button size="sm" render={<Link href="/settings/account" />}>
+              {dict.manageAccount}
             </Button>
           </CardContent>
         </Card>
