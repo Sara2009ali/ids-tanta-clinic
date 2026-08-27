@@ -82,7 +82,7 @@ export function NotificationBell({
               const Icon = meta.icon;
               const isUnread = item.status === "unread";
               const content = (
-                <div className="flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-accent/40">
+                <div className="flex items-start gap-2.5 px-3 py-2.5 text-start transition-colors hover:bg-accent/40">
                   <Icon className={`mt-0.5 size-4 shrink-0 ${meta.className}`} />
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <p className={`text-sm ${isUnread ? "font-medium" : "text-foreground/90"}`}>{item.notification.title}</p>

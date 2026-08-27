@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink } from "@/components/layout/back-link";
 import { DoctorScheduleSelector } from "@/components/appointments/doctor-schedule-selector";
 import { ExceptionsManager } from "@/components/appointments/exceptions-manager";
 import { VacationsManager } from "@/components/appointments/vacations-manager";
@@ -48,13 +46,7 @@ export default async function DoctorSchedulePage({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          render={<Link href="/appointments" aria-label="Back to appointments" />}
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
+        <BackLink href="/appointments" ariaLabel="Back to appointments" />
         <div>
           <h1 className={typography.pageTitle}>Doctor Schedules</h1>
           <p className="text-sm text-muted-foreground">Weekly hours, vacations, and one-off exceptions.</p>

@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -62,10 +60,7 @@ export default async function TreatmentPlansReportPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>Treatment Plans</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Plan and item counts reflect their current status — this clinic doesn&apos;t keep a history of past status

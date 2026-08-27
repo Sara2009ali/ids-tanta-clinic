@@ -236,7 +236,7 @@ export function PriceListsManager({
             <TableRow>
               <TableHead>{dict.nameColumn}</TableHead>
               <TableHead>{dict.pricingColumn}</TableHead>
-              <TableHead className="text-right">{dict.actionsColumn}</TableHead>
+              <TableHead className="text-end">{dict.actionsColumn}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

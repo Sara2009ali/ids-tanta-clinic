@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Clock, FileWarning, Users } from "lucide-react";
+import { ArrowRight, Clock, FileWarning, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { UnresolvedCompensationFilters } from "@/components/compensation/unresolved-compensation-filters";
 import { UnresolvedCompensationTable, formatAge, type UnresolvedEntryRow } from "@/components/compensation/unresolved-compensation-table";
@@ -99,16 +100,13 @@ export default async function UnresolvedCompensationPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/compensation" />}>
-            <ArrowLeft className="size-4" />
-            Compensation
-          </Button>
+          <BackLink href="/compensation" label="Compensation" />
           <h1 className={cn("mt-1", typography.pageTitle)}>Unresolved Compensation</h1>
           <p className="text-sm text-muted-foreground">Payments recorded with no matching compensation rate.</p>
         </div>
         <Button variant="outline" render={<Link href="/compensation/rules" />}>
           Go to Rules
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4 rtl:rotate-180" />
         </Button>
       </div>
 

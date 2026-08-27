@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink } from "@/components/layout/back-link";
 import { ChairsManager } from "@/components/appointments/chairs-manager";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
@@ -19,13 +17,7 @@ export default async function ChairsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          render={<Link href="/appointments" aria-label="Back to appointments" />}
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
+        <BackLink href="/appointments" ariaLabel="Back to appointments" />
         <div>
           <h1 className={typography.pageTitle}>Chairs</h1>
           <p className="text-sm text-muted-foreground">

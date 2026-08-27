@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, AlertCircle, FileWarning, HandCoins, Wallet } from "lucide-react";
+import { ArrowRight, AlertCircle, FileWarning, HandCoins, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { formatCurrency } from "@/lib/billing/format";
@@ -29,16 +30,13 @@ export default async function CompensationReportPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-            <ArrowLeft className="size-4" />
-            Reports
-          </Button>
+          <BackLink href="/reports" label="Reports" />
           <h1 className={cn("mt-1", typography.pageTitle)}>Compensation</h1>
           <p className="text-sm text-muted-foreground">This month&apos;s clinic-wide compensation summary.</p>
         </div>
         <Button variant="outline" render={<Link href="/compensation" />}>
           Open Compensation
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4 rtl:rotate-180" />
         </Button>
       </div>
 

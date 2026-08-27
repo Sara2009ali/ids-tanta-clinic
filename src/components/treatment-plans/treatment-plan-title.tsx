@@ -91,7 +91,7 @@ export function TreatmentPlanTitle({
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="group flex items-center gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex items-center gap-2 rounded-md text-start focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       aria-label="Edit treatment plan title"
     >
       <h1 className={typography.pageTitle}>{displayTitle}</h1>

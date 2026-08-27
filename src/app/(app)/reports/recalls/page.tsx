@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft, CalendarClock, CheckCircle2, CircleSlash, Clock, RotateCcw, TriangleAlert } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CalendarClock, CheckCircle2, CircleSlash, Clock, RotateCcw, TriangleAlert } from "lucide-react";
+import { BackLink } from "@/components/layout/back-link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportDateRangeFilter } from "@/components/reports/report-date-range-filter";
 import { DoctorFilterSelect } from "@/components/reports/doctor-filter-select";
@@ -56,10 +55,7 @@ export default async function RecallsReportPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>Recalls</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Due/scheduled/completed/dismissed reflect current recall status for recalls created or decided within the

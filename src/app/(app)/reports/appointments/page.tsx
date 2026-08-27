@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft, CalendarDays, UserX, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CalendarDays, UserX, XCircle } from "lucide-react";
+import { BackLink } from "@/components/layout/back-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportDateRangeFilter } from "@/components/reports/report-date-range-filter";
@@ -58,10 +57,7 @@ export default async function AppointmentsReportPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>Appointments</h1>
         <p className="text-sm text-muted-foreground">Volume, cancellations, and no-shows.</p>
       </div>

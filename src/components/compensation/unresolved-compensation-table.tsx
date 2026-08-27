@@ -86,7 +86,7 @@ export function UnresolvedCompensationTable({
             <TableHead>Invoice</TableHead>
             <TableHead className="text-right">Payment Amount</TableHead>
             <TableHead>Age</TableHead>
-            {canManage && <TableHead className="text-right">Actions</TableHead>}
+            {canManage && <TableHead className="text-end">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -110,7 +110,7 @@ export function UnresolvedCompensationTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{formatAge(entry.created_at)}</TableCell>
                 {canManage && (
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <Button variant="outline" size="sm" disabled={pending} onClick={() => handleResolve(entry.id)}>
                       {isResolving && <Loader2 className="size-3.5 animate-spin" />}
                       Resolve

@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft, Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Wallet } from "lucide-react";
+import { BackLink } from "@/components/layout/back-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -47,10 +46,7 @@ export default async function CashReconciliationPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>{dict.pageTitle}</h1>
         <p className="text-sm text-muted-foreground">{dict.pageDescription}</p>
       </div>

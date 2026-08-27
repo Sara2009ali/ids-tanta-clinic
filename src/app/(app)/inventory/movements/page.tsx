@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { MovementsTable } from "@/components/inventory/movements-table";
 import { AdjustmentFormSheet } from "@/components/inventory/adjustment-form-sheet";
 import { ConsumptionFormSheet } from "@/components/inventory/consumption-form-sheet";
@@ -23,9 +21,7 @@ export default async function InventoryMovementsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" render={<Link href="/inventory" aria-label="Back to inventory" />}>
-            <ArrowLeft className="size-4" />
-          </Button>
+          <BackLink href="/inventory" ariaLabel="Back to inventory" />
           <div>
             <h1 className={typography.pageTitle}>Movements</h1>
             <p className="text-sm text-muted-foreground">Every stock change, clinic-wide.</p>

@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { PriceListsManager } from "@/components/pricing/price-lists-manager";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
@@ -18,10 +16,7 @@ export default async function PriceListsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Button size="sm" variant="ghost" className="-ms-2" render={<Link href="/procedures" />}>
-          <ArrowLeft className="size-4" />
-          {dict.backToProcedures}
-        </Button>
+        <BackLink href="/procedures" label={dict.backToProcedures} />
         <div>
           <h1 className={typography.pageTitle}>{dict.pageTitle}</h1>
           <p className="text-sm text-muted-foreground">{dict.pageDescription}</p>

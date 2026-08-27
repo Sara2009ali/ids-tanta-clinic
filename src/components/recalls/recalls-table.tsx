@@ -98,7 +98,7 @@ export function RecallsTable({
             <TableHead>Status</TableHead>
             <TableHead>Assigned Doctor</TableHead>
             <TableHead>Linked Appointment</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-end">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { Badge } from "@/components/ui/badge";
 import { PriceListItemsEditor } from "@/components/pricing/price-list-items-editor";
 import { requirePermission } from "@/lib/authz/session";
@@ -28,10 +26,7 @@ export default async function PriceListDetailPage({ params }: { params: Promise<
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Button size="sm" variant="ghost" className="-ms-2" render={<Link href="/procedures/price-lists" />}>
-          <ArrowLeft className="size-4" />
-          {dict.detail.backToPriceLists}
-        </Button>
+        <BackLink href="/procedures/price-lists" label={dict.detail.backToPriceLists} />
         <div className="flex items-center gap-2">
           <h1 className={typography.pageTitle}>{priceList.name}</h1>
           {priceList.is_default && <Badge variant="secondary">{dict.defaultBadge}</Badge>}

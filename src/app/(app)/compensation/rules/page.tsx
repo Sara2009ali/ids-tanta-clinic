@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompensationRulesFilters } from "@/components/compensation/compensation-rules-filters";
 import { CompensationRulesTable } from "@/components/compensation/compensation-rules-table";
@@ -100,10 +98,7 @@ export default async function CompensationRulesPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/compensation" />}>
-            <ArrowLeft className="size-4" />
-            Compensation
-          </Button>
+          <BackLink href="/compensation" label="Compensation" />
           <h1 className={cn("mt-1", typography.pageTitle)}>Compensation Rules</h1>
           <p className="text-sm text-muted-foreground">What each doctor earns, per procedure.</p>
         </div>

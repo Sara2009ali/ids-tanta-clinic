@@ -51,7 +51,7 @@ export function ProductsTable({
             <TableHead>Stock</TableHead>
             <TableHead>Supplier</TableHead>
             <TableHead>Status</TableHead>
-            {canManage && <TableHead className="text-right">Actions</TableHead>}
+            {canManage && <TableHead className="text-end">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,7 +70,7 @@ export function ProductsTable({
                     {product.stock_level} {INVENTORY_UNIT_LABELS[product.unit as InventoryUnit]}
                   </span>
                   {isLow && (
-                    <Badge variant="destructive" className="ml-2">
+                    <Badge variant="destructive" className="ms-2">
                       Low
                     </Badge>
                   )}
@@ -82,7 +82,7 @@ export function ProductsTable({
                   </Badge>
                 </TableCell>
                 {canManage && (
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <ProductRowActions product={product} categories={categories} suppliers={suppliers} />
                   </TableCell>
                 )}

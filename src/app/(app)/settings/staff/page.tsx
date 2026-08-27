@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink } from "@/components/layout/back-link";
 import { StaffFormSheet } from "@/components/staff/staff-form-sheet";
 import { StaffTable } from "@/components/staff/staff-table";
 import { requirePermission } from "@/lib/authz/session";
@@ -26,9 +24,7 @@ export default async function StaffPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" render={<Link href="/settings" aria-label="Back to settings" />}>
-            <ArrowLeft className="size-4" />
-          </Button>
+          <BackLink href="/settings" ariaLabel="Back to settings" />
           <div>
             <h1 className={typography.pageTitle}>{dict.title}</h1>
             <p className="text-sm text-muted-foreground">{dict.subtitle}</p>

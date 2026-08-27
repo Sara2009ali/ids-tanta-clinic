@@ -75,7 +75,7 @@ export function PaymentsHistory({
               <TableHead>Reference</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Date</TableHead>
-              {canEdit && <TableHead className="text-right">Actions</TableHead>}
+              {canEdit && <TableHead className="text-end">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -91,7 +91,7 @@ export function PaymentsHistory({
                 <TableCell className="text-right tabular-nums">{formatCurrency(Number(payment.amount))}</TableCell>
                 <TableCell className="text-muted-foreground">{formatTimestamp(payment.paid_at)}</TableCell>
                 {canEdit && (
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     {payment.type === "payment" && (
                       <Button
                         variant="ghost"

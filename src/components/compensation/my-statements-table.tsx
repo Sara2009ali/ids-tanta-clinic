@@ -51,7 +51,7 @@ export function MyStatementsTable({
             <button
               type="button"
               onClick={() => toggle(settlement.id)}
-              className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-accent/40"
+              className="flex w-full items-center justify-between gap-4 px-4 py-3 text-start hover:bg-accent/40"
             >
               <div className="flex items-center gap-2 text-sm font-medium">
                 {isExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}

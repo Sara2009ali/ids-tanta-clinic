@@ -125,7 +125,7 @@ export function TreatmentRecordsList({
             <TableHead>Procedure</TableHead>
             <TableHead>Doctor</TableHead>
             {canEdit && (
-              <TableHead className="text-right">
+              <TableHead className="text-end">
                 <span className="sr-only">Actions</span>
               </TableHead>
             )}
@@ -161,7 +161,7 @@ export function TreatmentRecordsList({
                   </TableCell>
                   <TableCell>Dr. {doctorName}</TableCell>
                   {canEdit && (
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => startEdit(record)}>
                           <Pencil className="size-3.5" />

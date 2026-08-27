@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { requirePermission } from "@/lib/authz/session";
 import { PERMISSIONS } from "@/lib/authz/permissions";
 import { listInsurersWithPlans } from "@/lib/insurance/queries";
@@ -20,9 +18,7 @@ export default async function InsuranceSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" render={<Link href="/settings" aria-label="Back to settings" />}>
-          <ArrowLeft className="size-4" />
-        </Button>
+        <BackLink href="/settings" ariaLabel="Back to settings" />
         <div>
           <h1 className={typography.pageTitle}>{dict.pageTitle}</h1>
           <p className="text-sm text-muted-foreground">{dict.pageDescription}</p>

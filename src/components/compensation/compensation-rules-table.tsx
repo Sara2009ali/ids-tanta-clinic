@@ -110,7 +110,7 @@ export function CompensationRulesTable({
               <TableHead>Rate</TableHead>
               <TableHead>Effective</TableHead>
               {mode === "history" && <TableHead>Status</TableHead>}
-              {mode === "active" && canManage && <TableHead className="text-right">Actions</TableHead>}
+              {mode === "active" && canManage && <TableHead className="text-end">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -145,7 +145,7 @@ export function CompensationRulesTable({
                     </TableCell>
                   )}
                   {mode === "active" && canManage && (
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="sm" onClick={() => setReplacingRule(rule)}>
                           <Pencil className="size-3.5" />

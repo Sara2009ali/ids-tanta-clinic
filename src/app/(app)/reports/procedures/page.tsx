@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ReportDateRangeFilter } from "@/components/reports/report-date-range-filter";
 import { formatCurrency } from "@/lib/billing/format";
@@ -48,10 +46,7 @@ export default async function ProceduresReportPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>Procedures</h1>
         <p className="text-sm text-muted-foreground">Top procedures by revenue, and payment-method distribution.</p>
       </div>

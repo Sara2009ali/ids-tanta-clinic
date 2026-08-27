@@ -498,7 +498,7 @@ export function VisitTypesManager({
               <TableHead>Recall interval</TableHead>
               <TableHead>Clinic</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-end">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft, Stethoscope } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Stethoscope } from "lucide-react";
+import { BackLink } from "@/components/layout/back-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -75,10 +74,7 @@ export default async function ClinicalActivityReportPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>Clinical Activity</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
           What was clinically performed, by procedure and by doctor — counted directly from treatment records, not

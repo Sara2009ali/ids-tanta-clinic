@@ -219,7 +219,7 @@ export function CategoriesManager({ categories, canManage }: { categories: Categ
               <TableHead>Name</TableHead>
               <TableHead>Clinic</TableHead>
               <TableHead>Status</TableHead>
-              {canManage && <TableHead className="text-right">Actions</TableHead>}
+              {canManage && <TableHead className="text-end">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>

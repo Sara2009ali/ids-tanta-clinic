@@ -317,7 +317,7 @@ export function SuppliersManager({ suppliers, canManage }: { suppliers: Supplier
               <TableHead>Phone</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Status</TableHead>
-              {canManage && <TableHead className="text-right">Actions</TableHead>}
+              {canManage && <TableHead className="text-end">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>

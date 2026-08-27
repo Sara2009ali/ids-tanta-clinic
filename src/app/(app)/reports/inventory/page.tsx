@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, ArrowRight, CalendarClock, Package, Warehouse } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, Package, Warehouse } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/layout/back-link";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/billing/format";
@@ -41,16 +42,13 @@ export default async function InventoryReportPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-            <ArrowLeft className="size-4" />
-            Reports
-          </Button>
+          <BackLink href="/reports" label="Reports" />
           <h1 className={cn("mt-1", typography.pageTitle)}>Inventory</h1>
           <p className="text-sm text-muted-foreground">Stock value, low stock, and expiring items.</p>
         </div>
         <Button variant="outline" render={<Link href="/inventory" />}>
           Open Inventory
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-4 rtl:rotate-180" />
         </Button>
       </div>
 

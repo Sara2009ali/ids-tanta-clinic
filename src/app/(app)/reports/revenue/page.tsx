@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft, LineChart, Receipt, Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LineChart, Receipt, Wallet } from "lucide-react";
+import { BackLink } from "@/components/layout/back-link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportDateRangeFilter } from "@/components/reports/report-date-range-filter";
@@ -57,10 +56,7 @@ export default async function RevenueReportPage({
   return (
     <div className="space-y-6">
       <div>
-        <Button variant="ghost" size="sm" render={<Link href="/reports" />}>
-          <ArrowLeft className="size-4" />
-          Reports
-        </Button>
+        <BackLink href="/reports" label="Reports" />
         <h1 className={cn("mt-1", typography.pageTitle)}>Revenue</h1>
         <p className="text-sm text-muted-foreground">Completed payments and outstanding balances.</p>
       </div>
