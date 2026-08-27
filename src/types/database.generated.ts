@@ -2459,6 +2459,33 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduler_runs: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          results: Json | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          results?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          results?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       staff_profiles: {
         Row: {
           avatar_url: string | null
@@ -2860,6 +2887,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_scheduler_run: {
+        Args: { p_stale_after_seconds?: number }
+        Returns: string
+      }
       compute_full_compensation: {
         Args: { p_config: Json; p_subtotal: number; p_type: string }
         Returns: number
@@ -2883,6 +2914,10 @@ export type Database = {
         Returns: string
       }
       current_permissions: { Args: never; Returns: string[] }
+      finish_scheduler_run: {
+        Args: { p_results?: Json; p_run_id: string; p_status: string }
+        Returns: undefined
+      }
       recalculate_invoice_totals: {
         Args: { target_invoice_id: string }
         Returns: undefined
