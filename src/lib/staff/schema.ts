@@ -76,6 +76,23 @@ export function decideStaffRoleReassignment(input: {
   return { allowed: true };
 }
 
+/**
+ * The actual write payload for a role reassignment. `role_id` — not the
+ * legacy `role` column — is what `current_permissions()` resolves
+ * permissions from (see `sync_staff_role_id()` in
+ * `0007_reapply_rbac.sql`), and that trigger only recomputes `role_id`
+ * when it's NULL, which it never is on an existing row. Explicitly nulling
+ * `role_id` here forces the trigger to recompute it from the NEW role
+ * we're setting, using the same mapping
+ * (`private.role_key_for_legacy_role`) invite-time provisioning already
+ * relies on — this file never duplicates that mapping. Without this,
+ * changeStaffRole() would change the displayed role without changing the
+ * account's actual permissions.
+ */
+export function buildStaffRoleUpdate(newRole: StaffAssignableRole): { role: StaffAssignableRole; role_id: null } {
+  return { role: newRole, role_id: null };
+}
+
 export type StaffInvitationStatus = "pending" | "active" | "inactive";
 
 /**

@@ -6,6 +6,7 @@ import {
   isStaffAssignableRole,
   deriveStaffInvitationStatus,
   decideStaffRoleReassignment,
+  buildStaffRoleUpdate,
   STAFF_ASSIGNABLE_ROLES,
 } from "@/lib/staff/schema";
 
@@ -160,5 +161,18 @@ describe("decideStaffRoleReassignment", () => {
 
   it("allows a no-op reassignment (new role equals current role)", () => {
     expect(decideStaffRoleReassignment({ ...base, newRole: base.targetRole })).toEqual({ allowed: true });
+  });
+});
+
+describe("buildStaffRoleUpdate", () => {
+  it("always nulls role_id alongside the new role — this is what forces sync_staff_role_id() to recompute effective permissions for the NEW role instead of leaving the stale role_id (and therefore stale permissions) from before the reassignment", () => {
+    for (const role of STAFF_ASSIGNABLE_ROLES) {
+      expect(buildStaffRoleUpdate(role)).toEqual({ role, role_id: null });
+    }
+  });
+
+  it("never omits role_id — a payload that forgot it would silently reintroduce the Batch 9 bug", () => {
+    const payload = buildStaffRoleUpdate("admin");
+    expect(payload).toHaveProperty("role_id", null);
   });
 });

@@ -2,8 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RECALL_STATUS_LABELS, type RecallStatus } from "@/types/domain";
 import { buildRecallsHref, type RecallsQueryParams } from "@/components/recalls/recalls-query-params";
@@ -57,10 +56,12 @@ export function RecallsFilters({ value, doctors }: { value: RecallsQueryParams; 
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-      <div className="relative sm:min-w-56 sm:max-w-sm sm:flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={searchText} onChange={handleSearchChange} placeholder="Search by reason..." className="pl-9" />
-      </div>
+      <SearchInput
+        value={searchText}
+        onChange={handleSearchChange}
+        placeholder="Search by reason..."
+        className="sm:min-w-56 sm:max-w-sm sm:flex-1"
+      />
 
       <Select
         items={STATUS_ITEMS}

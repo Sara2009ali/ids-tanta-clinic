@@ -14,6 +14,7 @@ import {
   staffCreateFormValuesFromFormData,
   isStaffAssignableRole,
   decideStaffRoleReassignment,
+  buildStaffRoleUpdate,
 } from "@/lib/staff/schema";
 import { createNotification, getStaffIdsWithPermission } from "@/lib/notifications/service";
 import { buildStaffInvitedNotification } from "@/lib/notifications/events";
@@ -251,7 +252,7 @@ export async function changeStaffRole(staffId: string, newRole: string): Promise
 
   const { error } = await supabase
     .from("staff_profiles")
-    .update({ role: newRole })
+    .update(buildStaffRoleUpdate(newRole))
     .eq("id", staffId)
     .eq("clinic_id", staff.clinic_id);
 
