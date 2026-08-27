@@ -24,6 +24,16 @@ export interface CreateNotificationInput {
    * (0016_notifications.sql) for why the resolution boundary sits here.
    */
   recipientStaffIds: string[];
+  /**
+   * Database-enforced idempotency key (notifications.event_key,
+   * 0040_notification_event_key.sql) for events that can be retried or
+   * re-evaluated (e.g. a scheduler job running twice) — omit for a
+   * naturally one-shot event (Batch 6's recall-created/staff-invited
+   * events, whose own call sites already guarantee at-most-once). When
+   * given, a second call with the same key returns null instead of a new
+   * notification id.
+   */
+  eventKey?: string;
 }
 
 /**
@@ -64,6 +74,7 @@ export async function createNotification(
     p_action_url: input.actionUrl,
     p_action_label: input.actionLabel,
     p_created_by: input.createdBy,
+    p_event_key: input.eventKey,
   });
 
   if (error) {

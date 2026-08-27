@@ -2,9 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   buildRecallCreatedNotification,
   buildStaffInvitedNotification,
+  buildAppointmentReminderNotification,
+  buildLowStockNotification,
   shouldNotifyForAutoRecall,
   type RecallNotificationInput,
   type StaffInvitedNotificationInput,
+  type AppointmentReminderNotificationInput,
+  type LowStockNotificationInput,
 } from "@/lib/notifications/events";
 
 describe("buildRecallCreatedNotification", () => {
@@ -94,5 +98,83 @@ describe("buildStaffInvitedNotification", () => {
     expect(serialized).not.toContain("password");
     expect(serialized).not.toContain("token");
     expect(serialized).not.toContain("/activate");
+  });
+});
+
+describe("buildAppointmentReminderNotification", () => {
+  const input: AppointmentReminderNotificationInput = {
+    clinicId: "clinic-1",
+    appointmentId: "appt-1",
+    window: "next_day",
+    patientName: "Karim Youssef",
+    scheduledStartLabel: "Jun 16, 10:00 AM",
+    recipientStaffIds: ["staff-1", "staff-2"],
+  };
+
+  it("uses the appointments.reminder source and info/normal severity", () => {
+    const result = buildAppointmentReminderNotification(input);
+    expect(result.source).toBe("appointments.reminder");
+    expect(result.type).toBe("info");
+    expect(result.priority).toBe("normal");
+  });
+
+  it("links entity_id/action_url to the appointment", () => {
+    const result = buildAppointmentReminderNotification(input);
+    expect(result.entityType).toBe("appointment");
+    expect(result.entityId).toBe("appt-1");
+    expect(result.actionUrl).toBe("/appointments");
+  });
+
+  it("mentions the patient's name and scheduled time in the body", () => {
+    const result = buildAppointmentReminderNotification(input);
+    expect(result.body).toContain("Karim Youssef");
+    expect(result.body).toContain("Jun 16, 10:00 AM");
+  });
+
+  it("always sets a database-enforced event key scoped to this appointment and window", () => {
+    const result = buildAppointmentReminderNotification(input);
+    expect(result.eventKey).toBe("appointment_reminder:appt-1:next_day");
+  });
+
+  it("produces a different event key for a different appointment", () => {
+    const other = buildAppointmentReminderNotification({ ...input, appointmentId: "appt-2" });
+    expect(other.eventKey).not.toBe(buildAppointmentReminderNotification(input).eventKey);
+  });
+});
+
+describe("buildLowStockNotification", () => {
+  const input: LowStockNotificationInput = {
+    clinicId: "clinic-1",
+    productId: "product-1",
+    productName: "Latex Gloves (M)",
+    stockLevel: 4,
+    reorderThreshold: 10,
+    recipientStaffIds: ["staff-1"],
+  };
+
+  it("uses the inventory.low_stock source and warning/normal severity", () => {
+    const result = buildLowStockNotification(input);
+    expect(result.source).toBe("inventory.low_stock");
+    expect(result.type).toBe("warning");
+    expect(result.priority).toBe("normal");
+  });
+
+  it("links entity_id/action_url to the product", () => {
+    const result = buildLowStockNotification(input);
+    expect(result.entityType).toBe("inventory_product");
+    expect(result.entityId).toBe("product-1");
+    expect(result.actionUrl).toBe("/inventory/products");
+  });
+
+  it("mentions the product name, stock level, and threshold in the body", () => {
+    const result = buildLowStockNotification(input);
+    expect(result.body).toContain("Latex Gloves (M)");
+    expect(result.body).toContain("4");
+    expect(result.body).toContain("10");
+  });
+
+  it("does not set an event key — deduplication is handled by the low-stock state table, not a point-in-time key", () => {
+    const result = buildLowStockNotification(input);
+    expect(result.eventKey).toBeUndefined();
   });
 });

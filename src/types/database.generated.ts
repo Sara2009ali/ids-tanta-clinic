@@ -897,6 +897,39 @@ export type Database = {
           },
         ]
       }
+      inventory_low_stock_alerts: {
+        Row: {
+          clinic_id: string
+          notified_at: string
+          product_id: string
+        }
+        Insert: {
+          clinic_id: string
+          notified_at?: string
+          product_id: string
+        }
+        Update: {
+          clinic_id?: string
+          notified_at?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_low_stock_alerts_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_low_stock_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_movements: {
         Row: {
           clinic_id: string
@@ -1339,6 +1372,7 @@ export type Database = {
           created_by: string | null
           entity_id: string | null
           entity_type: string | null
+          event_key: string | null
           id: string
           priority: string
           requires_action: boolean
@@ -1355,6 +1389,7 @@ export type Database = {
           created_by?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          event_key?: string | null
           id?: string
           priority: string
           requires_action?: boolean
@@ -1371,6 +1406,7 @@ export type Database = {
           created_by?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          event_key?: string | null
           id?: string
           priority?: string
           requires_action?: boolean
@@ -2904,6 +2940,7 @@ export type Database = {
           p_created_by?: string
           p_entity_id?: string
           p_entity_type?: string
+          p_event_key?: string
           p_priority: string
           p_recipient_staff_ids: string[]
           p_requires_action?: boolean

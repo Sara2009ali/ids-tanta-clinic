@@ -6,9 +6,24 @@ describe("SCHEDULER_JOBS — the closed job registry", () => {
     expect(SCHEDULER_JOBS.some((job) => job.name === "heartbeat")).toBe(true);
   });
 
+  it("registers both Batch 8 time-based jobs the data model can honestly support", () => {
+    expect(SCHEDULER_JOBS.some((job) => job.name === "appointment_reminders")).toBe(true);
+    expect(SCHEDULER_JOBS.some((job) => job.name === "low_stock_notifications")).toBe(true);
+  });
+
+  it("does NOT register overdue_invoice_notifications — a documented blocker, not an oversight (invoices has no due_date/overdue concept in the schema)", () => {
+    expect(SCHEDULER_JOBS.some((job) => job.name === "overdue_invoice_notifications")).toBe(false);
+  });
+
   it("every registered job has a unique name", () => {
     const names = SCHEDULER_JOBS.map((job) => job.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("every registered job exposes a callable run() function", () => {
+    for (const job of SCHEDULER_JOBS) {
+      expect(typeof job.run).toBe("function");
+    }
   });
 });
 
